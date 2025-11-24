@@ -190,24 +190,44 @@ class EmailLoginPage extends StatefulWidget {
 }
 
 class _EmailLoginPageState extends State<EmailLoginPage> {
+  // Global Key สำหรับ Form
+  final _formKey = GlobalKey<FormState>();
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+
   bool _isRegisterMode = false;
   bool _isLoading = false;
 
+  // ฟังก์ชันตรวจสอบความถูกต้องของอีเมลเบื้องต้น
+  bool _isValidEmail(String email) {
+    // Regex สำหรับการตรวจสอบอีเมลอย่างง่าย
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
   Future<void> _processAuth() async {
+    // 1. ตรวจสอบ Validation ของฟอร์มทั้งหมดก่อนดำเนินการต่อ
+    if (_formKey.currentState == null || !_formKey.currentState!.validate()) {
+      return; // ถ้า Validation ไม่ผ่าน ให้ออกจากฟังก์ชันทันที
+    }
+
+    // 2. ตรวจสอบการยืนยันรหัสผ่านเฉพาะโหมด Register
     if (_isRegisterMode && _passwordController.text != _confirmPasswordController.text) {
       _showErrorDialog('Passwords do not match.');
       return;
     }
 
+    // ผ่าน Validation แล้ว ดำเนินการต่อ
     if (mounted) setState(() => _isLoading = true);
 
+    // Simulate Auth Process
+    // ในโค้ดจริง ตรงนี้คือส่วนที่คุณจะเรียก API หรือ Firebase Auth
     await Future.delayed(const Duration(milliseconds: 1000));
 
     if (mounted) {
       setState(() => _isLoading = false);
+      // หาก Auth สำเร็จ นำทางไปหน้า Home
       Navigator.of(context).pushReplacementNamed('/home');
     }
   }
@@ -239,88 +259,128 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(_isRegisterMode ? 'Register' : 'Email Login'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(30),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const LogoHeader(),
-              const SizedBox(height: 30),
+          child: Form( // ห่อหุ้มด้วย Form Widget
+            key: _formKey, // กำหนด Key ให้ Form
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const LogoHeader(),
+                const SizedBox(height: 30),
 
-              TextField(
-                controller: _emailController,
-                enabled: !_isLoading,
-                decoration: InputDecoration(
-                  labelText: 'Email Address',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  prefixIcon: const Icon(Icons.email),
+                // ใช้อีเมลเป็น TextFormField
+                TextFormField(
+                  controller: _emailController,
+                  enabled: !_isLoading,
+                  decoration: InputDecoration(
+                    labelText: 'Email Address',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.email),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email address.';
+                    }
+                    if (!_isValidEmail(value)) {
+                      return 'Please enter a valid email address.';
+                    }
+                    return null;
+                  },
                 ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 15),
+                const SizedBox(height: 15),
 
-              TextField(
-                controller: _passwordController,
-                enabled: !_isLoading,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  prefixIcon: const Icon(Icons.lock),
-                ),
-              ),
-              const SizedBox(height: 15),
-
-              if (_isRegisterMode) ...[
-                TextField(
-                  controller: _confirmPasswordController,
+                // ใช้รหัสผ่านเป็น TextFormField
+                TextFormField(
+                  controller: _passwordController,
                   enabled: !_isLoading,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Confirm Password',
+                    labelText: 'Password',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.lock),
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password.';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters.';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 15),
-              ],
 
-              const SizedBox(height: 30),
+                if (_isRegisterMode) ...[
+                  // ใช้ยืนยันรหัสผ่านเป็น TextFormField
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    enabled: !_isLoading,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      prefixIcon: const Icon(Icons.lock),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please confirm your password.';
+                      }
+                      if (value != _passwordController.text) {
+                        return 'Passwords do not match.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                ],
 
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else
-                ElevatedButton(
-                  onPressed: _processAuth,
-                  child: Text(_isRegisterMode ? 'CREATE ACCOUNT' : 'LOGIN'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                const SizedBox(height: 30),
+
+                if (_isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  ElevatedButton(
+                    onPressed: _processAuth,
+                    child: Text(_isRegisterMode ? 'CREATE ACCOUNT' : 'LOGIN'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+
+                const SizedBox(height: 20),
+
+                TextButton(
+                  onPressed: _isLoading ? null : () {
+                    setState(() {
+                      _isRegisterMode = !_isRegisterMode;
+                      // เมื่อเปลี่ยนโหมด ต้อง Reset Validation status ของฟอร์มด้วย
+                      _formKey.currentState?.reset();
+                      _emailController.clear();
+                      _passwordController.clear();
+                      _confirmPasswordController.clear();
+                    });
+                  },
+                  child: Text(
+                    _isRegisterMode ? 'Already have an account? Login' : 'Don\'t have an account? Register',
+                    style: TextStyle(color: Theme.of(context).primaryColor),
                   ),
                 ),
-
-              const SizedBox(height: 20),
-
-              TextButton(
-                onPressed: _isLoading ? null : () {
-                  setState(() {
-                    _isRegisterMode = !_isRegisterMode;
-                    _emailController.clear();
-                    _passwordController.clear();
-                    _confirmPasswordController.clear();
-                  });
-                },
-                child: Text(
-                  _isRegisterMode ? 'Already have an account? Login' : 'Don\'t have an account? Register',
-                  style: TextStyle(color: Theme.of(context).primaryColor),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
