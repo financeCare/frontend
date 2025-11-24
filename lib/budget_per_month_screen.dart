@@ -156,10 +156,6 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
 
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('งบประมาณรายเดือน', style: TextStyle(color: Colors.white)),
-        backgroundColor: Theme.of(context).primaryColor,
-      ),
       body: Column(
         children: [
           // --- 1. Overview Card ---
