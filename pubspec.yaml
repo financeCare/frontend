@@ -15,6 +15,7 @@ dependencies:
 
   # LINE Login (เวอร์ชันที่มีจริง)
   flutter_line_sdk: ^2.6.1
+  fl_chart: ^0.66.0
 
   # Google Login
   google_sign_in: ^6.1.0
