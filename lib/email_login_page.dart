@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'main.dart'; // Import main เพื่อใช้ LogoHeader
+import 'auth/auth_widget.dart';
+import 'main.dart' hide LogoHeader; // Import main เพื่อใช้ LogoHeader
 // =========================================================
 // 2. EMAIL LOGIN PAGE: หน้าจอ Login ด้วย Email/Password
 // =========================================================

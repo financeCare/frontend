@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "574118687805",
+    "project_id": "financecare-ccc27",
+    "storage_bucket": "financecare-ccc27.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:574118687805:android:0599023b0dcb02ecade654",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "574118687805-pjorecukb9lr507397v0fptenn6j6p11.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flutter_application_1",
+            "certificate_hash": "6824fa49127e5df6eda829b602e7824e2c0ddd6c"
+          }
+        },
+        {
+          "client_id": "574118687805-5o7ktmktaaq1sfofdepu51f3j9oa73j9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB04D9m97UFVIhGUDI1BVRn_rY6XTAtIrU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "574118687805-5o7ktmktaaq1sfofdepu51f3j9oa73j9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

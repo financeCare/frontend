@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
-import 'main.dart'; // Import main เพื่อใช้ LogoHeader และ Routing
-
-// =========================================================
-// 1. WELCOME PAGE: หน้าจอเริ่มต้นให้เลือก LINE หรือ Email
-// =========================================================
+import 'package:google_sign_in/google_sign_in.dart'; // **เพิ่ม: สำหรับ Google Login**
+import 'package:flutter_application_1/main.dart'; // Import main เพื่อใช้ LogoHeader
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
@@ -15,12 +12,14 @@ class WelcomePage extends StatefulWidget {
 
 class _WelcomePageState extends State<WelcomePage> {
   bool _isLoading = false;
+  // **เพิ่ม: Google Sign In Instance**
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
 
   void _navigateToHome() {
-    // ไปหน้า Home และล้าง Navigation Stack (ใช้ named route)
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
+  // **ฟังก์ชัน: ล็อกอินด้วย LINE**
   Future<void> _loginWithLine() async {
     if (mounted) {
       setState(() => _isLoading = true);
@@ -29,7 +28,6 @@ class _WelcomePageState extends State<WelcomePage> {
     bool success = false;
 
     try {
-      // เรียกใช้ LINE SDK สำหรับ Login
       await LineSDK.instance.login(scopes: ["profile", "openid", "email"]);
       success = true;
     } catch (e) {
@@ -46,6 +44,37 @@ class _WelcomePageState extends State<WelcomePage> {
       }
     }
   }
+
+  // **ฟังก์ชัน: ล็อกอินด้วย Google**
+  Future<void> _loginWithGoogle() async {
+    if (mounted) setState(() => _isLoading = true);
+    bool success = false;
+
+    try {
+      // Google Sign-In
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser != null) {
+        // ในแอปพลิเคชันจริง: ใช้ googleUser.authentication เพื่อยืนยันตัวตนกับ Backend/Firebase
+        success = true;
+      } else {
+        // ผู้ใช้ยกเลิกการล็อกอิน
+        success = false;
+      }
+    } catch (e) {
+      _showErrorDialog('Google Login Failed: ${e.toString()}');
+      success = false;
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (success && mounted) {
+        _navigateToHome();
+      }
+    }
+  }
+
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -66,13 +95,27 @@ class _WelcomePageState extends State<WelcomePage> {
   Widget _buildLineLoginButton() {
     return ElevatedButton.icon(
       onPressed: _isLoading ? null : _loginWithLine,
-      icon: const Icon(
-        Icons.comment, // ใช้ไอคอนพื้นฐานแทน Image.asset เพื่อให้โค้ดรันได้ง่าย
-        color: Colors.white,
-      ),
+      // ใช้ Icon Placeholder (สมมติว่าเป็นไอคอนเดิม)
+      icon: const Icon(Icons.person, color: Colors.white),
       label: const Text('Login with LINE'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF06C755),
+        backgroundColor: const Color(0xFF06C755), // สีเขียว LINE
+        foregroundColor: Colors.white,
+        minimumSize: const Size(double.infinity, 50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  // **ปุ่มล็อกอินด้วย Google**
+  Widget _buildGoogleLoginButton() {
+    return ElevatedButton.icon(
+      onPressed: _isLoading ? null : _loginWithGoogle,
+      icon: const Icon(Icons.person, color: Colors.white), // ใช้ไอคอน Placeholder
+      label: const Text('Login with Google'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue.shade700,
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 50),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -96,16 +139,23 @@ class _WelcomePageState extends State<WelcomePage> {
 
               if (_isLoading)
                 const Center(child: CircularProgressIndicator())
-              else
+              else ...[
+                // LINE Login
                 _buildLineLoginButton(),
+                const SizedBox(height: 15),
+
+                // **Google Login ถูกเพิ่มกลับเข้ามา**
+                _buildGoogleLoginButton(),
+              ],
+
 
               const SizedBox(height: 20),
               const Divider(height: 40, thickness: 1),
 
+              // Email Login
               ElevatedButton(
                 onPressed: _isLoading ? null : () {
-                  // ใช้ named route ไปหน้า Email Login
-                  Navigator.of(context).pushNamed('/login_email');
+                  Navigator.of(context).pushNamed('/email_login');
                 },
                 child: const Text('Login / Register with Email'),
                 style: ElevatedButton.styleFrom(
