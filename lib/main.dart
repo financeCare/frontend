@@ -3,13 +3,13 @@ import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 
 // Screens
 // **NOTE:** ต้องมั่นใจว่าไฟล์เหล่านี้มีอยู่ในโครงสร้าง lib/ ของคุณ
-import 'pages/welcome_page.dart';
+import './pages/welcome_page.dart';
 import 'email_login_page.dart';
-import 'pages/homepage.dart'; // HomePage ที่มี Bottom Navigation Bar (สำคัญ: ต้องเป็นไฟล์ home_page.dart ที่มี FAB)
+import './pages/homepage.dart'; // HomePage ที่มี Bottom Navigation Bar (สำคัญ: ต้องเป็นไฟล์ home_page.dart ที่มี FAB)
 import 'expense_entry_screen.dart'; // Expense Entry (Route /expense_entry)
-import 'pages/simulator_screen.dart'; // Simulator (Route /simulator)
+import './pages/simulator_screen.dart'; // Simulator (Route /simulator)
 
-// Widget Helper: LogoHeader - **ใช้ Image.asset สำหรับโลโก้**
+// Widget Helper: LogoHeader - **ปรับขนาดโลโก้**
 class LogoHeader extends StatelessWidget {
   const LogoHeader({super.key});
 
@@ -20,10 +20,9 @@ class LogoHeader extends StatelessWidget {
         // ใช้ Image.asset เพื่อแสดงโลโก้เดิม
         Image.asset(
           'assets/logo_finance_care.png',
-          height: 120, // ปรับขนาด
-          width: 120,
+          height: 280, // **เพิ่มขนาดให้ใหญ่ขึ้น**
+          width: 380,  // **เพิ่มขนาดให้ใหญ่ขึ้น**
         ),
-        const SizedBox(height: 20),
       ],
     );
   }
@@ -49,7 +48,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'FINANCE CARE FC App',
-      // **แก้ไข: เปลี่ยนสี Primary Color และ Seed Color เป็น Teal (สีเขียวอมน้ำเงิน) เพื่อให้เข้ากับโลโก้**
       theme: ThemeData(
         primaryColor: const Color(0xFF00796B), // Deep Teal
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF00796B)),

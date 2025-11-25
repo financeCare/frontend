@@ -202,33 +202,36 @@ class _CrudPageState extends State<CrudPage> {
   }
 
   Widget buildIncomeStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("กรุณาใส่รายรับของคุณ", style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 20),
-        TextField(
-          controller: incomeCtrl,
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly, // รับเฉพาะตัวเลข
-          ],
-          decoration: InputDecoration(
-            labelText: "รายรับ / เดือน",
-            errorText: incomeError ? "กรุณากรอกจำนวนเงิน" : null,
+    // ** NEW: ห่อหุ้มด้วย SingleChildScrollView เพื่อให้หน้านี้ Scroll ได้เช่นกัน **
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("กรุณาใส่รายรับของคุณ", style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 20),
+          TextField(
+            controller: incomeCtrl,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly, // รับเฉพาะตัวเลข
+            ],
+            decoration: InputDecoration(
+              labelText: "รายรับ / เดือน",
+              errorText: incomeError ? "กรุณากรอกจำนวนเงิน" : null,
+            ),
           ),
-        ),
-        const SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: addIncome,
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 48), // ทำให้ปุ่มกว้างเต็ม
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: addIncome,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48), // ทำให้ปุ่มกว้างเต็ม
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Next"),
           ),
-          child: const Text("Next"),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -236,105 +239,119 @@ class _CrudPageState extends State<CrudPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("ระบุหนี้ของคุณ", style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 15),
-
-        // ชื่อหนี้
-        TextField(
-          controller: debtNameCtrl,
-          decoration: InputDecoration(
-            labelText: "ชื่อหนี้",
-            errorText: debtNameError ? "กรุณากรอกชื่อหนี้" : null,
-          ),
-        ),
-        const SizedBox(height: 10),
-
-        // ประเภทหนี้ Dropdown
-        DropdownButtonFormField<String>(
-          value: selectedDebtType,
-          decoration: const InputDecoration(labelText: "ประเภทหนี้"),
-          items: debtTypes.map((type) => DropdownMenuItem(
-            value: type,
-            child: Text(type),
-          )).toList(),
-          onChanged: (val) => setState(() => selectedDebtType = val!),
-        ),
-        const SizedBox(height: 10),
-
-        // จำนวนเงิน
-        TextField(
-          controller: debtAmountCtrl,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: "จำนวนเงิน",
-            errorText: debtAmountError ? "กรุณากรอกจำนวนเงิน" : null,
-          ),
-        ),
-        const SizedBox(height: 10),
-
-        // ดอกเบี้ย
-        TextField(
-          controller: debtInterestCtrl,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: "ดอกเบี้ย (%)",
-            errorText: debtInterestError ? "กรุณากรอกดอกเบี้ย" : null,
-          ),
-        ),
-        const SizedBox(height: 10),
-
-        ElevatedButton(
-          onPressed: addDebt,
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 48), // ทำให้ปุ่มกว้างเต็ม
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text("เพิ่มหนี้"),
-        ),
-        const SizedBox(height: 20),
-        const Text("รายการหนี้ของคุณ:", style: TextStyle(fontWeight: FontWeight.bold)),
-
+        // ** NEW: ห่อหุ้มส่วนของ Form และ List ด้วย SingleChildScrollView **
         Expanded(
-          child: ListView.builder(
-            itemCount: debts.length,
-            itemBuilder: (context, index) {
-              final debt = debts[index];
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              // mainAxisSize: MainAxisSize.min, // ไม่จำเป็นต้องใช้เมื่อมี Expanded ครอบ List
+              children: [
+                Text("ระบุหนี้ของคุณ", style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 15),
 
-              return Card(
-                elevation: 2,
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                child: ListTile(
-                  title: Text(debt.name, style: Theme.of(context).textTheme.titleMedium),
-                  subtitle: Text(
-                    "ประเภท: ${debt.type} | ยอดหนี้: ${debt.amount.toStringAsFixed(0)} | ดอกเบี้ย: ${debt.interest}%",
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Edit
-                      IconButton(
-                        icon: Icon(Icons.edit, color: Colors.blue.shade600),
-                        onPressed: () => editDebt(index),
-                      ),
-                      // Delete
-                      IconButton(
-                        icon: Icon(Icons.delete, color: Colors.red.shade600),
-                        onPressed: () {
-                          // ใช้ showDialog ที่มีอยู่แล้ว
-                          deleteDebt(index);
-                        },
-                      ),
-                    ],
+                // ชื่อหนี้
+                TextField(
+                  controller: debtNameCtrl,
+                  decoration: InputDecoration(
+                    labelText: "ชื่อหนี้",
+                    errorText: debtNameError ? "กรุณากรอกชื่อหนี้" : null,
                   ),
                 ),
-              );
-            },
-          ),
-        ),
+                const SizedBox(height: 10),
 
-        // ปุ่มด้านล่าง
+                // ประเภทหนี้ Dropdown
+                DropdownButtonFormField<String>(
+                  value: selectedDebtType,
+                  decoration: const InputDecoration(labelText: "ประเภทหนี้"),
+                  items: debtTypes.map((type) => DropdownMenuItem(
+                    value: type,
+                    child: Text(type),
+                  )).toList(),
+                  onChanged: (val) => setState(() => selectedDebtType = val!),
+                ),
+                const SizedBox(height: 10),
+
+                // จำนวนเงิน
+                TextField(
+                  controller: debtAmountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: "จำนวนเงิน",
+                    errorText: debtAmountError ? "กรุณากรอกจำนวนเงิน" : null,
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // ดอกเบี้ย
+                TextField(
+                  controller: debtInterestCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: "ดอกเบี้ย (%)",
+                    errorText: debtInterestError ? "กรุณากรอกดอกเบี้ย" : null,
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                ElevatedButton(
+                  onPressed: addDebt,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48), // ทำให้ปุ่มกว้างเต็ม
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text("เพิ่มหนี้"),
+                ),
+                const SizedBox(height: 20),
+                const Text("รายการหนี้ของคุณ:", style: TextStyle(fontWeight: FontWeight.bold)),
+
+                // รายการหนี้
+                // เราใช้ Column ภายใน SingleChildScrollView ดังนั้นต้องใช้ shrinkWrap: true
+                // และไม่สามารถใช้ Expanded ได้ เพราะมันจะไปขัดแย้งกับ SingleChildScrollView
+                ListView.builder(
+                  shrinkWrap: true, // บอกให้ ListView ใช้พื้นที่เท่าที่จำเป็น
+                  physics: const NeverScrollableScrollPhysics(), // ปิด Scroll ของ ListView เพราะ Scroll หลักคือ SingleChildScrollView
+                  itemCount: debts.length,
+                  itemBuilder: (context, index) {
+                    final debt = debts[index];
+
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        title: Text(debt.name, style: Theme.of(context).textTheme.titleMedium),
+                        subtitle: Text(
+                          "ประเภท: ${debt.type} | ยอดหนี้: ${debt.amount.toStringAsFixed(0)} | ดอกเบี้ย: ${debt.interest}%",
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Edit
+                            IconButton(
+                              icon: Icon(Icons.edit, color: Colors.blue.shade600),
+                              onPressed: () => editDebt(index),
+                            ),
+                            // Delete
+                            IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red.shade600),
+                              onPressed: () {
+                                // ใช้ showDialog ที่มีอยู่แล้ว
+                                deleteDebt(index);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ), // สิ้นสุด Expanded ที่มี SingleChildScrollView
+
+        // ปุ่มด้านล่าง (คงที่ ไม่ให้ Scroll)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10.0),
           child: Row(
