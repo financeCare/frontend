@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 
 // Screens
-// **NOTE:** ต้องมั่นใจว่าไฟล์เหล่านี้มีอยู่ในโครงสร้าง lib/ ของคุณ
-import './pages/welcome_page.dart';
-import 'email_login_page.dart';
+// **NOTE:** ต้องมั่นใจว่าไฟล์เหล่านี้มีอยู่ในโครงสร้าง lib/ ของimport 'auth/auth_widget.darimport 'auth/auth_widget.dart';
+import './auth/auth_widget.dart';
 import './pages/homepage.dart'; // HomePage ที่มี Bottom Navigation Bar (สำคัญ: ต้องเป็นไฟล์ home_page.dart ที่มี FAB)
 import 'expense_entry_screen.dart'; // Expense Entry (Route /expense_entry)
 import './pages/simulator_screen.dart'; // Simulator (Route /simulator)
@@ -28,16 +27,14 @@ class LogoHeader extends StatelessWidget {
   }
 }
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize LINE SDK (ใช้ dummy ID สำหรับการทดสอบ)
   try {
-    LineSDK.instance.setup('dummy_line_channel_id');
+    await LineSDK.instance.setup('2008279064');
+    print('start app');
   } catch (e) {
     // print('LINE SDK initialization failed: $e');
   }
-
   runApp(const MyApp());
 }
 

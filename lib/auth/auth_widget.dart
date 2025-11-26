@@ -110,31 +110,28 @@ class _WelcomePageState extends State<WelcomePage> {
   // Login with LINE
   // ------------------------------------------
   Future<void> _loginWithLine() async {
-    if (mounted) {
-      setState(() => _isLoading = true);
-    }
-
+    print('a1');
+    if (mounted) setState(() => _isLoading = true);
     bool success = false;
 
     try {
-      await LineSDK.instance.login(scopes: ["profile", "openid", "email"]);
-      final accessToken = await LineSDK.instance.currentAccessToken;
-      success = accessToken != null && accessToken.value.isNotEmpty;
+      final result = await LineSDK.instance.login(scopes: ["profile", "openid", "email"]);
 
+      print("LINE LOGIN CALLBACK HIT!");
+      print("AccessToken: ${result.accessToken.value}");
+      print("UserID: ${result.userProfile?.userId}");
+      print("DisplayName: ${result.userProfile?.displayName}");
+
+      success = true;
     } catch (e) {
-      _showErrorDialog("LINE Login Failed: $e");
-      success = false;
+      print("LINE login error: $e");
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (success && mounted) {
-        _navigateToHome();
-      }
+      if (mounted) setState(() => _isLoading = false);
+      if (success && mounted) _navigateToHome();
     }
   }
+
+
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -153,6 +150,7 @@ class _WelcomePageState extends State<WelcomePage> {
   }
 
   Widget _buildLineLoginButton() {
+    print('b1');
     return ElevatedButton.icon(
       onPressed: _isLoading ? null : _loginWithLine,
       icon: Image.asset(
@@ -199,6 +197,7 @@ class _WelcomePageState extends State<WelcomePage> {
 
   @override
   Widget build(BuildContext context) {
+    print('c1');
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
