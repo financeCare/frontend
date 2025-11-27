@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+      # 🌟 เพิ่มบรรทัดนี้
+  shared_preferences: ^2.2.2 # หรือเวอร์ชันล่าสุด
   http: ^1.2.1
 
   # iOS-style icons

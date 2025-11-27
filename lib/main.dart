@@ -6,7 +6,7 @@ import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import './auth/auth_widget.dart';
 import './pages/homepage.dart'; // HomePage ที่มี Bottom Navigation Bar (สำคัญ: ต้องเป็นไฟล์ home_page.dart ที่มี FAB)
 import 'expense_entry_screen.dart'; // Expense Entry (Route /expense_entry)
-import './pages/simulator_screen.dart'; // Simulator (Route /simulator)
+import './pages/simulator/simulator_screen.dart'; // Simulator (Route /simulator)
 
 // Widget Helper: LogoHeader - **ปรับขนาดโลโก้**
 class LogoHeader extends StatelessWidget {

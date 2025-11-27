@@ -4,6 +4,10 @@ import '../models/constants.dart';
 import 'dashboard_page.dart';
 import 'package:flutter/services.dart';
 
+// 🌟 เพิ่ม Imports สำหรับ API
+import '../services/transaction_service.dart'; // ตรวจสอบ path ให้ถูกต้อง
+import '../models/transaction.dart'; // ตรวจสอบ path ให้ถูกต้อง
+
 class CrudPage extends StatefulWidget {
   const CrudPage({super.key});
 
@@ -14,12 +18,20 @@ class CrudPage extends StatefulWidget {
 class _CrudPageState extends State<CrudPage> {
   int currentStep = 1;
 
+  // รายรับที่ผู้ใช้กรอกเอง
   final TextEditingController incomeCtrl = TextEditingController();
   List<FinanceItem> incomes = [];
 
+  // 🌟 ตัวแปรสำหรับ API
+  final TransactionService _transactionService = TransactionService();
+  late Future<List<Transaction>> _transactionsFuture;
+  List<FinanceItem> apiIncomes = [];
+
+  // หนี้สิน
   final TextEditingController debtNameCtrl = TextEditingController();
   final TextEditingController debtAmountCtrl = TextEditingController();
   final TextEditingController debtInterestCtrl = TextEditingController();
+  // สมมติว่า debtTypes มาจากไฟล์ constants.dart
   String selectedDebtType = debtTypes[0];
   List<FinanceItem> debts = [];
 
@@ -28,6 +40,40 @@ class _CrudPageState extends State<CrudPage> {
   bool debtAmountError = false;
   bool debtInterestError = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // 🌟 เรียกใช้ฟังก์ชันดึงข้อมูล API เมื่อ Widget เริ่มต้นทำงาน
+    _transactionsFuture = _fetchApiData();
+  }
+
+  // 🌟 ฟังก์ชันสำหรับดึงข้อมูล API, กรองรายรับ, และแปลงเป็น FinanceItem
+  Future<List<Transaction>> _fetchApiData() async {
+    try {
+      final transactions = await _transactionService.getOwnTransactions();
+
+      // กรองเฉพาะรายการ 'Income' และแปลงเป็น List<FinanceItem>
+      apiIncomes = transactions
+          .where((t) => t.type == 'Income') // กรองเฉพาะรายรับ
+          .map((t) => FinanceItem(
+        name: "API Income",
+        amount: t.amount,
+        createdAt: t.transactionDate,
+      )
+      )
+          .toList();
+
+      return transactions;
+
+    } catch (e) {
+      // จัดการข้อผิดพลาด
+      print('API Error: $e');
+      // 🚨 อาจจะต้องเพิ่มการแจ้งเตือนผู้ใช้ตรงนี้ เช่น Toast หรือ Dialog
+      return [];
+    }
+  }
+
+
   void addIncome() {
     setState(() {
       incomeError = incomeCtrl.text.isEmpty;
@@ -35,9 +81,11 @@ class _CrudPageState extends State<CrudPage> {
 
     if (incomeError) return;
 
+    // เพิ่มรายรับที่ผู้ใช้กรอกเข้าใน List 'incomes' (แยกจาก apiIncomes)
     incomes.add(FinanceItem(
-      name: "Income",
+      name: "Manual Income",
       amount: double.tryParse(incomeCtrl.text) ?? 0,
+      createdAt: DateTime.now(),
     ));
 
     incomeCtrl.clear();
@@ -47,7 +95,7 @@ class _CrudPageState extends State<CrudPage> {
   }
 
   void addDebt() {
-    // 🟢 เพิ่มการตรวจสอบ error ก่อน
+    // เพิ่มการตรวจสอบ error ก่อน
     setState(() {
       debtNameError = debtNameCtrl.text.isEmpty;
       debtAmountError = debtAmountCtrl.text.isEmpty;
@@ -67,8 +115,8 @@ class _CrudPageState extends State<CrudPage> {
       name: debtNameCtrl.text,
       amount: double.tryParse(debtAmountCtrl.text) ?? 0,
       interest: double.tryParse(debtInterestCtrl.text) ?? 0,
-      type: selectedDebtType,          // ต้องมีตัวแปร selectedDebtType
-      createdAt: DateTime.now(),       // เพิ่มตรงนี้
+      type: selectedDebtType,
+      createdAt: DateTime.now(),
     ));
 
     debtNameCtrl.clear();
@@ -117,9 +165,8 @@ class _CrudPageState extends State<CrudPage> {
                 TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
                 ElevatedButton(
                   onPressed: () {
-                    // 🚨 เพิ่มการตรวจสอบตัวเลขที่นี่ด้วย
+                    // เพิ่มการตรวจสอบตัวเลขที่นี่ด้วย
                     if (double.tryParse(amountCtrl.text) == null || double.tryParse(interestCtrl.text) == null) {
-                      // สามารถเพิ่มแจ้งเตือนใน Dialog ได้ถ้าต้องการ
                       return;
                     }
                     setState(() {
@@ -164,56 +211,86 @@ class _CrudPageState extends State<CrudPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // 🌟 ตั้งค่าความสูงของ AppBar ให้มีพื้นที่มากขึ้น
         toolbarHeight: 80.0,
-
-        // 🌟 เปลี่ยน title เป็น Logo Asset
         title: Padding(
-          // 🔴 เพิ่ม Padding ด้านบนเพื่อดันโลโก้ลงมา
           padding: const EdgeInsets.only(top: 15.0),
           child: Image.asset(
             'assets/logo_finance_care.png',
-            height: 80, // ขนาดที่เหมาะสมสำหรับ AppBar
+            height: 80,
             errorBuilder: (context, error, stackTrace) {
-              // กรณีหาไฟล์ภาพไม่เจอ ให้แสดงข้อความแทน
               return Text(
                 'Finance Care',
                 style: Theme.of(context).textTheme.titleLarge!.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor, // ใช้สีหลักของ Theme แทนสีขาว
+                  color: Theme.of(context).primaryColor,
                 ),
               );
             },
           ),
         ),
-        centerTitle: true, // จัดให้อยู่ตรงกลาง
-        // 🔴 ปรับพื้นหลังเป็นโปร่งใสและยกเลิกเงา
+        centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        // 🔴 ตั้งค่าสีของไอคอน/ปุ่มย้อนกลับให้เป็นสีหลักของ Theme
         iconTheme: IconThemeData(color: Theme.of(context).primaryColor),
       ),
-      body: Padding(
-        // 🔴 ปรับ Padding ของ Body เพื่อไม่ให้ชนขอบด้านบน
-        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 10),
-        child: currentStep == 1 ? buildIncomeStep() : buildDebtStep(),
+
+      // 🌟 ห่อหุ้ม Body ด้วย FutureBuilder เพื่อรอข้อมูล API
+      body: FutureBuilder<List<Transaction>>(
+        future: _transactionsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // แสดง Loading ขณะดึงข้อมูล
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            // แสดงข้อผิดพลาด API (หากเกิดปัญหาเรื่อง Permission/Network)
+            return Center(child: Text('ไม่สามารถดึงข้อมูล API ได้: ${snapshot.error}'));
+          }
+
+          // เมื่อข้อมูล API ถูกโหลดแล้ว (อยู่ใน apiIncomes)
+          return Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 10),
+            child: currentStep == 1 ? buildIncomeStep() : buildDebtStep(),
+          );
+        },
       ),
     );
   }
 
   Widget buildIncomeStep() {
-    // ** NEW: ห่อหุ้มด้วย SingleChildScrollView เพื่อให้หน้านี้ Scroll ได้เช่นกัน **
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("กรุณาใส่รายรับของคุณ", style: Theme.of(context).textTheme.headlineSmall),
+          Text("รายรับจากระบบ (API)", style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 10),
+
+          // 🌟 แสดงรายการรายรับที่ดึงมาจาก API
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: apiIncomes.length,
+            itemBuilder: (context, index) {
+              final item = apiIncomes[index];
+              return ListTile(
+                title: Text("รายการรายรับ: ${item.amount.toStringAsFixed(2)}"),
+                // ใช้ Null Check สำหรับ createdAt
+                subtitle: Text("วันที่: ${item.createdAt?.toLocal().toString().split(' ')[0] ?? 'N/A'}"),
+              );
+            },
+          ),
+
+          const Divider(height: 40),
+
+          Text("กรุณาใส่รายรับเพิ่มเติม (ถ้ามี)", style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 20),
+
           TextField(
             controller: incomeCtrl,
             keyboardType: TextInputType.number,
             inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly, // รับเฉพาะตัวเลข
+              FilteringTextInputFormatter.digitsOnly,
             ],
             decoration: InputDecoration(
               labelText: "รายรับ / เดือน",
@@ -221,10 +298,11 @@ class _CrudPageState extends State<CrudPage> {
             ),
           ),
           const SizedBox(height: 20),
+
           ElevatedButton(
             onPressed: addIncome,
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 48), // ทำให้ปุ่มกว้างเต็ม
+              minimumSize: const Size(double.infinity, 48),
               backgroundColor: Theme.of(context).primaryColor,
               foregroundColor: Colors.white,
             ),
@@ -239,12 +317,10 @@ class _CrudPageState extends State<CrudPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ** NEW: ห่อหุ้มส่วนของ Form และ List ด้วย SingleChildScrollView **
         Expanded(
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              // mainAxisSize: MainAxisSize.min, // ไม่จำเป็นต้องใช้เมื่อมี Expanded ครอบ List
               children: [
                 Text("ระบุหนี้ของคุณ", style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 15),
@@ -296,7 +372,7 @@ class _CrudPageState extends State<CrudPage> {
                 ElevatedButton(
                   onPressed: addDebt,
                   style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48), // ทำให้ปุ่มกว้างเต็ม
+                    minimumSize: const Size(double.infinity, 48),
                     backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.white,
                   ),
@@ -306,11 +382,9 @@ class _CrudPageState extends State<CrudPage> {
                 const Text("รายการหนี้ของคุณ:", style: TextStyle(fontWeight: FontWeight.bold)),
 
                 // รายการหนี้
-                // เราใช้ Column ภายใน SingleChildScrollView ดังนั้นต้องใช้ shrinkWrap: true
-                // และไม่สามารถใช้ Expanded ได้ เพราะมันจะไปขัดแย้งกับ SingleChildScrollView
                 ListView.builder(
-                  shrinkWrap: true, // บอกให้ ListView ใช้พื้นที่เท่าที่จำเป็น
-                  physics: const NeverScrollableScrollPhysics(), // ปิด Scroll ของ ListView เพราะ Scroll หลักคือ SingleChildScrollView
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: debts.length,
                   itemBuilder: (context, index) {
                     final debt = debts[index];
@@ -327,16 +401,13 @@ class _CrudPageState extends State<CrudPage> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Edit
                             IconButton(
                               icon: Icon(Icons.edit, color: Colors.blue.shade600),
                               onPressed: () => editDebt(index),
                             ),
-                            // Delete
                             IconButton(
                               icon: Icon(Icons.delete, color: Colors.red.shade600),
                               onPressed: () {
-                                // ใช้ showDialog ที่มีอยู่แล้ว
                                 deleteDebt(index);
                               },
                             ),
@@ -349,7 +420,7 @@ class _CrudPageState extends State<CrudPage> {
               ],
             ),
           ),
-        ), // สิ้นสุด Expanded ที่มี SingleChildScrollView
+        ),
 
         // ปุ่มด้านล่าง (คงที่ ไม่ให้ Scroll)
         Padding(
@@ -367,13 +438,16 @@ class _CrudPageState extends State<CrudPage> {
               ),
               ElevatedButton(
                 onPressed: () {
+                  // 🌟 รวมรายการรายรับทั้งหมด (Manual + API) ก่อนส่งไปยัง Dashboard
+                  final allIncomes = [...incomes, ...apiIncomes];
+
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => DashboardPage(incomes: incomes, debts: debts)),
+                    MaterialPageRoute(builder: (_) => DashboardPage(incomes: allIncomes, debts: debts)),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepOrange, // สีที่เด่นกว่า
+                  backgroundColor: Colors.deepOrange,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text("ไปหน้าสรุป"),

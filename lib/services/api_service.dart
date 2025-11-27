@@ -12,6 +12,7 @@ class AuthService {
   }
 
   Future<bool> login(String email, String password) async {
+    print('try to login');
     try {
       final response = await http.post(
         Uri.parse("$baseUrl/auth/login"),
@@ -25,7 +26,7 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final token = data["accessToken"];
-
+       
         final file = await _tokenFile;
         await file.writeAsString(token);
 

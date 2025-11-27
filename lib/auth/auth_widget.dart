@@ -83,6 +83,14 @@ class _WelcomePageState extends State<WelcomePage> {
       if (googleUser != null) {
         // ในการใช้งานจริง: ควรนำ idToken หรือ accessToken ไปยืนยันกับ Backend/Firebase
         print('Google Sign-In successful for user: ${googleUser.displayName}');
+        print('${googleUser.authentication}');
+        print('${googleUser.authHeaders}');
+        print('${googleUser.displayName}');
+        print('${googleUser.email}');
+        print('${googleUser.hashCode}');
+        print('${googleUser.id}');
+        print('${googleUser.photoUrl}');
+        print('${googleUser.serverAuthCode}');
         success = true;
       } else {
         // ผู้ใช้ยกเลิกการ Login
