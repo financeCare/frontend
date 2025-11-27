@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../models/finance_item.dart';
 import '../models/constants.dart';
+import '../services/dashboard_service.dart';
 
 class DashboardPage extends StatefulWidget {
   final List<FinanceItem> incomes;
@@ -19,6 +20,7 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   bool showPie = true; // toggle chart type
+  final DashboardService service = DashboardService(baseUrl: "https://your-api.com"); // กำหนด URL API ของคุณ
 
   // ------------------ แก้ไขรายรับ ------------------
   void editIncome(int index) {
@@ -127,6 +129,19 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // ------------------ ส่งข้อมูลไป API ------------------
+  Future<void> sendData() async {
+    bool success = await service.sendDashboardData(
+      incomes: widget.incomes,
+      debts: widget.debts,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? "ส่งข้อมูลเรียบร้อย" : "ส่งข้อมูลไม่สำเร็จ"),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     double totalIncome = widget.incomes.fold(0, (sum, item) => sum + item.amount);
@@ -140,6 +155,13 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Text(
               showPie ? "Bar Chart" : "Pie Chart",
               style: const TextStyle(color: Colors.white),
+            ),
+          ),
+          TextButton(
+            onPressed: sendData, // ปุ่มส่งข้อมูล
+            child: const Text(
+              "Upload",
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],

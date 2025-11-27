@@ -7,7 +7,7 @@ import 'pages/welcome_page.dart';
 import 'email_login_page.dart';
 import 'pages/homepage.dart'; // HomePage ที่มี Bottom Navigation Bar (สำคัญ: ต้องเป็นไฟล์ home_page.dart ที่มี FAB)
 import 'expense_entry_screen.dart'; // Expense Entry (Route /expense_entry)
-import 'pages/simulator_screen.dart'; // Simulator (Route /simulator)
+import 'pages/simulator/simulator_screen.dart'; // Simulator (Route /simulator)
 
 // Widget Helper: LogoHeader - **ใช้ Image.asset สำหรับโลโก้**
 class LogoHeader extends StatelessWidget {
@@ -67,7 +67,7 @@ class MyApp extends StatelessWidget {
         '/expense_entry': (context) => const ExpenseEntryScreen(),
 
         // Route สำหรับ Simulator Screen (ถูกเรียกจากปุ่ม FAB)
-        '/simulator': (context) => const SimulatorScreen(),
+        '/simulator': (context) => SimulatorScreen(),
       },
     );
   }
