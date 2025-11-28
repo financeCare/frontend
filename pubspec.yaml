@@ -9,14 +9,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-      # 🌟 เพิ่มบรรทัดนี้
-  shared_preferences: ^2.2.2 # หรือเวอร์ชันล่าสุด
+  shared_preferences: ^2.2.2
   http: ^1.2.1
-
+  firebase_auth: ^4.20.0 # 🚨 แก้ไขตรงนี้: ใส่เลขเวอร์ชันจริง
+  firebase_core: ^2.32.0  # ใช้เวอร์ชันล่าสุดที่คุณมี
+  cloud_firestore: ^4.17.5 # ใช้เวอร์ชันล่าสุดที่คุณมี
+  intl: ^0.18.1
   # iOS-style icons
   cupertino_icons: ^1.0.8
 
-  # LINE Login (เวอร์ชันที่มีจริง)
+  # LINE Login
   flutter_line_sdk: ^2.6.1
   fl_chart: ^0.66.0
 
@@ -33,7 +35,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
 
   assets:
     - assets/
