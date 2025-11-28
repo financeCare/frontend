@@ -246,24 +246,40 @@ class _DashboardPageState extends State<DashboardPage> {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
+              reservedSize: 40, // <==== สำคัญมาก
               getTitlesWidget: (value, meta) {
                 if (value == 0) return const Text("รายรับ");
                 int debtIndex = value.toInt() - 1;
                 if (debtIndex >= 0 && debtIndex < widget.debts.length) {
-                  return Text(widget.debts[debtIndex].name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 10));
+                  return Text(widget.debts[debtIndex].name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 10));
                 }
                 return const SizedBox.shrink();
               },
             ),
           ),
-          leftTitles: const AxisTitles(),
-          topTitles: const AxisTitles(),
+
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              getTitlesWidget: (value, meta) =>
+                  Text(value.toInt().toString(), style: const TextStyle(fontSize: 8)),
+            ),
+          ),
+
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
         ),
       ),
     );
-  }
 
-  // ------------------ รายการรายรับ ------------------
+  }
   Widget _buildIncomeList() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

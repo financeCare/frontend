@@ -119,7 +119,6 @@ class _CrudPageState extends State<CrudPage> {
                   onPressed: () {
                     // 🚨 เพิ่มการตรวจสอบตัวเลขที่นี่ด้วย
                     if (double.tryParse(amountCtrl.text) == null || double.tryParse(interestCtrl.text) == null) {
-                      // สามารถเพิ่มแจ้งเตือนใน Dialog ได้ถ้าต้องการ
                       return;
                     }
                     setState(() {

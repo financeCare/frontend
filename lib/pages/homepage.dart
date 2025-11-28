@@ -85,7 +85,7 @@ class _HomePageState extends State<HomePage> {
     // ใช้ _selectedIndex (0, 1, 2, 3)
     switch(index) {
       case 0:
-        return 'Dashboard (หน้าหลัก)';
+        return '';
       case 1:
         return 'แจ้งเตือน';
       case 2:
