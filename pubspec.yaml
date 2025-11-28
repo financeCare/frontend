@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+      # 🌟 เพิ่มบรรทัดนี้
+  shared_preferences: ^2.2.2 # หรือเวอร์ชันล่าสุด
   http: ^1.2.1
 
   # iOS-style icons
@@ -32,13 +34,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # ตัวอย่างใส่ assets (ถ้ามี)
-  assets: # <--- ลบ # และเว้นวรรค 2 ช่อง ให้ตรงกับ uses-material-design
-    - assets/ # <--- เพิ่ม assets/ และเว้นวรรค 4 ช่อง
-  #   - images/
 
-  # ตัวอย่างใส่ custom fonts (ถ้ามี)
-  # fonts:
-  #   - family: Roboto
-  #     fonts:
-  #       - asset: fonts/Roboto-Regular.ttf
+  assets:
+    - assets/
