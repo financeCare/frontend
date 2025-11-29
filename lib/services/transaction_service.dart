@@ -16,10 +16,9 @@ class TransactionService {
   final AuthService _authService = AuthService();
 
 
-  /// ฟังก์ชันสำหรับดึงรายการธุรกรรมทั้งหมดของผู้ใช้
   Future<List<Transaction>> getOwnTransactions() async {
   
-    // 3. ดึง Token จาก AuthService
+
     final String? authToken = await _authService.getToken();
 print(authToken);
 if

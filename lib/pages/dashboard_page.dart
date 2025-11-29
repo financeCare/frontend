@@ -4,19 +4,17 @@ import '../models/finance_item.dart';
 import '../models/constants.dart';
 import '../services/dashboard_service.dart';
 
+
 class DashboardPage extends StatefulWidget {
   final List<FinanceItem> incomes;
   final List<FinanceItem> debts;
 
-  const DashboardPage({
-    super.key,
-    required this.incomes,
-    required this.debts,
-  });
+  const DashboardPage({super.key, required this.incomes, required this.debts});
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
+
 
 class _DashboardPageState extends State<DashboardPage> {
   bool showPie = true; // toggle chart type
