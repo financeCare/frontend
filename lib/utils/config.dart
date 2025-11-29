@@ -1,1 +1,1 @@
-const String baseUrl = 'http://10.4.153.6:8080';
+const String baseUrl = 'http://bscit.sit.kmutt.ac.th/capstone25/cp25ms2/api';

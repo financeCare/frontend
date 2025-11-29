@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
 
 // Screens
 // **NOTE:** ต้องมั่นใจว่าไฟล์เหล่านี้มีอยู่ในโครงสร้าง lib/ ของimport 'auth/auth_widget.darimport 'auth/auth_widget.dart';
@@ -33,7 +35,7 @@ void main() async {
     await LineSDK.instance.setup('2008279064');
     print('start app');
   } catch (e) {
-    // print('LINE SDK initialization failed: $e');
+    print('LINE SDK initialization failed: $e');
   }
   runApp(const MyApp());
 }
@@ -65,5 +67,11 @@ class MyApp extends StatelessWidget {
         '/simulator': (context) => const SimulatorScreen(),
       },
     );
+  }
+}
+
+void requestNotificationPermission() async {
+  if (Platform.isAndroid && await Permission.notification.isDenied) {
+    await Permission.notification.request();
   }
 }
