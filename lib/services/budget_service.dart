@@ -7,7 +7,7 @@ import '../utils/config.dart';
 import 'accessToken_service.dart';
 
 class BudgetService {
-  final String _budgetUrl = '$baseUrl/budget';
+  final String _budgetUrl = '$baseUrl/budget/overview';
   final storage = FlutterSecureStorage();
 
   Future<List<BudgetOverview>> getAmountInBudget() async {
