@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 // NOTE: ต้องมั่นใจว่าไฟล์เหล่านี้มีอยู่จริงในโครงสร้างโปรเจกต์ของคุณ
 import 'crud_page.dart'; // สมมติว่าเป็นหน้า Dashboard/Home
 import 'budget_per_month_screen.dart'; // สมมติว่าเป็นหน้า Budget
+import 'dashboard_page.dart';
 
 
 // =========================================================
@@ -85,7 +86,7 @@ class _HomePageState extends State<HomePage> {
     // ใช้ _selectedIndex (0, 1, 2, 3)
     switch(index) {
       case 0:
-        return 'Dashboard (หน้าหลัก)';
+        return '';
       case 1:
         return 'แจ้งเตือน';
       case 2:

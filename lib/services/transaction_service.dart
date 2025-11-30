@@ -10,6 +10,26 @@ class TransactionService {
   final String _transactionsUrl = '$baseUrl/transactions';
   final storage = FlutterSecureStorage();
 
+  // 1. กำหนด Base URL จาก config.dart
+  static const String _basePath = baseUrl;
+  final String _transactionsUrl = '$_basePath/api/transactions';
+
+  // 2. สร้าง Instance ของ AuthService เพื่อใช้ดึง Token
+  final AuthService _authService = AuthService();
+
+
+  Future<List<Transaction>> getOwnTransactions() async {
+  
+
+    final String? authToken = await _authService.getToken();
+print(authToken);
+if
+    (authToken == null) {
+      // โยน Exception หากไม่มี Token (ทำให้ FutureBuilder แสดง Error)
+      throw Exception('Authentication token is missing. Please log in.');
+    }
+
+    // 4. สร้าง HTTP Request โดยใส่ Authorization Header
   Future<List<Transaction>> getOwnTransactions() async {
   String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.get(
