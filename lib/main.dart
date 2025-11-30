@@ -1,116 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
+
+// Screens
+// **NOTE:** ต้องมั่นใจว่าไฟล์เหล่านี้มีอยู่ในโครงสร้าง lib/ ของimport 'auth/auth_widget.darimport 'auth/auth_widget.dart';
+import './auth/auth_widget.dart';
+import './pages/homepage.dart'; // HomePage ที่มี Bottom Navigation Bar (สำคัญ: ต้องเป็นไฟล์ home_page.dart ที่มี FAB)
+import 'expense_entry_screen.dart'; // Expense Entry (Route /expense_entry)
+import './pages/simulator/simulator_screen.dart'; // Simulator (Route /simulator)
+
+// Widget Helper: LogoHeader - **ปรับขนาดโลโก้**
+class LogoHeader extends StatelessWidget {
+  const LogoHeader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // ใช้ Image.asset เพื่อแสดงโลโก้เดิม
+        Image.asset(
+          'assets/logo_finance_care.png',
+          height: 280, // **เพิ่มขนาดให้ใหญ่ขึ้น**
+          width: 380,  // **เพิ่มขนาดให้ใหญ่ขึ้น**
+        ),
+      ],
+    );
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Setup LINE SDK ด้วย Channel ID จริง
-  await LineSDK.instance.setup("2008279064");
-  runApp(const FinanceCareApp());
+  try {
+    await LineSDK.instance.setup('2008279064');
+    print('start app');
+  } catch (e) {
+    print('LINE SDK initialization failed: $e');
+  }
+  runApp(const MyApp());
 }
 
-class FinanceCareApp extends StatelessWidget {
-  const FinanceCareApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Finance Care PoC',
-      home: const LineLoginPage(),
-    );
-  }
-}
-
-class LineLoginPage extends StatefulWidget {
-  const LineLoginPage({super.key});
-
-  @override
-  State<LineLoginPage> createState() => _LineLoginPageState();
-}
-
-class _LineLoginPageState extends State<LineLoginPage> {
-  Map<String, dynamic>? _lineUser;
-  bool _isLoading = false;
-
-  Future<void> _loginWithLine() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final result = await LineSDK.instance.login(
-        scopes: ["profile", "openid", "email"],
-      );
-
-      final user = {
-        'userId': result.userProfile?.userId,
-        'displayName': result.userProfile?.displayName,
-        'pictureUrl': result.userProfile?.pictureUrl,
-        'statusMessage': result.userProfile?.statusMessage,
-        'accessToken': result.accessToken?.value,
-      };
-
-      setState(() {
-        _lineUser = user;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _lineUser = {'error': e.toString()};
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Login with LINE')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (_isLoading) ...[
-                const CircularProgressIndicator(),
-                const SizedBox(height: 20),
-                const Text("Logging in with LINE..."),
-              ] else if (_lineUser != null) ...[
-                const Text(
-                  "LINE User JSON:",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  _lineUser.toString(),
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () async {
-                    await LineSDK.instance.logout();
-                    setState(() => _lineUser = null);
-                  },
-                  child: const Text("Logout"),
-                ),
-              ] else ...[
-                ElevatedButton.icon(
-                  onPressed: _loginWithLine,
-                  icon: const Icon(Icons.chat),
-                  label: const Text(
-                    'Login with LINE',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF06C755),
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+      title: 'FINANCE CARE FC App',
+      theme: ThemeData(
+        primaryColor: const Color(0xFF00796B), // Deep Teal
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF00796B)),
+        useMaterial3: true,
       ),
+      initialRoute: '/',
+
+      // กำหนด Named Routes ทั้งหมดที่แอปฯ ใช้
+      routes: {
+        '/': (context) => const WelcomePage(),
+        '/email_login': (context) => const EmailLoginPage(),
+        '/home': (context) => const HomePage(), // Home Page with Navbar
+
+        // Route สำหรับการบันทึกค่าใช้จ่าย (ถูกเรียกจาก BudgetPerMonthScreen)
+        '/expense_entry': (context) => const ExpenseEntryScreen(),
+
+        // Route สำหรับ Simulator Screen (ถูกเรียกจากปุ่ม FAB)
+        '/simulator': (context) => const SimulatorScreen(),
+      },
     );
+  }
+}
+
+void requestNotificationPermission() async {
+  if (Platform.isAndroid && await Permission.notification.isDenied) {
+    await Permission.notification.request();
   }
 }
