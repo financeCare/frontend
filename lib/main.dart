@@ -44,6 +44,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'FINANCE CARE FC App',
       theme: ThemeData(
         primaryColor: const Color(0xFF00796B), // Deep Teal
