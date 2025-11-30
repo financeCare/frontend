@@ -7,7 +7,7 @@ import '../utils/config.dart';
 import 'accessToken_service.dart';
 
 class TransactionService {
-  final String _transactionsUrl = '$baseUrl/api/transactions';
+  final String _transactionsUrl = '$baseUrl/transactions';
   final storage = FlutterSecureStorage();
 
   Future<List<Transaction>> getOwnTransactions() async {

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -25,7 +24,7 @@ Future<String?> getAccessToken() async {
     }
 
     final response = await http.post(
-      Uri.parse('$baseUrl/api/auth/refresh-token'),
+      Uri.parse('$baseUrl/auth/refresh-token'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $refreshToken',
@@ -36,11 +35,13 @@ Future<String?> getAccessToken() async {
       final responseData = json.decode(response.body);
       String newAccessToken = responseData['accessToken'];
       await storage.write(key: "accessToken", value: newAccessToken);
+      print('newAccessToken : $newAccessToken');
       return newAccessToken;
     } else {
       return null;
     }
   } else {
+    print('accesss : $accessToken');
     return accessToken;
   }
 }
