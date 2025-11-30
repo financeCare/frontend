@@ -1,4 +1,4 @@
-name: flutter_application_1
+name: financeCare
 description: "A new Flutter project."
 publish_to: 'none'
 version: 1.0.0+1
@@ -12,24 +12,25 @@ dependencies:
       # 🌟 เพิ่มบรรทัดนี้
   shared_preferences: ^2.2.2 # หรือเวอร์ชันล่าสุด
   http: ^1.2.1
+  flutter_secure_storage: ^9.2.4
 
   # iOS-style icons
   cupertino_icons: ^1.0.8
 
   # LINE Login (เวอร์ชันที่มีจริง)
   flutter_line_sdk: ^2.6.1
-  fl_chart: ^0.66.0
-
+  fl_chart: ^1.1.1
+  permission_handler: ^12.0.1
   # Google Login
-  google_sign_in: ^6.1.6
-
+  google_sign_in: ^6.1.0
+  jwt_decoder: ^2.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   # Recommended lints
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
