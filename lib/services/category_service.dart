@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:financeCare/models/budgetOverview.dart';
 import 'package:financeCare/models/category.dart';
 import 'package:financeCare/models/finance_item.dart';
+import 'package:financeCare/services/budget_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -12,7 +13,6 @@ import 'accessToken_service.dart';
 class CategoryService {
   final String _url = '$baseUrl/categories';
   final storage = FlutterSecureStorage();
-
   Future<List<Categories>> getCategories() async {
   String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.get(
@@ -85,27 +85,33 @@ class CategoryService {
     }
   }
 
-  Future<List<FinanceItem>> mapCategoryIncomeToFinanceItem() async {
-    try {
-      final categories = await getCategories();
+Future<List<FinanceItem>> mapCategoryIncomeToFinanceItem() async {
+  try {
+    // ดึง budget list
+    final budgets = await BudgetService().getBudget(); // List<BudgetResponse>
+    final categories = await getCategories();
 
-      List<FinanceItem> incomeItem = categories
-          .where((c) => c.type == 'Income')
-          .map(
-            (c) => FinanceItem(
-              name: c.categoryName,
-              amount: 0,
-              createdAt: DateTime.now(),
-            ),
-          )
-          .toList();
+    // สมมติเราจะเอา budget[0] เป็นตัวอย่าง
+    final budget = budgets.isNotEmpty ? budgets[0] : null;
 
-      return incomeItem;
-    } catch (error) {
-      print("Error fetching categories: $error");
-      return []; // return ค่าเผื่อ error
-    }
+    List<FinanceItem> incomeItem = categories
+        .where((c) => c.type == 'Income')
+        .map(
+          (c) => FinanceItem(
+            id: c.categoryId,
+            name: c.categoryName,
+            amount: budget?.amount ?? 0.0, // ถ้าไม่มี budget จะเป็น 0
+            createdAt: DateTime.now(),
+          ),
+        )
+        .toList();
+
+    print("income length: ${incomeItem.length}");
+    return incomeItem;
+  } catch (error) {
+    print("Error fetching categories: $error");
+    return []; // return ค่าเผื่อ error
   }
-
+}
 
 }

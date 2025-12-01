@@ -1,4 +1,5 @@
 class FinanceItem {
+  int id;
   String name;
   double amount;
   double interest;
@@ -6,6 +7,7 @@ class FinanceItem {
   DateTime createdAt;
 
   FinanceItem({
+    required this.id,
     required this.name,
     required this.amount,
     this.interest = 0,
@@ -15,6 +17,7 @@ class FinanceItem {
 
   Map<String, dynamic> toJson() {
     return {
+      "id": id,
       "name": name,
       "amount": amount,
       "interest": interest,
@@ -25,6 +28,7 @@ class FinanceItem {
 
   factory FinanceItem.fromJson(Map<String, dynamic> json) {
     return FinanceItem(
+      id: json['id'], // ✅ ต้องมี
       name: json['name'],
       amount: (json['amount'] as num).toDouble(),
       interest: json['interest'] != null ? (json['interest'] as num).toDouble() : 0,

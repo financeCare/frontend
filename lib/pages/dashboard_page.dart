@@ -8,7 +8,6 @@ import '../services/dashboard_service.dart';
 class DashboardPage extends StatefulWidget {
   final List<FinanceItem> incomes;
   final List<FinanceItem> debts;
-
   const DashboardPage({super.key, required this.incomes, required this.debts});
 
   @override
@@ -188,7 +187,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // ------------------ Pie Chart ------------------
   Widget _buildPieChart(double totalIncome) {
-    List<PieChartSectionData> sections = [
+      List<PieChartSectionData> sections = [
       PieChartSectionData(
         value: totalIncome,
         title: "รายรับ",
@@ -287,7 +286,7 @@ class _DashboardPageState extends State<DashboardPage> {
           int index = entry.key;
           final item = entry.value;
           return ListTile(
-            title: Text("รายรับ ${index + 1}"),
+            title: Text(item.name),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
