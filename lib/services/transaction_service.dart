@@ -8,7 +8,7 @@ import '../utils/config.dart';
 import 'accessToken_service.dart';
 
 class TransactionService {
-  final String _transactionsUrl = '$baseUrl/transactions';
+  final String _transactionsUrl = '$baseUrl/api/transactions';
   final storage = FlutterSecureStorage();
   Future<List<TransactionResponse>> getOwnTransactions() async {
   String? accessToken = await AccesstokenService().getAccessToken();
@@ -58,7 +58,7 @@ Future<List<TransactionResponse>> getSalaryTransactions() async {
 }
 
 
-void createTransaction(TransactionRequest transaction) async {
+  Future <void> createTransaction(TransactionRequest transaction) async {
   String? accessToken = await AccesstokenService().getAccessToken();
 
   final response = await http.post(

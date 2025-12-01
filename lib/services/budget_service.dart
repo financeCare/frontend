@@ -8,7 +8,7 @@ import '../utils/config.dart';
 import 'accessToken_service.dart';
 
 class BudgetService {
-  final String url = '$baseUrl/budget';
+  final String url = '$baseUrl/api/budget';
   final storage = FlutterSecureStorage();
 
   Future<List<BudgetResponse>> getBudget() async {

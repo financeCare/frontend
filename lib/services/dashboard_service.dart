@@ -9,7 +9,7 @@ class DashboardService {
 
   /// ดึงข้อมูลรายได้และหนี้จาก BE
   Future<Map<String, List<FinanceItem>>> fetchDashboardData() async {
-    final url = Uri.parse('$baseUrl/dashboard');
+    final url = Uri.parse('$baseUrl/api/dashboard');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -35,7 +35,7 @@ class DashboardService {
     required List<FinanceItem> incomes,
     required List<FinanceItem> debts,
   }) async {
-    final url = Uri.parse('$baseUrl/dashboard');
+    final url = Uri.parse('$baseUrl/api/dashboard');
     try {
       final body = jsonEncode({
         'incomes': incomes.map((i) => i.toJson()).toList(),

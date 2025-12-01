@@ -24,7 +24,7 @@ Future<String?> getAccessToken() async {
     }
 
     final response = await http.post(
-      Uri.parse('$baseUrl/auth/refresh-token'),
+      Uri.parse('$baseUrl/api/auth/refresh-token'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $refreshToken',

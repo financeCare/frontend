@@ -59,7 +59,8 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d+\.?\d{0,2}'))
+                        RegExp(r'^\d+\.?\d{0,2}'),
+                      )
                     ],
                     decoration: InputDecoration(
                       labelText: 'จำนวนเงิน',
@@ -143,7 +144,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
   void _showEditBudgetDialog(int index) {
     final item = _budgetItems[index];
     final TextEditingController controller =
-        TextEditingController(text: item.limitBudget.toString());
+    TextEditingController(text: item.limitBudget.toString());
 
     showDialog(
       context: context,
@@ -190,7 +191,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
   @override
   Widget build(BuildContext context) {
     final double totalBudget =
-        _budgetItems.fold(0.0, (sum, item) => sum + item.limitBudget);
+    _budgetItems.fold(0.0, (sum, item) => sum + item.limitBudget);
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -223,9 +224,10 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                         Text(
                           '${totalBudget.toStringAsFixed(2)} บาท',
                           style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepPurple),
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.deepPurple,
+                          ),
                         ),
                       ],
                     ),
@@ -247,87 +249,96 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
             ),
             const SizedBox(height: 10),
 
-            ..._budgetItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
+          ..._budgetItems.asMap().entries.map((entry) {
+        final index = entry.key;
+        final item = entry.value;
 
-              final budgeted = item.limitBudget;
-              final spent = item.amount;
-              final remaining = budgeted - spent;
-              final percentage =
-                  budgeted > 0 ? (spent / budgeted).clamp(0.0, 1.0) : 0.0;
+        final budgeted = item.limitBudget;
+        final spent = item.amount;
+        final remaining = budgeted - spent;
+        final percentage =
+        budgeted > 0 ? (spent / budgeted).clamp(0.0, 1.0) : 0.0;
 
-              final progressColor = remaining < 0
-                  ? Colors.red
-                  : (remaining < budgeted * 0.2
-                      ? Colors.orange
-                      : Colors.lightGreen);
+        final progressColor = remaining < 0
+            ? Colors.red
+            : (remaining < budgeted * 0.2 ? Colors.orange : Colors.lightGreen);
 
-              return Card(
-                elevation: 1,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.budgetName,
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.edit,
-                                size: 20, color: Colors.blue),
-                            onPressed: () => _showEditBudgetDialog(index),
-                          ),
-                        ],
+        return Card(
+          elevation: 1,
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// 🔹 ชื่อหมวดหมู่ + ปุ่มเพิ่มรายจ่าย + ปุ่มแก้ไขงบ
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.budgetName,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
                       ),
+                    ),
 
-                      const SizedBox(height: 10),
+                    /// 👉 ปุ่มเพิ่มรายจ่าย (กดได้แค่ตรงนี้)
+                    IconButton(
+                      icon: const Icon(Icons.add_circle,
+                          size: 24, color: Colors.green),
+                      onPressed: () => _onBudgetItemTapped(index),
+                    ),
 
-                      LinearProgressIndicator(
-                        value: percentage,
-                        backgroundColor: Colors.grey.shade300,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(progressColor),
-                        minHeight: 8,
-                      ),
+                    /// 👉 ปุ่มแก้ไขงบประมาณ
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
+                      onPressed: () => _showEditBudgetDialog(index),
+                    ),
+                  ],
+                ),
 
-                      const SizedBox(height: 6),
+                const SizedBox(height: 6),
 
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          InkWell(
-                            onTap: () => _onBudgetItemTapped(index),
-                            child: Text(
-                              'ใช้ไป: ${spent.toStringAsFixed(2)} บาท',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.blue,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'เหลือ: ${remaining.toStringAsFixed(2)} บาท',
-                            style: TextStyle(
-                              color: progressColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                /// 🔹 เหลือ: xxx บาท (ย้ายขึ้นมาไว้ด้านบน)
+                Text(
+                  'เหลือ: ${remaining.toStringAsFixed(2)} บาท',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: progressColor,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              );
-            }),
+
+                const SizedBox(height: 10),
+
+                LinearProgressIndicator(
+                  value: percentage,
+                  backgroundColor: Colors.grey.shade300,
+                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                  minHeight: 8,
+                ),
+
+                const SizedBox(height: 6),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+
+                    Text(
+                      'ใช้ไป: ${spent.toStringAsFixed(2)} บาท',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
           ],
         ),
       ),
