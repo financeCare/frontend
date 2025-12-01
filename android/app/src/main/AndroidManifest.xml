@@ -1,37 +1,57 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.financeCare">
+
+    <!-- Required for network access -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:label="financeCare"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
+        <!-- Main Flutter Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-    
+
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
 
+            <!-- Main launcher -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- LINE Login Intent Filter -->
+            <!-- LINE Login Intent Filter for callback -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="line2008279064" />
+                <data android:scheme="line2008279064" /> <!-- ใส่ LINE Channel ID ของคุณ -->
             </intent-filter>
 
+        </activity>
+
+        <!-- LINE SDK Authentication Activity -->
+        <activity
+            android:name="jp.naver.line.android.sdk.login.internal.LineAuthenticationActivity"
+            android:launchMode="singleTask"
+            android:exported="true"
+            tools:replace="android:exported">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="line2008279064"/> <!-- ใส่ LINE Channel ID ของคุณ -->
+            </intent-filter>
         </activity>
 
         <meta-data
@@ -40,6 +60,9 @@
     </application>
 
     <queries>
+        <!-- Allow checking whether LINE app is installed (Android 11+ package visibility) -->
+        <package android:name="jp.naver.line.android" />
+
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
