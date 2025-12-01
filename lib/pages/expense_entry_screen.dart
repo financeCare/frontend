@@ -1,16 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import '../../services/api_service.dart';
-
-// 💡 Mock Data: ข้อมูลหมวดหมู่สำหรับ Dropdown
-final List<String> _mockCategories = [
-  'อาหารและเครื่องดื่ม',
-  'ค่าเดินทาง',
-  'ช้อปปิ้ง',
-  'บิลและค่าใช้จ่าย',
-  'บันเทิง',
-  'อื่น ๆ',
-];
 
 class ExpenseEntryScreen extends StatefulWidget {
   const ExpenseEntryScreen({super.key});
@@ -20,235 +8,276 @@ class ExpenseEntryScreen extends StatefulWidget {
 }
 
 class _ExpenseEntryScreenState extends State<ExpenseEntryScreen> {
-  // 💡 Key สำหรับจัดการสถานะของ Form
   final _formKey = GlobalKey<FormState>();
-  // 💡 สร้าง instance ของ ApiService
-  final ApiService _apiService = ApiService();
 
-  // State สำหรับเก็บข้อมูลฟอร์ม
-  double? _amount;
-  String _description = '';
-  String? _selectedCategory;
-  DateTime _selectedDate = DateTime.now();
+  // Database Field Mappings based on 'transactions' table
+  String? _transactionType; // Maps to 'type' (e.g., 'expense', 'income')
+  String? _selectedCategory; // Will be mapped to 'category_id' (integer)
 
-  bool _isLoading = false;
+  final TextEditingController _amountController = TextEditingController(); // Maps to 'amount' (double precision)
+  final TextEditingController _descriptionController = TextEditingController(); // Maps to 'description' (character varying)
+  DateTime _selectedDate = DateTime.now(); // Maps to 'transaction_date' (date)
+
+  bool _isSaving = false;
+
+  // Available Transaction Types
+  final List<String> _transactionTypes = ['รายจ่าย', 'รายรับ'];
+
+  // Available Categories (Mock data to be used for category_id)
+  final List<Map<String, dynamic>> _categoriesWithIcon = [
+    {'name': 'ค่าอาหาร', 'icon': Icons.fastfood, 'id': 1},
+    {'name': 'ค่าเดินทาง', 'icon': Icons.directions_bus, 'id': 2},
+    {'name': 'ค่าวัสดุ', 'icon': Icons.business_center, 'id': 3},
+    {'name': 'ค่าอื่น ๆ', 'icon': Icons.more_horiz, 'id': 4}
+  ];
 
   @override
   void initState() {
     super.initState();
-    // กำหนดค่าเริ่มต้นของหมวดหมู่ให้เป็นค่าแรกในรายการ
-    _selectedCategory = _mockCategories.first;
-    // ตั้งค่าภาษาไทยสำหรับ DateFormat
-    Intl.defaultLocale = 'th';
+    // Set default transaction type
+    _transactionType = _transactionTypes.first;
   }
 
-  // 🚨 เมธอดสำหรับบันทึกค่าใช้จ่ายและเรียก API
-  Future<void> _saveExpense() async {
-    // ตรวจสอบความถูกต้องของฟอร์ม
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-
-      setState(() {
-        _isLoading = true; // เริ่มโหลด
-      });
-
-      // เตรียมข้อมูลที่จะส่งไปยัง Backend
-      final transactionData = {
-        'amount': _amount,
-        'description': _description,
-        'category': _selectedCategory,
-        // แปลงวันที่ให้อยู่ในรูปแบบ 'YYYY-MM-DD' ซึ่งเป็นมาตรฐานที่ Backend มักใช้
-        'date': DateFormat('yyyy-MM-dd').format(_selectedDate),
-        'type': 'expense',
-      };
-
-      try {
-        // 🚨 เรียกใช้เมธอด createTransaction
-        await _apiService.createTransaction(transactionData);
-
-        // แสดง Popup สำเร็จและกลับหน้าจอ
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('บันทึกค่าใช้จ่ายสำเร็จ!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        Navigator.pop(context); // ปิดหน้าจอ ExpenseEntryScreen
-
-      } catch (e) {
-        // แสดง Popup ข้อผิดพลาด
-        print('Error saving expense: $e');
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('เกิดข้อผิดพลาดในการบันทึก: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      } finally {
-        // เสร็จสิ้นการโหลด ไม่ว่าสำเร็จหรือผิดพลาด
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+  // Utility function for formatting date
+  String _formatDate(DateTime date) {
+    return "${date.day}/${date.month}/${date.year}";
   }
 
-  // เมธอดสำหรับเปิด Date Picker
-  Future<void> _presentDatePicker() async {
-    final DateTime? pickedDate = await showDatePicker(
+  Future<void> pickDate() async {
+    DateTime? newDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2023),
-      lastDate: DateTime.now(),
-      locale: const Locale('th', 'TH'), // ใช้ภาษาไทย
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
       helpText: 'เลือกวันที่ทำรายการ',
-      cancelText: 'ยกเลิก',
-      confirmText: 'ตกลง',
     );
-    if (pickedDate != null && pickedDate != _selectedDate) {
+
+    if (newDate != null) {
       setState(() {
-        _selectedDate = pickedDate;
+        _selectedDate = newDate;
       });
     }
+  }
+
+  void saveExpense() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isSaving = true);
+
+      // Find the actual category ID for database mapping
+      final selectedCategoryObject = _categoriesWithIcon.firstWhere(
+            (cat) => cat['name'] == _selectedCategory,
+        orElse: () => {'id': null},
+      );
+
+      // Simulate API call or database save
+      await Future.delayed(const Duration(seconds: 2));
+
+      final transactionDataForDB = {
+        // Essential DB fields
+        'type': _transactionType,
+        'category_id': selectedCategoryObject['id'], // Mapped to integer
+        'amount': double.tryParse(_amountController.text) ?? 0.0,
+        'description': _descriptionController.text,
+        'transaction_date': _selectedDate.toIso8601String().substring(0, 10), // Format for Date type
+      };
+
+      print('Transaction Data Prepared for DB: $transactionDataForDB');
+
+      if (mounted) {
+        // 1. Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("บันทึกรายการสำเร็จ!")),
+        );
+
+        // 2. Reset saving state and clear form (optional, since we are navigating away)
+        // setState(() {
+        //   _isSaving = false;
+        //   _amountController.clear();
+        //   _descriptionController.clear();
+        //   _selectedCategory = null;
+        // });
+
+        // 3. Navigate back to the previous screen (Homepage/Dashboard)
+        Navigator.pop(context);
+      }
+    }
+    // Only set _isSaving to false if validation failed or if mounted check failed before navigation
+    if(mounted) {
+      setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('บันทึกค่าใช้จ่ายใหม่'),
+        title: const Text('บันทึกรายการ'), // Updated title to be general
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
+        elevation: 4,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              // 1. ช่องกรอกจำนวนเงิน
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'จำนวนเงิน (฿)',
-                  prefixIcon: const Icon(Icons.monetization_on),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'กรุณาใส่จำนวนเงิน';
-                  }
-                  final amount = double.tryParse(value);
-                  if (amount == null || amount <= 0) {
-                    return 'จำนวนเงินไม่ถูกต้อง';
-                  }
-                  return null;
-                },
-                onSaved: (value) {
-                  _amount = double.tryParse(value!);
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // 2. ช่องกรอกรายละเอียด
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'รายละเอียด (เช่น ค่ากาแฟ, ค่ารถไฟฟ้า)',
-                  prefixIcon: const Icon(Icons.description),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                maxLength: 100,
-                onSaved: (value) {
-                  _description = value ?? '';
-                },
-              ),
-              const SizedBox(height: 10),
-
-              // 3. Dropdown เลือกหมวดหมู่
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- 1. ประเภทรายการ (Type) ---
+              const Text("ประเภทรายการ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(
-                  labelText: 'หมวดหมู่',
-                  prefixIcon: const Icon(Icons.category),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  hintText: "เลือกประเภทรายการ",
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.swap_horiz),
                 ),
-                value: _selectedCategory,
-                items: _mockCategories.map((String category) {
+                items: _transactionTypes.map((type) {
                   return DropdownMenuItem<String>(
-                    value: category,
-                    child: Text(category),
+                    value: type,
+                    child: Text(type),
                   );
                 }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedCategory = newValue;
-                  });
+                value: _transactionType,
+                onChanged: (value) {
+                  setState(() => _transactionType = value);
                 },
+                validator: (value) => value == null ? "กรุณาเลือกประเภทรายการ" : null,
+              ),
+              const SizedBox(height: 20),
+
+              // --- 2. หมวดหมู่ (Category ID) ---
+              const Text("หมวดหมู่", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  hintText: "เลือกหมวดหมู่",
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.category),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: _categoriesWithIcon.map((item) {
+                  return DropdownMenuItem<String>(
+                    value: item['name'] as String,
+                    child: Row(
+                      children: [
+                        Icon(item['icon'] as IconData, size: 20, color: Theme.of(context).primaryColor),
+                        const SizedBox(width: 10),
+                        Text(item['name'] as String),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                value: _selectedCategory,
+                onChanged: (value) {
+                  setState(() => _selectedCategory = value);
+                },
+                validator: (value) => value == null ? "กรุณาเลือกหมวดหมู่" : null,
+              ),
+              const SizedBox(height: 20),
+
+              // --- 3. จำนวนเงิน (Amount) ---
+              const Text("จำนวนเงิน", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: "เช่น 120.00",
+                  prefixIcon: const Icon(Icons.attach_money),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'กรุณาเลือกหมวดหมู่';
-                  }
+                  if (value == null || value.isEmpty) return "กรุณากรอกจำนวนเงิน";
+                  final amount = double.tryParse(value);
+                  if (amount == null || amount <= 0) return "จำนวนเงินไม่ถูกต้อง";
                   return null;
-                },
-                onSaved: (value) {
-                  _selectedCategory = value;
                 },
               ),
               const SizedBox(height: 20),
 
-              // 4. แถวสำหรับเลือกวันที่
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  children: <Widget>[
-                    const Icon(Icons.calendar_today, color: Colors.grey),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'วันที่ทำรายการ: ${DateFormat('EEEE, d MMMM yyyy').format(_selectedDate)}',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ),
-                    OutlinedButton(
-                      onPressed: _presentDatePicker,
-                      child: const Text('เปลี่ยนวันที่'),
-                    ),
-                  ],
+              // --- 4. รายละเอียดเพิ่มเติม (Description) ---
+              const Text("รายละเอียดเพิ่มเติม", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _descriptionController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: "ระบุรายละเอียดเพิ่มเติม (ถ้ามี)",
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-              const Divider(),
+              const SizedBox(height: 20),
+
+              // --- 5. วันที่ (Transaction Date) ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "วันที่: ${_formatDate(_selectedDate)}",
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: pickDate,
+                    icon: const Icon(Icons.calendar_today, size: 18),
+                    label: const Text("เลือกวันที่"),
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                    ),
+                  )
+                ],
+              ),
+
               const SizedBox(height: 30),
 
-              // 5. ปุ่มบันทึก
-              ElevatedButton(
-                onPressed: _isLoading ? null : _saveExpense,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              // --- ปุ่มบันทึก ---
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isSaving ? null : saveExpense,
+                  icon: _isSaving
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                      : const Icon(Icons.save),
+                  label: Text(_isSaving ? "กำลังบันทึก..." : "บันทึกรายการ"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  elevation: 5,
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
-                )
-                    : const Text(
-                  'บันทึกรายการ',
-                  style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              // ปุ่มยกเลิก
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    // Reset fields on cancel
+                    setState(() {
+                      _amountController.clear();
+                      _descriptionController.clear();
+                      _selectedCategory = null;
+                      _transactionType = _transactionTypes.first;
+                      _selectedDate = DateTime.now();
+                    });
+                  },
+                  icon: const Icon(Icons.close),
+                  label: const Text("ล้างข้อมูล"),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    side: BorderSide(color: Theme.of(context).primaryColor),
+                  ),
                 ),
               ),
             ],

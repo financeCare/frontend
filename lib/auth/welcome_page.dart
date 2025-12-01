@@ -5,7 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 // 🌟 Import จากที่อยู่ใหม่
 import '../auth//logo_header.dart';
-import 'email_login_page.dart'; // 🌟 Import EmailLoginPage ที่ถูกแยกออกไป
+import '../pages/email_login_page.dart'; // 🌟 Import EmailLoginPage ที่ถูกแยกออกไป
 
 // =========================================================
 // 1. WELCOME PAGE: หน้าจอเริ่มต้นให้เลือก LINE หรือ Email

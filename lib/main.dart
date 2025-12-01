@@ -13,7 +13,7 @@ import './auth/auth_manager.dart';
 import './auth/welcome_page.dart';
 import 'pages/expense_entry_screen.dart';
 import './pages/simulator/simulator_screen.dart';
-import './auth/email_login_page.dart';
+import 'pages/email_login_page.dart';
 import './pages/homepage.dart';
 
 // Widget Helper: LogoHeader - **ปรับขนาดโลโก้**
@@ -79,6 +79,7 @@ class MyApp extends StatelessWidget {
         : const WelcomePage();
 
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'FINANCE CARE FC App',
       theme: ThemeData(
         primaryColor: const Color(0xFF00796B), // Deep Teal
