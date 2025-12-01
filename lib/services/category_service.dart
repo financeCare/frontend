@@ -11,7 +11,7 @@ import '../utils/config.dart';
 import 'accessToken_service.dart';
 
 class CategoryService {
-  final String _url = '$baseUrl/categories';
+  final String _url = '$baseUrl/api/categories';
   final storage = FlutterSecureStorage();
   Future<List<Categories>> getCategories() async {
   String? accessToken = await AccesstokenService().getAccessToken();

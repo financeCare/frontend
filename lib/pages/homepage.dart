@@ -55,7 +55,8 @@ class _HomePageState extends State<HomePage> {
       const PlaceholderScreen(title: 'Notifications (แจ้งเตือน)'), // Index 1: Notification
       // Index 2 ถูกข้ามไปใน List แต่มีใน BottomNavigationBar (ตำแหน่ง FAB)
       const BudgetPerMonthScreen(), // Index 2 (แทน Index 3 เดิม): Budget
-      const PlaceholderScreen(title: 'Settings (ตั้งค่า)'), // Index 3 (แทน Index 4 เดิม): Setting
+      const PlaceholderScreen(title: 'Settings (ตั้งค่า)'),
+      // Index 3 (แทน Index 4 เดิม): Setting
     ];
   }
 

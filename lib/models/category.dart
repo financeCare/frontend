@@ -3,14 +3,14 @@ class Categories {
   final String userId;         // UUID เป็น String
   final String categoryName;
   final String type;
-  final String budgetId;       // UUID, ไม่ต้องแปลง
+  final String? budgetId;      // <-- เปลี่ยนเป็น nullable
 
   Categories({
     required this.categoryId,
     required this.userId,
     required this.categoryName,
     required this.type,
-    required this.budgetId,
+    this.budgetId,              // <-- ไม่ต้อง required
   });
 
   factory Categories.fromJson(Map<String, dynamic> json) {
@@ -19,7 +19,7 @@ class Categories {
       userId: json['userId'],
       categoryName: json['categoryName'],
       type: json['type'],
-      budgetId: json['budgetId'],
+      budgetId: json['budgetId'] ?? '', // <-- ถ้าไม่มี ให้เป็น empty string
     );
   }
 

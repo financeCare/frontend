@@ -56,7 +56,7 @@ class MyApp extends StatelessWidget {
 
       // กำหนด Named Routes ทั้งหมดที่แอปฯ ใช้
       routes: {
-        '/': (context) => const WelcomePage(),
+        '/': (context) => const WelcomePage(), // ถ้าอยาก test ตอนbe พัง เปลี่ยนเป็น /home
         '/email_login': (context) => const EmailLoginPage(),
         '/home': (context) => const HomePage(), // Home Page with Navbar
 

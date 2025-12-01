@@ -28,7 +28,7 @@ class FinanceItem {
 
   factory FinanceItem.fromJson(Map<String, dynamic> json) {
     return FinanceItem(
-      id: json['id'], // ✅ ต้องมี
+      id: json['id'],
       name: json['name'],
       amount: (json['amount'] as num).toDouble(),
       interest: json['interest'] != null ? (json['interest'] as num).toDouble() : 0,
@@ -38,4 +38,9 @@ class FinanceItem {
           : DateTime.now(),
     );
   }
+  static double totalAmount(List<FinanceItem> items) {
+    return items.fold(0.0, (sum, item) => sum + item.amount);
+  }
 }
+
+

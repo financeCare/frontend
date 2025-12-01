@@ -14,7 +14,7 @@ final storage = FlutterSecureStorage();
 // =========================================================
 class AuthService {
   Future<bool> login(String email, String password) async {
-    final url = Uri.parse('$baseUrl/auth/login');
+    final url = Uri.parse('$baseUrl/api/auth/login');
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
@@ -169,7 +169,7 @@ class _WelcomePageState extends State<WelcomePage> {
         print('Google Sign-In successful for user: ${googleUser.displayName}');
         final GoogleSignInAuthentication auth = await googleUser.authentication;
         print("ID Token: ${auth.idToken}");
-        final url = Uri.parse('$baseUrl/auth/login/google');
+        final url = Uri.parse('$baseUrl/api/auth/login/google');
         final response = await http.post(
           url,
           headers: {"Content-Type": "application/json"},
@@ -221,7 +221,7 @@ class _WelcomePageState extends State<WelcomePage> {
       print("UserID: ${result.userProfile?.userId}");
       print("JWT id_token: ${result.accessToken.idTokenRaw}");
 
-      final url = Uri.parse('$baseUrl/auth/login/line');
+      final url = Uri.parse('$baseUrl/api/auth/login/line');
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},

@@ -12,12 +12,12 @@ import '../utils/config.dart';
 import 'accessToken_service.dart';
 
 class DebtService {
-  final String url = '$baseUrl/debts';
+  final String url = '$baseUrl/api/debts';
   final storage = FlutterSecureStorage();
   Future<List<DebtTypeResponse>> getDebtType() async {
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.get(
-      Uri.parse('$baseUrl/debt-types'),
+      Uri.parse('$baseUrl/api/debt-types'),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
@@ -50,7 +50,7 @@ class DebtService {
   Future<List<RepaymentTypeResponse>> getRepaymentType() async {
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.get(
-      Uri.parse('$baseUrl/repayment-types'),
+      Uri.parse('$baseUrl/api/repayment-types'),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ class DebtService {
   Future<List<DebtResponse>> getAllDebt() async {
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.get(
-      Uri.parse('$baseUrl/debts'),
+      Uri.parse('$baseUrl/api/debts'),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ class DebtService {
 Future<DebtResponse> getDebtDetail(int id) async {
   String? accessToken = await AccesstokenService().getAccessToken();
   final response = await http.get(
-    Uri.parse('$baseUrl/debts/$id'),
+    Uri.parse('$baseUrl/api/debts/$id'),
     headers: {
       'Authorization': 'Bearer $accessToken',
       'Content-Type': 'application/json',
@@ -170,8 +170,9 @@ Future<DebtResponse> getDebtDetail(int id) async {
 
     Future<void> deleteDebt(int debtId) async {
     String? accessToken = await AccesstokenService().getAccessToken();
+    print(debtId);
     final response = await http.delete(
-      Uri.parse('$baseUrl/debts/$debtId'),
+      Uri.parse('$baseUrl/api/debts/$debtId'),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
@@ -243,46 +244,39 @@ Future<DebtResponse> getDebtDetail(int id) async {
     }
   }
 
-  Future<void> updateDebt(int id,DebtRequest debtRequest) async {
-print("Editing debt id: ${id}");
-String? accessToken = await AccesstokenService().getAccessToken();
-print("AccessToken: $accessToken");
-    print({
-    'principalAmount': debtRequest.principalAmount,
-    'interestRate': debtRequest.interestRate,
-    'repaymentTypeId': debtRequest.repaymentTypeId,
-    'startDate': debtRequest.startDate.toIso8601String(),
-    'endDate': debtRequest.endDate.toIso8601String(),
-    'isActive': debtRequest.isActive,
-    'priority': debtRequest.priority,
-    'debtTypeId': debtRequest.debtTypeId,
-    'debtName': debtRequest.debtName,
-  });
+  Future<void> updateDebt(int id, DebtRequest debtRequest) async {
+    print("Editing debt id: $id");
+
+    String? accessToken = await AccesstokenService().getAccessToken();
+    print("AccessToken: $accessToken");
+
+    final body = {
+      'debtName': debtRequest.debtName,
+      'principalAmount': debtRequest.principalAmount,
+      'interestRate': debtRequest.interestRate,
+      'debtTypeId': debtRequest.debtTypeId,
+      'repaymentTypeId': debtRequest.repaymentTypeId,
+      'startDate': debtRequest.startDate.toIso8601String(),
+      'endDate': debtRequest.endDate.toIso8601String(),
+      'priority': debtRequest.priority,
+      'isActive': debtRequest.isActive,
+    };
+    print("Request body: $body");
+
     final response = await http.put(
-      Uri.parse("$url/$id"),
+      Uri.parse('$baseUrl/api/debts/$id'), // <- ใช้ id ไม่ใช่ debtId
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'principalAmount': debtRequest.principalAmount,
-        'interestRate': debtRequest.interestRate,
-        'repaymentTypeId': debtRequest.repaymentTypeId,
-        'startDate': debtRequest.startDate.toIso8601String(),
-        'endDate': debtRequest.endDate.toIso8601String(),
-        'isActive': debtRequest.isActive,
-        'priority': debtRequest.priority,
-        'debtTypeId': debtRequest.debtTypeId,
-        'debtName': debtRequest.debtName,
-      }),
-      
+      body: jsonEncode(body),
     );
 
     print("transaction status code : ${response.statusCode}");
     print("transaction body : ${response.body}");
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      print("Transaction created successfully.");
+      print("Debt updated successfully.");
     } else if (response.statusCode == 401) {
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
@@ -291,7 +285,7 @@ print("AccessToken: $accessToken");
       );
     } else {
       String errorMessage =
-          'Failed to create transaction (Status ${response.statusCode})';
+          'Failed to update debt (Status ${response.statusCode})';
       try {
         final errorBody = json.decode(response.body);
         errorMessage = errorBody['message'] ?? errorMessage;
@@ -299,5 +293,6 @@ print("AccessToken: $accessToken");
       throw Exception(errorMessage);
     }
   }
+
 
 }

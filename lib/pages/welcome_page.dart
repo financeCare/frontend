@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:google_sign_in/google_sign_in.dart'; // **เพิ่ม: สำหรับ Google Login**
 import 'package:financeCare/main.dart'; // Import main เพื่อใช้ LogoHeader
+import 'package:financeCare/main.dart';
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});

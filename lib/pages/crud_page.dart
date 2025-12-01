@@ -29,29 +29,45 @@ class _CrudPageState extends State<CrudPage> {
 
 
   final TextEditingController incomeCtrl = TextEditingController();
+  List<FinanceItem> debts = [];
   List<FinanceItem> incomes = [];
 
-  final TextEditingController debtNameCtrl = TextEditingController();
-  final TextEditingController debtAmountCtrl = TextEditingController();
-  final TextEditingController debtInterestCtrl = TextEditingController();
-  final TextEditingController debtStartDateCtrl = TextEditingController();
-  final TextEditingController debtEndDateCtrl = TextEditingController();
-  final TextEditingController debtPriorityCtrl = TextEditingController();
 
-  List<DebtTypeResponse> debtTypeList = [];
-  List<RepaymentTypeResponse> repaymentTypeList = [];
-  List<String> debtType = [];
-  List<String> repaymentType = [];
-  String? selectedDebtType;
-  String? selectedRepaymentType;
-  List<FinanceItem> debts = [];
-  int selectedRepaymentTypeId = 0;
-  int selectedDebtTypeId = 0;
+    // ชื่อหนี้
+    final TextEditingController debtNameCtrl = TextEditingController();
+    final TextEditingController debtAmountCtrl = TextEditingController();
+    final TextEditingController debtInterestCtrl = TextEditingController();
+    final TextEditingController debtStartDateCtrl = TextEditingController();
+    final TextEditingController debtEndDateCtrl = TextEditingController();
+    final TextEditingController debtPriorityCtrl = TextEditingController();
+    final TextEditingController incomeNameCtrl = TextEditingController();
 
-  bool incomeError = false;
-  bool debtNameError = false;
-  bool debtAmountError = false;
-  bool debtInterestError = false;
+
+
+    List<DebtTypeResponse> debtTypeList = [];
+    List<RepaymentTypeResponse> repaymentTypeList = [];
+    List<String> debtType = [];
+    List<String> repaymentType = [];
+    String? selectedDebtType;
+    String? selectedRepaymentType;
+    int selectedRepaymentTypeId = 0;
+    int selectedDebtTypeId = 0;
+
+    bool incomeError = false;
+    bool debtNameError = false;
+    bool debtAmountError = false;
+    bool debtInterestError = false;
+    bool get isDebtFormValid {
+      return debtNameCtrl.text.trim().isNotEmpty &&
+          debtAmountCtrl.text.trim().isNotEmpty &&
+          debtInterestCtrl.text.trim().isNotEmpty;
+    }
+
+  bool get isIncomeFormValid {
+    return incomeCtrl.text.trim().isNotEmpty;
+  }
+
+
 
   @override
   void initState() {
@@ -130,34 +146,113 @@ class _CrudPageState extends State<CrudPage> {
       incomeError = incomeCtrl.text.isEmpty;
     });
     if (incomeError) return;
+
     final double incomeAmount = double.tryParse(incomeCtrl.text) ?? 0;
     print('income : ${incomeCtrl.text}');
     print('income parse : $incomeAmount');
+
+    // เพิ่มลง list incomes เพื่อให้จำนวนรวมอัปเดต
+    setState(() {
+      incomes.add(FinanceItem(
+        id: DateTime.now().millisecondsSinceEpoch, // id ชั่วคราว
+        name: "รายรับที่เพิ่ม", // หรือใช้ incomeNameCtrl.text
+        amount: incomeAmount,
+        createdAt: DateTime.now(),
+      ));
+    });
+
     categoryService
         .getCategories()
         .then((categories) {
-          for (var category in categories) {
-            if (category.type == 'Income' &&
-                category.categoryName == 'Salary') {
-              transactionService.createTransaction(
-                TransactionRequest(
-                  categoryId: category.categoryId,
-                  amount: incomeAmount, 
-                  transactionDate: DateTime.now(),
-                  description: "Manual Salary Income",
-                ),
-              );
-            }
-          }
-        })
-        .catchError((error) {
-          print('Error fetching categories: $error');
-        });
-    incomeCtrl.clear();
-    setState(() {
-      currentStep = 2;
+      for (var category in categories) {
+        if (category.type == 'Income' &&
+            category.categoryName == 'Salary') {
+          transactionService.createTransaction(
+            TransactionRequest(
+              categoryId: category.categoryId,
+              amount: incomeAmount,
+              transactionDate: DateTime.now(),
+              description: "Manual Salary Income",
+            ),
+          );
+        }
+      }
+    }).catchError((error) {
+      print('Error fetching categories: $error');
     });
+
+    incomeCtrl.clear();
   }
+
+
+
+
+// ฟังก์ชันแก้ไข
+  void editIncome(int index) {
+    final income = incomes[index];
+    final controller = TextEditingController(text: income.amount.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("แก้ไขรายรับ"),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: "จำนวนเงิน"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("ยกเลิก"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  income.amount = double.tryParse(controller.text) ?? income.amount;
+                });
+                Navigator.pop(context);
+              },
+              child: const Text("บันทึก"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+// ฟังก์ชันลบ
+  void deleteIncome(int index) {
+    final income = incomes[index];
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("ยืนยันการลบ"),
+        content: Text("คุณแน่ใจว่าต้องการลบ '${income.name}'?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("ยกเลิก"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                incomes.removeAt(index);
+              });
+              Navigator.pop(context);
+            },
+            child: const Text("ลบ"),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+
+
 
   void addDebt() async {
     setState(() {
@@ -230,7 +325,7 @@ class _CrudPageState extends State<CrudPage> {
       print("Error fetching debt detail: $e");
       return;
     }
-    
+
     final nameCtrl = TextEditingController(text: debtResponse.debtName);
     final amountCtrl = TextEditingController(
       text: debtResponse.principalAmount.toString(),
@@ -274,10 +369,10 @@ class _CrudPageState extends State<CrudPage> {
                       items: debtType
                           .map(
                             (type) => DropdownMenuItem(
-                              value: type,
-                              child: Text(type),
-                            ),
-                          )
+                          value: type,
+                          child: Text(type),
+                        ),
+                      )
                           .toList(),
                       onChanged: (val) =>
                           setDialogState(() => tempDebtType = val!),
@@ -291,10 +386,10 @@ class _CrudPageState extends State<CrudPage> {
                       items: repaymentType
                           .map(
                             (type) => DropdownMenuItem(
-                              value: type,
-                              child: Text(type),
-                            ),
-                          )
+                          value: type,
+                          child: Text(type),
+                        ),
+                      )
                           .toList(),
                       onChanged: (val) =>
                           setDialogState(() => tempRepaymentType = val!),
@@ -330,7 +425,7 @@ class _CrudPageState extends State<CrudPage> {
                         );
                         if (picked != null) {
                           setDialogState(
-                            () => startDateCtrl.text = picked
+                                () => startDateCtrl.text = picked
                                 .toIso8601String()
                                 .split('T')[0],
                           );
@@ -354,7 +449,7 @@ class _CrudPageState extends State<CrudPage> {
                         );
                         if (picked != null) {
                           setDialogState(
-                            () => endDateCtrl.text = picked
+                                () => endDateCtrl.text = picked
                                 .toIso8601String()
                                 .split('T')[0],
                           );
@@ -439,6 +534,8 @@ class _CrudPageState extends State<CrudPage> {
     throw Exception('not found debt id');
   }
 
+
+
   void deleteDebt(int index) {
     FinanceItem financeItem = debts[index];
     showDialog(
@@ -468,6 +565,7 @@ class _CrudPageState extends State<CrudPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         toolbarHeight: 80.0,
         title: Padding(
           padding: const EdgeInsets.only(top: 15.0),
@@ -514,6 +612,7 @@ class _CrudPageState extends State<CrudPage> {
           ),
           const SizedBox(height: 20),
 
+          // Input รายรับ
           TextField(
             controller: incomeCtrl,
             keyboardType: TextInputType.number,
@@ -522,22 +621,74 @@ class _CrudPageState extends State<CrudPage> {
               labelText: "รายรับ / เดือน",
               errorText: incomeError ? "กรุณากรอกจำนวนเงิน" : null,
             ),
+            onChanged: (_) => setState(() {}), // อัปเดตปุ่ม
           ),
+
           const SizedBox(height: 20),
 
-          ElevatedButton(
-            onPressed: addIncome,
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 48),
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
+
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: isIncomeFormValid ? addIncome : null,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text("เพิ่มรายรับ"),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: incomes.fold<double>(0, (sum, item) => sum + item.amount) <= 0
+                      ? null
+                      : () {
+                    setState(() {
+                      currentStep = 2;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    backgroundColor: incomes.fold<double>(0, (sum, item) => sum + item.amount) <= 0
+                        ? Colors.grey.shade400 // สีปุ่ม disabled
+                        : Colors.deepOrange,    // สีปุ่มพร้อมกด (เด่นกว่าเทา)
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text("ไปหน้าเพิ่มหนี้"),
+                ),
+              )
+            ],
+          )
+,
+
+          const SizedBox(height: 8),
+
+          // แสดงจำนวนรายรับทั้งหมด
+            Text(
+              "รายรับทั้งหมด: ${FinanceItem.totalAmount(incomes).toStringAsFixed(0)} บาท",
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            child: const Text("Next"),
-          ),
+
+          const SizedBox(height: 20),
+
+          // แสดงรายการรายรับที่เพิ่มแล้ว
+
         ],
       ),
     );
   }
+
+
+
+
+
+
 
   Widget buildDebtStep() {
     return Column(
@@ -562,6 +713,7 @@ class _CrudPageState extends State<CrudPage> {
                     border: const OutlineInputBorder(),
                     errorText: debtNameError ? "กรุณากรอกชื่อหนี้" : null,
                   ),
+                  onChanged: (_) => setState(() {}), // <-- เพิ่มบรรทัดนี้
                 ),
                 const SizedBox(height: 15),
 
@@ -584,7 +736,7 @@ class _CrudPageState extends State<CrudPage> {
                 DropdownButtonFormField<String>(
                   value: selectedRepaymentType,
                   decoration: const InputDecoration(
-                    labelText: "ประเภทหนี้",
+                    labelText: "ประเภทการชำระ",
                     border: OutlineInputBorder(),
                   ),
                   items: repaymentType
@@ -607,6 +759,7 @@ class _CrudPageState extends State<CrudPage> {
                     border: const OutlineInputBorder(),
                     errorText: debtAmountError ? "กรุณากรอกจำนวนเงิน" : null,
                   ),
+                  onChanged: (_) => setState(() {}), // <-- เพิ่มบรรทัดนี้
                 ),
                 const SizedBox(height: 15),
 
@@ -621,6 +774,7 @@ class _CrudPageState extends State<CrudPage> {
                     border: const OutlineInputBorder(),
                     errorText: debtInterestError ? "กรุณากรอกดอกเบี้ย" : null,
                   ),
+                  onChanged: (_) => setState(() {}), // <-- เพิ่มบรรทัดนี้
                 ),
                 const SizedBox(height: 15),
 
@@ -660,21 +814,30 @@ class _CrudPageState extends State<CrudPage> {
                     suffixIcon: Icon(Icons.calendar_today),
                   ),
                   onTap: () async {
+                    // ตรวจสอบว่ามีวันที่เริ่มต้นหรือยัง
+                    DateTime startDate = DateTime.now();
+                    if (debtStartDateCtrl.text.isNotEmpty) {
+                      startDate = DateTime.parse(debtStartDateCtrl.text);
+                    }
+
+                    // วันสิ้นสุดต้องหลังวันเริ่มต้น 1 วัน
+                    DateTime firstEndDate = startDate.add(const Duration(days: 1));
+
                     DateTime? picked = await showDatePicker(
                       context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime(2000),
+                      initialDate: firstEndDate, // เริ่มต้นที่วันถัดไป
+                      firstDate: firstEndDate,   // ห้ามเลือกวันก่อนวันเริ่มต้น
                       lastDate: DateTime(2100),
                     );
                     if (picked != null) {
                       setState(() {
-                        debtEndDateCtrl.text = picked.toIso8601String().split(
-                          'T',
-                        )[0];
+                        debtEndDateCtrl.text = picked.toIso8601String().split('T')[0];
                       });
                     }
                   },
                 ),
+
+
                 const SizedBox(height: 15),
 
 
@@ -691,14 +854,15 @@ class _CrudPageState extends State<CrudPage> {
 
 
                 ElevatedButton(
-                  onPressed: addDebt,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48),
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text("เพิ่มหนี้"),
-                ),
+                onPressed: isDebtFormValid ? addDebt : null, // <-- ถ้า false จะ disabled
+    style: ElevatedButton.styleFrom(
+    minimumSize: const Size(double.infinity, 48),
+    backgroundColor: Theme.of(context).primaryColor,
+    foregroundColor: Colors.white,
+    ),
+    child: const Text("เพิ่มหนี้"),
+    ),
+
                 const SizedBox(height: 20),
 
                 const Text(
