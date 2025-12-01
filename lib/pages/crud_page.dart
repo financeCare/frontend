@@ -33,10 +33,10 @@ class _CrudPageState extends State<CrudPage> {
 
   // รายรับที่ผู้ใช้กรอกเอง
   final TextEditingController incomeCtrl = TextEditingController();
+  List<FinanceItem> debts = [];
   List<FinanceItem> incomes = [];
 
-  // เอารายรับ API ออก → ไม่ใช้แล้ว
-  // List<FinanceItem> apiIncomes = [];
+
 
     // ชื่อหนี้
     final TextEditingController debtNameCtrl = TextEditingController();
@@ -55,7 +55,6 @@ class _CrudPageState extends State<CrudPage> {
     List<String> repaymentType = [];
     String? selectedDebtType;
     String? selectedRepaymentType;
-    List<FinanceItem> debts = [];
     int selectedRepaymentTypeId = 0;
     int selectedDebtTypeId = 0;
 
@@ -72,6 +71,7 @@ class _CrudPageState extends State<CrudPage> {
   bool get isIncomeFormValid {
     return incomeCtrl.text.trim().isNotEmpty;
   }
+
 
 
   @override
@@ -150,25 +150,51 @@ class _CrudPageState extends State<CrudPage> {
     }
   }
 
-  void addIncome() {
+  void addIncome() async {
     setState(() {
       incomeError = incomeCtrl.text.isEmpty;
     });
     if (incomeError) return;
 
     final double incomeAmount = double.tryParse(incomeCtrl.text) ?? 0;
+    print('income : ${incomeCtrl.text}');
+    print('income parse : $incomeAmount');
 
+    // เพิ่มลง list incomes เพื่อให้จำนวนรวมอัปเดต
     setState(() {
       incomes.add(FinanceItem(
-        id: DateTime.now().millisecondsSinceEpoch,
-        name: 'Salary',
+        id: DateTime.now().millisecondsSinceEpoch, // id ชั่วคราว
+        name: "รายรับที่เพิ่ม", // หรือใช้ incomeNameCtrl.text
         amount: incomeAmount,
-        type: 'Income',
         createdAt: DateTime.now(),
       ));
-      incomeCtrl.clear(); // ล้าง input
     });
+
+    categoryService
+        .getCategories()
+        .then((categories) {
+      for (var category in categories) {
+        if (category.type == 'Income' &&
+            category.categoryName == 'Salary') {
+          transactionService.createTransaction(
+            TransactionRequest(
+              categoryId: category.categoryId,
+              amount: incomeAmount,
+              transactionDate: DateTime.now(),
+              description: "Manual Salary Income",
+            ),
+          );
+        }
+      }
+    }).catchError((error) {
+      print('Error fetching categories: $error');
+    });
+
+    incomeCtrl.clear();
   }
+
+
+
 
 // ฟังก์ชันแก้ไข
   void editIncome(int index) {
@@ -587,9 +613,6 @@ class _CrudPageState extends State<CrudPage> {
         iconTheme: IconThemeData(color: Theme.of(context).primaryColor),
       ),
 
-
-
-
       body: Padding(
         padding: const EdgeInsets.only(
           left: 20,
@@ -627,10 +650,9 @@ class _CrudPageState extends State<CrudPage> {
 
           const SizedBox(height: 20),
 
-          // ปุ่ม
+
           Row(
             children: [
-              // ปุ่มเพิ่มรายรับ
               Expanded(
                 child: ElevatedButton(
                   onPressed: isIncomeFormValid ? addIncome : null,
@@ -643,81 +665,49 @@ class _CrudPageState extends State<CrudPage> {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // ปุ่มไปหน้าเพิ่มหนี้
               Expanded(
-                child: OutlinedButton(
-                  onPressed: incomes.isNotEmpty
-                      ? () {
+                child: ElevatedButton(
+                  onPressed: incomes.fold<double>(0, (sum, item) => sum + item.amount) <= 0
+                      ? null
+                      : () {
                     setState(() {
-                      currentStep = 2; // ไปหน้าเพิ่มหนี้
+                      currentStep = 2;
                     });
-                  }
-                      : null, // disabled ถ้า list ว่าง
-                  style: OutlinedButton.styleFrom(
+                  },
+                  style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 48),
-                    side: BorderSide(color: Theme.of(context).primaryColor),
-                    foregroundColor: Theme.of(context).primaryColor,
+                    backgroundColor: incomes.fold<double>(0, (sum, item) => sum + item.amount) <= 0
+                        ? Colors.grey.shade400 // สีปุ่ม disabled
+                        : Colors.deepOrange,    // สีปุ่มพร้อมกด (เด่นกว่าเทา)
+                    foregroundColor: Colors.white,
                   ),
                   child: const Text("ไปหน้าเพิ่มหนี้"),
                 ),
-              ),
+              )
             ],
-          ),
+          )
+,
+
+          const SizedBox(height: 8),
+
+          // แสดงจำนวนรายรับทั้งหมด
+            Text(
+              "รายรับทั้งหมด: ${FinanceItem.totalAmount(incomes).toStringAsFixed(0)} บาท",
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
 
           const SizedBox(height: 20),
 
           // แสดงรายการรายรับที่เพิ่มแล้ว
-          if (incomes.isNotEmpty)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "รายรับของคุณ:",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: incomes.length,
-                  itemBuilder: (context, index) {
-                    final income = incomes[index];
-                    return Card(
-                      elevation: 2,
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      child: ListTile(
-                        title: Text(
-                          income.name,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        subtitle: Text(
-                          "ยอด: ${income.amount.toStringAsFixed(0)}",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.edit, color: Colors.blue.shade600),
-                              onPressed: () => editIncome(index),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red.shade600),
-                              onPressed: () => deleteIncome(index),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
+
         ],
       ),
     );
   }
+
 
 
 

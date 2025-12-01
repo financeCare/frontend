@@ -10,6 +10,7 @@ import 'accessToken_service.dart';
 class TransactionService {
   final String _transactionsUrl = '$baseUrl/api/transactions';
   final storage = FlutterSecureStorage();
+
   Future<List<TransactionResponse>> getOwnTransactions() async {
   String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.get(
