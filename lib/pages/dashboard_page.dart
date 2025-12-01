@@ -4,54 +4,25 @@ import '../models/finance_item.dart';
 import '../models/constants.dart';
 import '../services/dashboard_service.dart';
 
+
 class DashboardPage extends StatefulWidget {
   final List<FinanceItem> incomes;
   final List<FinanceItem> debts;
-
   const DashboardPage({super.key, required this.incomes, required this.debts});
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
+
 class _DashboardPageState extends State<DashboardPage> {
-  final DashboardService service = DashboardService(baseUrl: "https://your-api.com");
-
-  // ------------------ เพิ่มรายรับ ------------------
-  void addIncome() {
-    final amountCtrl = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("เพิ่มรายรับ"),
-        content: TextField(
-          controller: amountCtrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: "จำนวนเงิน"),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                double amount = double.tryParse(amountCtrl.text) ?? 0;
-                if (amount > 0) {
-                  widget.incomes.add(FinanceItem(name: "รายรับใหม่", amount: amount));
-                }
-              });
-              Navigator.pop(context);
-            },
-            child: const Text("บันทึก"),
-          ),
-        ],
-      ),
-    );
-  }
+  bool showPie = true; // toggle chart type
+  final DashboardService service = DashboardService(baseUrl: "https://your-api.com"); // กำหนด URL API ของคุณ
 
   // ------------------ แก้ไขรายรับ ------------------
   void editIncome(int index) {
-    final amountCtrl = TextEditingController(text: widget.incomes[index].amount.toString());
+    TextEditingController amountCtrl =
+    TextEditingController(text: widget.incomes[index].amount.toString());
 
     showDialog(
       context: context,
@@ -67,7 +38,8 @@ class _DashboardPageState extends State<DashboardPage> {
           ElevatedButton(
             onPressed: () {
               setState(() {
-                widget.incomes[index].amount = double.tryParse(amountCtrl.text) ?? 0;
+                widget.incomes[index].amount =
+                    double.tryParse(amountCtrl.text) ?? 0;
               });
               Navigator.pop(context);
             },
@@ -78,38 +50,78 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // ------------------ Pie Chart ------------------
-  Widget _buildPieChart() {
-    List<PieChartSectionData> sections = [];
+  // ------------------ แก้ไขหนี้ ------------------
+  void editDebt(int index) {
+    final debt = widget.debts[index];
+    final nameCtrl = TextEditingController(text: debt.name);
+    final amountCtrl = TextEditingController(text: debt.amount.toString());
+    final interestCtrl = TextEditingController(text: debt.interest.toString());
+    String tempType = debt.type;
 
-    // รายรับ
-    double totalIncome = widget.incomes.fold(0, (sum, item) => sum + item.amount);
-    if (totalIncome > 0) {
-      sections.add(PieChartSectionData(
-        value: totalIncome,
-        title: "รายรับ\n${totalIncome.toStringAsFixed(0)}",
-        color: Colors.green,
-        radius: 60,
-        titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-      ));
-    }
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("แก้ไขหนี้"),
+              content: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "ชื่อหนี้")),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: tempType,
+                      decoration: const InputDecoration(labelText: "ประเภทหนี้"),
+                      items: debtTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+                      onChanged: (val) => setDialogState(() => tempType = val!),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "จำนวนเงิน")),
+                    const SizedBox(height: 10),
+                    TextField(controller: interestCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "ดอกเบี้ย (%)")),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      debt.name = nameCtrl.text;
+                      debt.amount = double.tryParse(amountCtrl.text) ?? 0;
+                      debt.interest = double.tryParse(interestCtrl.text) ?? 0;
+                      debt.type = tempType;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text("บันทึก"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
-    // หนี้
-    for (var debt in widget.debts) {
-      sections.add(PieChartSectionData(
-        value: debt.amount,
-        title: "${debt.name}\n${debt.amount.toStringAsFixed(0)}",
-        color: Colors.redAccent,
-        radius: 60,
-        titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-      ));
-    }
-
-    return PieChart(
-      PieChartData(
-        centerSpaceRadius: 40,
-        sections: sections,
-        sectionsSpace: 4,
+  // ------------------ ลบหนี้ ------------------
+  void deleteDebt(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("ยืนยันการลบ"),
+        content: Text("คุณแน่ใจหรือไม่ว่าต้องการลบ '${widget.debts[index].name}'?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
+          ElevatedButton(
+            onPressed: () {
+              setState(() => widget.debts.removeAt(index));
+              Navigator.pop(context);
+            },
+            child: const Text("ลบ"),
+          ),
+        ],
       ),
     );
   }
@@ -121,19 +133,33 @@ class _DashboardPageState extends State<DashboardPage> {
       debts: widget.debts,
     );
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(success ? "ส่งข้อมูลเรียบร้อย" : "ส่งข้อมูลไม่สำเร็จ")),
+      SnackBar(
+        content: Text(success ? "ส่งข้อมูลเรียบร้อย" : "ส่งข้อมูลไม่สำเร็จ"),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    double totalIncome = widget.incomes.fold(0, (sum, item) => sum + item.amount);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Dashboard Overview"),
         actions: [
           TextButton(
-            onPressed: sendData,
-            child: const Text("Upload", style: TextStyle(color: Colors.white)),
+            onPressed: () => setState(() => showPie = !showPie),
+            child: Text(
+              showPie ? "Bar Chart" : "Pie Chart",
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+          TextButton(
+            onPressed: sendData, // ปุ่มส่งข้อมูล
+            child: const Text(
+              "Upload",
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -141,25 +167,17 @@ class _DashboardPageState extends State<DashboardPage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Pie Chart
-            Expanded(child: _buildPieChart()),
-            const SizedBox(height: 20),
-
-            // ปุ่มเพิ่มรายรับ
-            ElevatedButton(
-              onPressed: addIncome,
-              child: const Text("เพิ่มรายรับ"),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
+            // ------------------ กราฟ ------------------
+            Expanded(
+              child: showPie
+                  ? _buildPieChart(totalIncome)
+                  : _buildBarChart(totalIncome),
             ),
-
             const SizedBox(height: 20),
-            // รายรับ
+            // ------------------ รายการรายรับ ------------------
             _buildIncomeList(),
             const SizedBox(height: 20),
-            // รายการหนี้
+            // ------------------ รายการหนี้ ------------------
             _buildDebtList(),
           ],
         ),
@@ -167,6 +185,98 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // ------------------ Pie Chart ------------------
+  Widget _buildPieChart(double totalIncome) {
+      List<PieChartSectionData> sections = [
+      PieChartSectionData(
+        value: totalIncome,
+        title: "รายรับ",
+        radius: 60,
+        color: Colors.green,
+        titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+    ];
+
+    for (var debt in widget.debts) {
+      sections.add(PieChartSectionData(
+        value: debt.amount,
+        title: debt.name,
+        radius: 60,
+        color: Colors.redAccent,
+        titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+      ));
+    }
+
+    return PieChart(PieChartData(
+      centerSpaceRadius: 40,
+      sections: sections,
+      sectionsSpace: 4,
+    ));
+  }
+
+  // ------------------ Bar Chart ------------------
+  Widget _buildBarChart(double totalIncome) {
+    List<BarChartGroupData> bars = [
+      BarChartGroupData(
+        x: 0,
+        barRods: [BarChartRodData(toY: totalIncome, color: Colors.green, width: 20)],
+        showingTooltipIndicators: [0],
+      ),
+    ];
+
+    for (int i = 0; i < widget.debts.length; i++) {
+      final debt = widget.debts[i];
+      bars.add(
+        BarChartGroupData(
+          x: i + 1,
+          barRods: [BarChartRodData(toY: debt.amount, color: Colors.redAccent, width: 20)],
+          showingTooltipIndicators: [0],
+        ),
+      );
+    }
+
+    return BarChart(
+      BarChartData(
+        borderData: FlBorderData(show: false),
+        barGroups: bars,
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40, // <==== สำคัญมาก
+              getTitlesWidget: (value, meta) {
+                if (value == 0) return const Text("รายรับ");
+                int debtIndex = value.toInt() - 1;
+                if (debtIndex >= 0 && debtIndex < widget.debts.length) {
+                  return Text(widget.debts[debtIndex].name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 10));
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              getTitlesWidget: (value, meta) =>
+                  Text(value.toInt().toString(), style: const TextStyle(fontSize: 8)),
+            ),
+          ),
+
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
+      ),
+    );
+
+  }
   Widget _buildIncomeList() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,6 +300,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // ------------------ รายการหนี้ ------------------
   Widget _buildDebtList() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +314,10 @@ class _DashboardPageState extends State<DashboardPage> {
             subtitle: Text("ประเภท: ${debt.type} | ดอกเบี้ย: ${debt.interest}%"),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
-
+              children: [
+                IconButton(icon: const Icon(Icons.edit), onPressed: () => editDebt(index)),
+                IconButton(icon: const Icon(Icons.delete), onPressed: () => deleteDebt(index)),
+              ],
             ),
           );
         }),

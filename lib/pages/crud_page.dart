@@ -1,5 +1,17 @@
+import 'package:financeCare/models/category.dart';
+import 'package:financeCare/models/debtType_response.dart';
+import 'package:financeCare/models/debt_request.dart';
+import 'package:financeCare/models/debt_response.dart';
+import 'package:financeCare/models/repaymentType_response.dart';
+import 'package:financeCare/models/transaction_request.dart';
+import 'package:financeCare/models/transaction_response.dart';
+import 'package:financeCare/services/category_service.dart';
+import 'package:financeCare/services/debt_service.dart';
+import 'package:financeCare/services/transaction_service.dart';
+import 'package:financeCare/utils/config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/finance_item.dart';
 import '../models/constants.dart';
 import '../pages/dashboard_page.dart';
@@ -13,132 +25,153 @@ class CrudPage extends StatefulWidget {
 
 class _CrudPageState extends State<CrudPage> {
   int currentStep = 1;
+  TransactionService transactionService = TransactionService();
+  CategoryService categoryService = CategoryService();
+  DebtService debtService = DebtService();
+  final storage = FlutterSecureStorage();
+  String? error;
 
-  // รายรับ
-  final TextEditingController incomeNameCtrl = TextEditingController();
-  final TextEditingController incomeAmountCtrl = TextEditingController();
+  // รายรับที่ผู้ใช้กรอกเอง
+  final TextEditingController incomeCtrl = TextEditingController();
   List<FinanceItem> incomes = [];
 
-  // หนี้
+  // เอารายรับ API ออก → ไม่ใช้แล้ว
+  // List<FinanceItem> apiIncomes = [];
+
+  // ชื่อหนี้
   final TextEditingController debtNameCtrl = TextEditingController();
   final TextEditingController debtAmountCtrl = TextEditingController();
   final TextEditingController debtInterestCtrl = TextEditingController();
-  String selectedDebtType = debtTypes[0];
-  List<FinanceItem> debts = [];
+  final TextEditingController debtStartDateCtrl = TextEditingController();
+  final TextEditingController debtEndDateCtrl = TextEditingController();
+  final TextEditingController debtPriorityCtrl = TextEditingController();
 
-  // Errors
-  bool incomeNameError = false;
-  bool incomeAmountError = false;
+  List<DebtTypeResponse> debtTypeList = [];
+  List<RepaymentTypeResponse> repaymentTypeList = [];
+  List<String> debtType = [];
+  List<String> repaymentType = [];
+  String? selectedDebtType;
+  String? selectedRepaymentType;
+  List<FinanceItem> debts = [];
+  int selectedRepaymentTypeId = 0;
+  int selectedDebtTypeId = 0;
+
+  bool incomeError = false;
   bool debtNameError = false;
   bool debtAmountError = false;
   bool debtInterestError = false;
 
-  // -------------------- รายรับ --------------------
-  void confirmAddIncome() {
+  @override
+  void initState() {
+    super.initState();
+    loadDebtTypeAndRepaymentType();
+    fetchDebt();
+  }
+
+  Future<void> loadDebtTypeAndRepaymentType() async {
+    try {
+      final debt = await DebtService().getDebtType();
+      final repayment = await DebtService().getRepaymentType();
+      setState(() {
+        debtTypeList = debt;
+        repaymentTypeList = repayment;
+        debtType = debt.map((e) => e.debtTypeName).toList();
+        repaymentType = repayment.map((e) => e.typeName).toList();
+        print("repayment Type : ${debtType}");
+        print("repayment Type : ${repaymentType}");
+        if (debtType.isNotEmpty) selectedDebtType = debtType.first;
+        if (repaymentType.isNotEmpty)
+          selectedRepaymentType = repaymentType.first;
+      });
+    } catch (e) {
+      setState(() {
+        error = e.toString();
+      });
+    }
+  }
+
+  late Categories _categoryItems;
+
+  void fetchDebt() async {
+    final DebtResponseList = await DebtService().getAllDebt();
     setState(() {
-      incomeNameError = incomeNameCtrl.text.isEmpty;
-      incomeAmountError = incomeAmountCtrl.text.isEmpty;
+      debts = mapDebtToFinanceItem(DebtResponseList);
     });
-
-    if (incomeNameError || incomeAmountError) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("ยืนยันการเพิ่มรายรับ"),
-        content: Text("คุณต้องการเพิ่มรายรับ '${incomeNameCtrl.text}' จำนวน ${incomeAmountCtrl.text} บาท หรือไม่?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
-          ElevatedButton(
-            onPressed: () {
-              double? amount = double.tryParse(incomeAmountCtrl.text);
-              if (amount == null) return;
-
-              setState(() {
-                incomes.add(FinanceItem(
-                  name: incomeNameCtrl.text,
-                  amount: amount,
-                  createdAt: DateTime.now(),
-                ));
-                incomeNameCtrl.clear();
-                incomeAmountCtrl.clear();
-              });
-
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("เพิ่มรายรับสำเร็จ")),
-              );
-            },
-            child: const Text("ตกลง"),
-          ),
-        ],
-      ),
-    );
   }
 
-  void deleteIncome(int index) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("ยืนยันการลบ"),
-        content: Text("คุณแน่ใจหรือไม่ว่าต้องการลบ '${incomes[index].name}'?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                incomes.removeAt(index);
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("ลบรายรับสำเร็จ")),
-              );
-            },
-            child: const Text("ลบ"),
-          ),
-        ],
-      ),
-    );
+  List<FinanceItem> mapDebtToFinanceItem(List<DebtResponse> debts) {
+    return debts.map((d) {
+      return FinanceItem(
+        id: d.debtId,
+        name: d.debtName,
+        amount: d.principalAmount,
+        interest: d.interestRate,
+        type: d.debtType.debtTypeName,
+        createdAt: d.startDate, // หรือ DateTime.now()
+      );
+    }).toList();
   }
 
-  void editIncome(int index) {
-    final item = incomes[index];
-    final nameCtrl = TextEditingController(text: item.name);
-    final amountCtrl = TextEditingController(text: item.amount.toString());
+  Future<void> _loadIncomeData() async {
+    try {
+      final incomeItems = await categoryService
+          .mapCategoryIncomeToFinanceItem();
+      print("Income Items: $incomeItems");
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("แก้ไขรายรับ"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "ชื่อรายรับ")),
-            TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "จำนวนเงิน")),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                item.name = nameCtrl.text;
-                item.amount = double.tryParse(amountCtrl.text) ?? item.amount;
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("แก้ไขรายรับสำเร็จ")),
-              );
-            },
-            child: const Text("บันทึก"),
+      // เช็คว่ามีรายการหรือไม่
+      if (incomeItems.isEmpty) {
+        print("No income categories found.");
+      }
+
+      if (mounted) {
+        // ตรวจสอบว่า widget ยังอยู่บน tree
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DashboardPage(incomes: incomeItems, debts: debts),
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } catch (error) {
+      print("Error loading income data: $error");
+    }
   }
 
-  // -------------------- หนี้ --------------------
-  void confirmAddDebt() {
+  void addIncome() async {
+    setState(() {
+      incomeError = incomeCtrl.text.isEmpty;
+    });
+    if (incomeError) return;
+    final double incomeAmount = double.tryParse(incomeCtrl.text) ?? 0;
+    print('income : ${incomeCtrl.text}');
+    print('income parse : $incomeAmount');
+    categoryService
+        .getCategories()
+        .then((categories) {
+          for (var category in categories) {
+            if (category.type == 'Income' &&
+                category.categoryName == 'Salary') {
+              transactionService.createTransaction(
+                TransactionRequest(
+                  categoryId: category.categoryId,
+                  amount: incomeAmount, // ใช้ค่าที่เก็บไว้
+                  transactionDate: DateTime.now(),
+                  description: "Manual Salary Income",
+                ),
+              );
+            }
+          }
+        })
+        .catchError((error) {
+          print('Error fetching categories: $error');
+        });
+    incomeCtrl.clear();
+    setState(() {
+      currentStep = 2;
+    });
+  }
+
+  void addDebt() async {
     setState(() {
       debtNameError = debtNameCtrl.text.isEmpty;
       debtAmountError = debtAmountCtrl.text.isEmpty;
@@ -147,112 +180,390 @@ class _CrudPageState extends State<CrudPage> {
 
     if (debtNameError || debtAmountError || debtInterestError) return;
 
+    final double? amount = double.tryParse(debtAmountCtrl.text);
+    final double? interest = double.tryParse(debtInterestCtrl.text);
+
+    if (amount == null || interest == null) {
+      print("Invalid amount or interest");
+      return;
+    }
+    for (RepaymentTypeResponse repaymentType in repaymentTypeList) {
+      if (selectedRepaymentType == repaymentType.typeName) {
+        selectedRepaymentTypeId = repaymentType.typeId;
+      }
+    }
+    for (DebtTypeResponse debtTypeResponse in debtTypeList) {
+      if (selectedDebtType == debtTypeResponse.debtTypeName) {
+        selectedDebtTypeId = debtTypeResponse.debtTypeId;
+      }
+    }
+    // สร้าง DebtRequest
+    final debtRequest = DebtRequest(
+      debtName: debtNameCtrl.text,
+      principalAmount: amount,
+      interestRate: interest,
+      startDate: debtStartDateCtrl.text.isNotEmpty
+          ? DateTime.parse(debtStartDateCtrl.text)
+          : DateTime.now(),
+      endDate: debtEndDateCtrl.text.isNotEmpty
+          ? DateTime.parse(debtEndDateCtrl.text)
+          : DateTime.now().add(const Duration(days: 365)),
+      priority: debtPriorityCtrl.text.isNotEmpty
+          ? int.tryParse(debtPriorityCtrl.text) ?? 0
+          : 0,
+      debtTypeId: selectedDebtTypeId,
+      repaymentTypeId: selectedRepaymentTypeId,
+      isActive: true,
+    );
+
+    try {
+      await debtService.createDebt(debtRequest);
+      fetchDebt();
+      setState(() {
+        // debts.add(
+        //   FinanceItem(
+        //     name: debtRequest.debtName,
+        //     amount: debtRequest.principalAmount,
+        //     interest: debtRequest.interestRate,
+        //     type: selectedDebtType ?? '',
+        //     createdAt: DateTime.now(),
+        //   ),
+        // );
+
+        // ล้าง input fields
+        debtNameCtrl.clear();
+        debtAmountCtrl.clear();
+        debtInterestCtrl.clear();
+        debtStartDateCtrl.clear();
+        debtEndDateCtrl.clear();
+        debtPriorityCtrl.clear();
+        selectedDebtTypeId = 0;
+        selectedRepaymentTypeId = 0;
+      });
+    } catch (e) {
+      print("Error creating debt: $e");
+      // สามารถแสดง SnackBar แจ้งผู้ใช้ได้
+    }
+  }
+  // void editDebt(int index) {
+  //   final debt = debts[index];
+  //   final nameCtrl = TextEditingController(text: debt.name);
+  //   final amountCtrl = TextEditingController(text: debt.amount.toString());
+  //   final interestCtrl = TextEditingController(text: debt.interest.toString());
+  //   String tempType = debt.type;
+
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) {
+  //       return StatefulBuilder(
+  //         builder: (context, setDialogState) {
+  //           return AlertDialog(
+  //             title: const Text("แก้ไขหนี้"),
+  //             content: SingleChildScrollView(
+  //               child: Column(
+  //                 children: [
+  //                   TextField(
+  //                     controller: nameCtrl,
+  //                     decoration: const InputDecoration(labelText: "ชื่อหนี้"),
+  //                   ),
+  //                   const SizedBox(height: 10),
+  //                   DropdownButtonFormField<String>(
+  //                     value: tempType,
+  //                     decoration: const InputDecoration(
+  //                       labelText: "ประเภทหนี้",
+  //                     ),
+  //                     items: debtType
+  //                         .map(
+  //                           (type) => DropdownMenuItem(
+  //                             value: type,
+  //                             child: Text(type),
+  //                           ),
+  //                         )
+  //                         .toList(),
+  //                     onChanged: (val) => setDialogState(() => tempType = val!),
+  //                   ),
+  //                   const SizedBox(height: 10),
+  //                   TextField(
+  //                     controller: amountCtrl,
+  //                     keyboardType: TextInputType.number,
+  //                     decoration: const InputDecoration(labelText: "จำนวนเงิน"),
+  //                   ),
+  //                   const SizedBox(height: 10),
+  //                   TextField(
+  //                     controller: interestCtrl,
+  //                     keyboardType: TextInputType.number,
+  //                     decoration: const InputDecoration(
+  //                       labelText: "ดอกเบี้ย (%)",
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //             actions: [
+  //               TextButton(
+  //                 onPressed: () => Navigator.pop(context),
+  //                 child: const Text("ยกเลิก"),
+  //               ),
+  //               ElevatedButton(
+  //                 onPressed: () {
+  //                   if (double.tryParse(amountCtrl.text) == null ||
+  //                       double.tryParse(interestCtrl.text) == null) {
+  //                     return;
+  //                   }
+  //                   setState(() {
+  //                     debt.name = nameCtrl.text;
+  //                     debt.amount = double.tryParse(amountCtrl.text) ?? 0;
+  //                     debt.interest = double.tryParse(interestCtrl.text) ?? 0;
+  //                     debt.type = tempType;
+  //                   });
+  //                   Navigator.pop(context);
+  //                 },
+  //                 child: const Text("บันทึก"),
+  //               ),
+  //             ],
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
+  void editDebt(int index) async {
+    final debt = debts[index];
+
+    // ดึงรายละเอียดหนี้จาก backend
+    DebtResponse debtResponse;
+    try {
+      debtResponse = await DebtService().getDebtDetail(debt.id);
+    } catch (e) {
+      print("Error fetching debt detail: $e");
+      return;
+    }
+    
+    final nameCtrl = TextEditingController(text: debtResponse.debtName);
+    final amountCtrl = TextEditingController(
+      text: debtResponse.principalAmount.toString(),
+    );
+    final interestCtrl = TextEditingController(
+      text: debtResponse.interestRate.toString(),
+    );
+    final startDateCtrl = TextEditingController(
+      text: debtResponse.startDate.toIso8601String().split('T')[0],
+    );
+    final endDateCtrl = TextEditingController(
+      text: debtResponse.endDate.toIso8601String().split('T')[0],
+    );
+    final priorityCtrl = TextEditingController(
+      text: debtResponse.priority.toString(),
+    );
+
+    String tempDebtType = debtResponse.debtType.debtTypeName;
+    String tempRepaymentType = debtResponse.repaymentType.typeName;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("ยืนยันการเพิ่มหนี้"),
-        content: Text("คุณต้องการเพิ่มหนี้ '${debtNameCtrl.text}' จำนวน ${debtAmountCtrl.text} บาท ดอกเบี้ย ${debtInterestCtrl.text}% หรือไม่?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
-          ElevatedButton(
-            onPressed: () {
-              double? amount = double.tryParse(debtAmountCtrl.text);
-              double? interest = double.tryParse(debtInterestCtrl.text);
-              if (amount == null || interest == null) return;
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("แก้ไขหนี้"),
+              content: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: "ชื่อหนี้"),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: tempDebtType,
+                      decoration: const InputDecoration(
+                        labelText: "ประเภทหนี้",
+                      ),
+                      items: debtType
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) =>
+                          setDialogState(() => tempDebtType = val!),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: tempRepaymentType,
+                      decoration: const InputDecoration(
+                        labelText: "ประเภทการชำระ",
+                      ),
+                      items: repaymentType
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) =>
+                          setDialogState(() => tempRepaymentType = val!),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: amountCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: "จำนวนเงิน"),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: interestCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: "ดอกเบี้ย (%)",
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: startDateCtrl,
+                      readOnly: true,
+                      decoration: const InputDecoration(
+                        labelText: "วันที่เริ่มต้น",
+                        suffixIcon: Icon(Icons.calendar_today),
+                      ),
+                      onTap: () async {
+                        DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: debtResponse.startDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setDialogState(
+                            () => startDateCtrl.text = picked
+                                .toIso8601String()
+                                .split('T')[0],
+                          );
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: endDateCtrl,
+                      readOnly: true,
+                      decoration: const InputDecoration(
+                        labelText: "วันที่สิ้นสุด",
+                        suffixIcon: Icon(Icons.calendar_today),
+                      ),
+                      onTap: () async {
+                        DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: debtResponse.endDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setDialogState(
+                            () => endDateCtrl.text = picked
+                                .toIso8601String()
+                                .split('T')[0],
+                          );
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: priorityCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: "ลำดับความสำคัญ",
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("ยกเลิก"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final double? newAmount = double.tryParse(amountCtrl.text);
+                    final double? newInterest = double.tryParse(
+                      interestCtrl.text,
+                    );
+                    final int? newPriority = int.tryParse(priorityCtrl.text);
 
-              setState(() {
-                debts.add(FinanceItem(
-                  name: debtNameCtrl.text,
-                  amount: amount,
-                  interest: interest,
-                  type: selectedDebtType,
-                  createdAt: DateTime.now(),
-                ));
-                debtNameCtrl.clear();
-                debtAmountCtrl.clear();
-                debtInterestCtrl.clear();
-              });
+                    if (newAmount == null ||
+                        newInterest == null ||
+                        newPriority == null) {
+                      print("Invalid input");
+                      return;
+                    }
 
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("เพิ่มหนี้สำเร็จ")),
-              );
-            },
-            child: const Text("ตกลง"),
-          ),
-        ],
-      ),
+                    int newDebtTypeId = debtTypeList
+                        .firstWhere((e) => e.debtTypeName == tempDebtType)
+                        .debtTypeId;
+                    int newRepaymentTypeId = repaymentTypeList
+                        .firstWhere((e) => e.typeName == tempRepaymentType)
+                        .typeId;
+
+                    final updatedDebt = DebtRequest(
+                      debtName: nameCtrl.text,
+                      principalAmount: newAmount,
+                      interestRate: newInterest,
+                      startDate: DateTime.parse(startDateCtrl.text),
+                      endDate: DateTime.parse(endDateCtrl.text),
+                      priority: newPriority,
+                      debtTypeId: newDebtTypeId,
+                      repaymentTypeId: newRepaymentTypeId,
+                      isActive: debtResponse.isActive,
+                    );
+
+                    try {
+                      await DebtService().updateDebt(debt.id, updatedDebt);
+                      fetchDebt(); // refresh list
+                      Navigator.pop(context);
+                    } catch (e) {
+                      print("Error updating debt: $e");
+                    }
+                  },
+                  child: const Text("บันทึก"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
-  void editDebt(int index) {
-    final debt = debts[index];
-    final nameCtrl = TextEditingController(text: debt.name);
-    final amountCtrl = TextEditingController(text: debt.amount.toString());
-    final interestCtrl = TextEditingController(text: debt.interest.toString());
-    String tempType = debt.type;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text("แก้ไขหนี้"),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "ชื่อหนี้")),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  value: tempType,
-                  decoration: const InputDecoration(labelText: "ประเภทหนี้"),
-                  items: debtTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
-                  onChanged: (val) => setDialogState(() => tempType = val!),
-                ),
-                const SizedBox(height: 10),
-                TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "จำนวนเงิน")),
-                const SizedBox(height: 10),
-                TextField(controller: interestCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "ดอกเบี้ย (%)")),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  debt.name = nameCtrl.text;
-                  debt.amount = double.tryParse(amountCtrl.text) ?? debt.amount;
-                  debt.interest = double.tryParse(interestCtrl.text) ?? debt.interest;
-                  debt.type = tempType;
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("แก้ไขหนี้สำเร็จ")),
-                );
-              },
-              child: const Text("บันทึก"),
-            ),
-          ],
-        ),
-      ),
-    );
+  FinanceItem findDebtById(int id) {
+    print(debts);
+    for (FinanceItem financeItem in debts) {
+      if (financeItem.id == id) {
+        return financeItem;
+      }
+    }
+    throw Exception('not found debt id');
   }
 
   void deleteDebt(int index) {
+    FinanceItem financeItem = debts[index];
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("ยืนยันการลบ"),
-        content: Text("คุณแน่ใจหรือไม่ว่าต้องการลบ '${debts[index].name}'?"),
+        content: Text("คุณแน่ใจหรือไม่ว่าต้องการลบ '${financeItem.name}'?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("ยกเลิก"),
+          ),
           ElevatedButton(
-            onPressed: () {
-              setState(() => debts.removeAt(index));
+            onPressed: () async {
+              await DebtService().deleteDebt(financeItem.id);
+              fetchDebt();
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("ลบหนี้สำเร็จ")),
-              );
             },
             child: const Text("ลบ"),
           ),
@@ -261,84 +572,75 @@ class _CrudPageState extends State<CrudPage> {
     );
   }
 
-  // -------------------- Build --------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(""),
+        toolbarHeight: 80.0,
+        title: Padding(
+          padding: const EdgeInsets.only(top: 15.0),
+          child: Image.asset(
+            'assets/logo_finance_care.png',
+            height: 80,
+            errorBuilder: (context, error, stackTrace) {
+              return Text(
+                'Finance Care',
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                ),
+              );
+            },
+          ),
+        ),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Theme.of(context).primaryColor),
       ),
+
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.only(
+          left: 20,
+          right: 20,
+          bottom: 20,
+          top: 10,
+        ),
         child: currentStep == 1 ? buildIncomeStep() : buildDebtStep(),
       ),
     );
   }
 
   Widget buildIncomeStep() {
-    bool canAddIncome = incomeNameCtrl.text.isNotEmpty && incomeAmountCtrl.text.isNotEmpty;
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Image.asset('assets/logo_finance_care.png', width: 150, height: 150, fit: BoxFit.cover),
+          Text(
+            "กรุณาใส่รายรับ",
+            style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 20),
-          Text("กรุณาใส่รายรับ", style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 20),
+
           TextField(
-            controller: incomeNameCtrl,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(labelText: "ชื่อรายรับ", errorText: incomeNameError ? "กรุณากรอกชื่อ" : null),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: incomeAmountCtrl,
-            onChanged: (_) => setState(() {}),
+            controller: incomeCtrl,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(labelText: "จำนวนเงิน", errorText: incomeAmountError ? "กรุณากรอกจำนวนเงิน" : null),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ElevatedButton(
-                onPressed: canAddIncome ? confirmAddIncome : null,
-                child: const Text("เพิ่มรายรับ"),
-              ),
-              ElevatedButton(
-                onPressed: incomes.isNotEmpty ? () => setState(() => currentStep = 2) : null,
-                child: const Text("ไปหน้าหนี้"),
-              ),
-            ],
+            decoration: InputDecoration(
+              labelText: "รายรับ / เดือน",
+              errorText: incomeError ? "กรุณากรอกจำนวนเงิน" : null,
+            ),
           ),
           const SizedBox(height: 20),
-          const Text("รายรับของคุณ:", style: TextStyle(fontWeight: FontWeight.bold)),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: incomes.length,
-            itemBuilder: (context, index) {
-              final item = incomes[index];
-              return Card(
-                color: Colors.green.shade50,
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                child: ListTile(
-                  title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text("${item.amount.toStringAsFixed(0)} บาท"),
-                      IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => editIncome(index)),
-                      IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => deleteIncome(index)),
-                    ],
-                  ),
-                ),
-              );
-            },
+
+          ElevatedButton(
+            onPressed: addIncome,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Next"),
           ),
         ],
       ),
@@ -346,98 +648,251 @@ class _CrudPageState extends State<CrudPage> {
   }
 
   Widget buildDebtStep() {
-    bool canAddDebt = debtNameCtrl.text.isNotEmpty && debtAmountCtrl.text.isNotEmpty && debtInterestCtrl.text.isNotEmpty;
-    bool canGoDashboard = incomes.isNotEmpty && debts.isNotEmpty;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("ระบุหนี้ของคุณ", style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 15),
+                Text(
+                  "ระบุหนี้ของคุณ",
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 20),
+
+                // ชื่อหนี้
                 TextField(
                   controller: debtNameCtrl,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(labelText: "ชื่อหนี้", errorText: debtNameError ? "กรุณากรอกชื่อหนี้" : null),
+                  decoration: InputDecoration(
+                    labelText: "ชื่อหนี้",
+                    border: const OutlineInputBorder(),
+                    errorText: debtNameError ? "กรุณากรอกชื่อหนี้" : null,
+                  ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 15),
+
+                // ประเภทหนี้
                 DropdownButtonFormField<String>(
                   value: selectedDebtType,
-                  decoration: const InputDecoration(labelText: "ประเภทหนี้"),
-                  items: debtTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+                  decoration: const InputDecoration(
+                    labelText: "ประเภทหนี้",
+                    border: OutlineInputBorder(),
+                  ),
+                  items: debtType
+                      .map(
+                        (type) =>
+                            DropdownMenuItem(value: type, child: Text(type)),
+                      )
+                      .toList(),
                   onChanged: (val) => setState(() => selectedDebtType = val!),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 15),
+
+                // ประเภทการชำระ
+                DropdownButtonFormField<String>(
+                  value: selectedRepaymentType,
+                  decoration: const InputDecoration(
+                    labelText: "ประเภทหนี้",
+                    border: OutlineInputBorder(),
+                  ),
+                  items: repaymentType
+                      .map(
+                        (type) =>
+                            DropdownMenuItem(value: type, child: Text(type)),
+                      )
+                      .toList(),
+                  onChanged: (val) =>
+                      setState(() => selectedRepaymentType = val!),
+                ),
+                const SizedBox(height: 15),
+
+                // จำนวนเงิน
                 TextField(
                   controller: debtAmountCtrl,
-                  onChanged: (_) => setState(() {}),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: InputDecoration(labelText: "จำนวนเงิน", errorText: debtAmountError ? "กรุณากรอกจำนวนเงิน" : null),
+                  decoration: InputDecoration(
+                    labelText: "จำนวนเงิน",
+                    border: const OutlineInputBorder(),
+                    errorText: debtAmountError ? "กรุณากรอกจำนวนเงิน" : null,
+                  ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 15),
+
+                // ดอกเบี้ย
                 TextField(
                   controller: debtInterestCtrl,
-                  onChanged: (_) => setState(() {}),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: "ดอกเบี้ย (%)",
+                    border: const OutlineInputBorder(),
+                    errorText: debtInterestError ? "กรุณากรอกดอกเบี้ย" : null,
+                  ),
+                ),
+                const SizedBox(height: 15),
+
+                // วันที่เริ่มต้น
+                TextField(
+                  controller: debtStartDateCtrl,
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: "วันที่เริ่มต้น",
+                    border: const OutlineInputBorder(),
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                  onTap: () async {
+                    DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        debtStartDateCtrl.text = picked.toIso8601String().split(
+                          'T',
+                        )[0];
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 15),
+
+                // วันที่สิ้นสุด
+                TextField(
+                  controller: debtEndDateCtrl,
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: "วันที่สิ้นสุด",
+                    border: const OutlineInputBorder(),
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                  onTap: () async {
+                    DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        debtEndDateCtrl.text = picked.toIso8601String().split(
+                          'T',
+                        )[0];
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 15),
+
+                // Priority
+                TextField(
+                  controller: debtPriorityCtrl,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: InputDecoration(labelText: "ดอกเบี้ย (%)", errorText: debtInterestError ? "กรุณากรอกดอกเบี้ย" : null),
+                  decoration: InputDecoration(
+                    labelText: "ลำดับความสำคัญ",
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
+
+                // ปุ่มเพิ่มหนี้
                 ElevatedButton(
-                  onPressed: canAddDebt ? confirmAddDebt : null,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade600, foregroundColor: Colors.white),
+                  onPressed: addDebt,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
                   child: const Text("เพิ่มหนี้"),
                 ),
                 const SizedBox(height: 20),
-                const Text("รายการหนี้ของคุณ:", style: TextStyle(fontWeight: FontWeight.bold)),
+
+                const Text(
+                  "รายการหนี้ของคุณ:",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: debts.length,
                   itemBuilder: (context, index) {
                     final debt = debts[index];
+
                     return Card(
-                      color: Colors.orange.shade50,
+                      elevation: 2,
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       child: ListTile(
-                        title: Text(debt.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text("ประเภท: ${debt.type} | ยอด: ${debt.amount.toStringAsFixed(0)} | ดอกเบี้ย: ${debt.interest}%"),
+                        title: Text(
+                          debt.name,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        subtitle: Text(
+                          "ประเภท: ${debt.type} | ยอดหนี้: ${debt.amount.toStringAsFixed(0)} | ดอกเบี้ย: ${debt.interest}%",
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => editDebt(index)),
-                            IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => deleteDebt(index)),
+                            IconButton(
+                              icon: Icon(
+                                Icons.edit,
+                                color: Colors.blue.shade600,
+                              ),
+                              onPressed: () => editDebt(index),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.delete,
+                                color: Colors.red.shade600,
+                              ),
+                              onPressed: () => deleteDebt(index),
+                            ),
                           ],
                         ),
                       ),
                     );
                   },
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ElevatedButton(onPressed: () => setState(() => currentStep = 1), child: const Text("ย้อนกลับ")),
-                    ElevatedButton(
-                      onPressed: canGoDashboard
-                          ? () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => DashboardPage(incomes: incomes, debts: debts)),
-                        );
-                      }
-                          : null,
-                      child: const Text("ไปหน้าสรุป"),
-                    ),
-                  ],
-                ),
               ],
             ),
+          ),
+        ),
+
+        // ปุ่มย้อนกลับ / ไปหน้าสรุป
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ElevatedButton(
+                onPressed: () => setState(() => currentStep = 1),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey.shade300,
+                  foregroundColor: Colors.black87,
+                ),
+                child: const Text("ย้อนกลับ"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  await _loadIncomeData();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepOrange,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text("ไปหน้าสรุป"),
+              ),
+            ],
           ),
         ),
       ],

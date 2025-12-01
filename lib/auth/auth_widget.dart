@@ -43,7 +43,6 @@ class LogoHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // โค้ดที่นี่สมมติว่าไฟล์ logo_finance_care.png มีอยู่จริง
     return Column(
       children: [
         Image.asset(
