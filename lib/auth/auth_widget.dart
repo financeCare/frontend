@@ -35,7 +35,7 @@ class AuthService {
   }
 
   Future<bool> sendOTP(String email) async {
-    final url = Uri.parse('$baseUrl/auth/send-otp/$email');
+    final url = Uri.parse('$baseUrl/api/auth/send-otp/$email');
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
@@ -50,7 +50,7 @@ class AuthService {
   }
 
   Future<bool> verifyOTP(String email, String otp, String password) async {
-    final url = Uri.parse('$baseUrl/auth/verify-otp');
+    final url = Uri.parse('$baseUrl/api/auth/verify-otp');
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
@@ -67,7 +67,7 @@ class AuthService {
   }
 
   Future<bool> register(String email, String password) async {
-    final url = Uri.parse('$baseUrl/auth/register');
+    final url = Uri.parse('$baseUrl/api/auth/register');
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
@@ -80,10 +80,7 @@ class AuthService {
     print("login status : ${response.statusCode}");
     print("login body : ${response.body}");
     if (response.statusCode == 201) {
-      // if (await sendOTP(email)) {
-      //   print("send otp success");
-      // }
-      // await login(email, password);
+      await sendOTP(email);
     } else {
       return false;
     }
