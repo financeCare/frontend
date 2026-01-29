@@ -6,6 +6,23 @@ import '../../services/dashboard_service.dart';
 import 'PlanDetailScreen.dart';
 import '../../models/finance_item.dart';
 
+// ประกาศแผนใหม่เพิ่มตรงนี้ (หรือถ้าแยกไฟล์ไว้ ให้ทำการ import เข้ามาครับ)
+final DebtPlan fastTrackPlan = DebtPlan(
+  id: 'fast_track',
+  name: 'Fast Track',
+  description: 'จ่ายหนี้ทั้งหมดเร็วที่สุดเท่าที่ทำได้ โดยเน้นการโปะเงินสูงสุดในแต่ละเดือน',
+  pros: ['หมดหนี้เร็วที่สุด', 'ลดดอกเบี้ยจ่ายรวมได้มหาศาล'],
+  cons: ['ต้องรัดเข็มขัดอย่างหนัก', 'กระทบสภาพคล่องรายเดือน'],
+);
+
+final DebtPlan minimumPaymentPlan = DebtPlan(
+  id: 'minimum_payment',
+  name: 'Minimum Payment Plan',
+  description: 'เน้นจ่ายขั้นต่ำตามรอบบิล เพื่อรักษาสภาพคล่องทางการเงินให้ได้มากที่สุด',
+  pros: ['มีเงินเหลือใช้รายเดือนมากขึ้น', 'ง่ายต่อการจัดการกระแสเงินสด'],
+  cons: ['ใช้เวลานานมากในการปลดหนี้', 'เสียดอกเบี้ยสะสมสูงมาก'],
+);
+
 class SimulatorScreen extends StatefulWidget {
   const SimulatorScreen({super.key});
 
@@ -17,7 +34,14 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
   final DashboardService dashboardService =
   DashboardService(baseUrl: 'https://your-api.com'); // เปลี่ยนเป็น URL จริง
 
-  List<DebtPlan> debtPlans = [snowballPlan, avalanchePlan]; // ตัวอย่างแผน
+  // เพิ่ม fastTrackPlan และ minimumPaymentPlan เข้าไปใน List นี้
+  List<DebtPlan> debtPlans = [
+    snowballPlan,
+    avalanchePlan,
+    fastTrackPlan,
+    minimumPaymentPlan
+  ];
+
   List<FinanceItem> incomes = [];
   List<FinanceItem> debts = [];
   bool isLoading = true;
@@ -92,8 +116,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                                 plan: plan,
                                 incomes: incomes,
                                 debts: debts,
-                                monthlyBudget: 1000, // เปลี่ยนตาม user input
-
+                                monthlyBudget: 1000, // สามารถปรับเป็นตัวแปรที่รับค่าจาก User ได้
                               ),
                             ),
                           );

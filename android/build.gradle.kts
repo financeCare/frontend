@@ -1,11 +1,3 @@
-// ✅ ส่วน plugins ต้องมีแบบนี้
-plugins {
-    id("com.android.application") apply false
-    id("org.jetbrains.kotlin.android") apply false
-
-}
-
-
 allprojects {
     repositories {
         google()

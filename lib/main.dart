@@ -9,31 +9,23 @@ import 'firebase_options.dart';
 // <<<< เพิ่มการ Import AuthManager ที่นี่ >>>>
 import './auth/auth_manager.dart';
 
+<<<<<<< Updated upstream
 // Screens
 import './auth/welcome_page.dart';
 import 'pages/expense_entry_screen.dart';
 import './pages/simulator/simulator_screen.dart';
 import 'pages/email_login_page.dart';
 import './pages/homepage.dart';
+=======
+// Import screens - ตรวจสอบว่าชื่อไฟล์ตรงกับในโปรเจกต์ของคุณ
+import 'auth/auth_widget.dart';
+import 'pages/homepage.dart';
+import 'expense_entry_screen.dart';
+import 'pages/simulator/simulator_screen.dart';
+import 'notification/notification_screen.dart';
+// สมมติว่าไฟล์หน้าแจ้งเตือนของคุณชื่อ notification_screen.dart
+>>>>>>> Stashed changes
 
-// Widget Helper: LogoHeader - **ปรับขนาดโลโก้**
-class LogoHeader extends StatelessWidget {
-  const LogoHeader({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // ใช้ Image.asset เพื่อแสดงโลโก้เดิม
-        Image.asset(
-          'assets/logo_finance_care.png',
-          height: 280, // **เพิ่มขนาดให้ใหญ่ขึ้น**
-          width: 380,  // **เพิ่มขนาดให้ใหญ่ขึ้น**
-        ),
-      ],
-    );
-  }
-}
 
 // 🚨 ฟังก์ชัน main() ต้องเป็น async และรวมการเริ่มต้น (Initialization) ของทั้งสองบริการ
 void main() async {
@@ -55,10 +47,17 @@ void main() async {
 
   // 3. เริ่มต้น LINE SDK
   try {
+    // แทนที่ด้วย Channel ID ของคุณ
     await LineSDK.instance.setup('2008279064');
+<<<<<<< Updated upstream
     print('LINE SDK initialized successfully.');
   } catch (e) {
     print('LINE SDK initialization failed: $e');
+=======
+    debugPrint('LINE SDK initialized successfully');
+  } catch (e) {
+    debugPrint('LINE SDK initialization failed: $e');
+>>>>>>> Stashed changes
   }
 
   // 4. เริ่มต้นแอป Flutter
@@ -81,11 +80,18 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'FINANCE CARE FC App',
+      debugShowCheckedModeBanner: false, // ปิดแถบ Debug
       theme: ThemeData(
         primaryColor: const Color(0xFF00796B), // Deep Teal
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF00796B)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF00796B),
+          primary: const Color(0xFF00796B),
+        ),
         useMaterial3: true,
+        // กำหนด Font หลักของแอปถ้ามี
+        // fontFamily: 'Kanit',
       ),
+<<<<<<< Updated upstream
       // ใช้ 'home' แทน 'initialRoute' เพื่อให้สามารถกำหนดหน้าเริ่มต้นตามสถานะ Auth ได้
       home: initialScreen,
 
@@ -99,8 +105,54 @@ class MyApp extends StatelessWidget {
         '/expense_entry': (context) => const ExpenseEntryScreen(),
 
         // Route สำหรับ Simulator Screen
+=======
+
+      // เส้นทางเริ่มต้นเมื่อเปิดแอป
+      initialRoute: '/',
+
+      // การจัดการเส้นทาง (Routes) ทั้งหมดภายในแอป
+      routes: {
+        // หน้าต้อนรับ / เลือกวิธี Login
+        '/': (context) => const WelcomePage(),
+
+        // หน้าล็อคอินด้วยอีเมล
+        '/email_login': (context) => const EmailLoginPage(),
+
+        // หน้าหลัก (ที่มี Bottom Navigation Bar)
+        '/home': (context) => const HomePage(),
+
+        // หน้าบันทึกค่าใช้จ่าย
+        '/expense_entry': (context) => const ExpenseEntryScreen(),
+
+        // หน้าเครื่องมือคำนวณ (Simulator)
+>>>>>>> Stashed changes
         '/simulator': (context) => const SimulatorScreen(),
+
+        // --- เพิ่ม Route สำหรับการแจ้งเตือน ---
+        '/notify': (context) => const NotificationScreen(),
       },
+    );
+  }
+}
+
+// Widget Helper สำหรับแสดงโลโก้
+class LogoHeader extends StatelessWidget {
+  const LogoHeader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(
+          'assets/logo_finance_care.png',
+          height: 280, // ปรับขนาดตามที่คุณต้องการ
+          width: 380,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.account_balance_wallet, size: 100, color: Color(0xFF00796B));
+          },
+        ),
+      ],
     );
   }
 }

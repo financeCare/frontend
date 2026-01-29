@@ -2,32 +2,169 @@ import 'package:flutter/material.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-// Import หน้าจออื่นๆ ที่ใช้ใน Bottom Navigation Bar
-// NOTE: ต้องมั่นใจว่าไฟล์เหล่านี้มีอยู่จริงในโครงสร้างโปรเจกต์ของคุณ
-import 'crud_page.dart'; // สมมติว่าเป็นหน้า Dashboard/Home
-import 'budget_per_month_screen.dart'; // สมมติว่าเป็นหน้า Budget
-
+// Import เดิมของคุณ
+import 'crud_page.dart';
+import 'budget_per_month_screen.dart';
+import '../notification/notification_manager.dart';
 
 // =========================================================
-// 3. WIDGETS สำหรับหน้าจอ Placeholder (Notification/Setting)
+// 1. NOTIFICATION LIST SCREEN
 // =========================================================
-
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const PlaceholderScreen({required this.title, super.key});
+class NotificationListScreen extends StatelessWidget {
+  const NotificationListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(title, style: Theme.of(context).textTheme.headlineMedium!.copyWith(color: Colors.grey)),
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      separatorBuilder: (context, index) => const Divider(),
+      itemBuilder: (context, index) {
+        return ListTile(
+          leading: const CircleAvatar(
+            backgroundColor: Colors.orangeAccent,
+            child: Icon(Icons.notifications_active, color: Colors.white),
+          ),
+          title: Text('แจ้งเตือนรายการที่ ${index + 1}'),
+          subtitle: const Text('คุณมีนัดชำระหนี้ในวันพรุ่งนี้ กรุณาตรวจสอบข้อมูล'),
+          trailing: const Text('10:30', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          onTap: () {},
+        );
+      },
     );
   }
 }
 
 // =========================================================
-// 4. HOMEPAGE: หน้าจอหลักพร้อม Bottom Navigation Bar
+// 2. PROFILE SCREEN (หน้าโปรไฟล์ที่ปรับปรุงตามบรีฟ)
 // =========================================================
+class ProfileScreen extends StatelessWidget {
+  final VoidCallback onBack;
 
+  const ProfileScreen({super.key, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // แถบสีเขียวด้านบนพร้อมปุ่ม Back ตามภาพที่ต้องการ
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: onBack, // กดแล้วกลับไปหน้า Home (index 0)
+        ),
+        title: const Text('โปรไฟล์ผู้ใช้งาน'),
+        backgroundColor: const Color(0xFF00796B),
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 30),
+              decoration: const BoxDecoration(
+                color: Color(0xFF00796B),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      const CircleAvatar(
+                        radius: 60,
+                        backgroundColor: Colors.white,
+                        child: CircleAvatar(
+                          radius: 56,
+                          backgroundImage: NetworkImage('https://cdn-icons-png.flaticon.com/512/3135/3135715.png'), // รูปตัวอย่าง
+                        ),
+                      ),
+                      CircleAvatar(
+                        backgroundColor: Colors.orangeAccent,
+                        radius: 18,
+                        child: IconButton(
+                          icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                          onPressed: () {},
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  const Text(
+                    'สมชาย ใจดี',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Text(
+                    'somchai.j@example.com',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildProfileItem(Icons.person_outline, 'ชื่อ-นามสกุล', 'สมชาย ใจดี'),
+                  _buildProfileItem(Icons.phone_android, 'เบอร์โทรศัพท์', '081-234-5678'),
+                  _buildProfileItem(Icons.cake_outlined, 'วันเกิด', '12 มกราคม 2535'),
+                  const Divider(height: 40),
+                  ListTile(
+                    leading: const Icon(Icons.logout, color: Colors.redAccent),
+                    title: const Text('ออกจากระบบ', style: TextStyle(color: Colors.redAccent)),
+                    onTap: () {
+                      // Logic logout เดิมของคุณ
+                      Navigator.of(context).pushReplacementNamed('/');
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileItem(IconData icon, String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: const Color(0xFF00796B)),
+          ),
+          const SizedBox(width: 15),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =========================================================
+// 3. HOMEPAGE
+// =========================================================
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -36,160 +173,128 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0; // Index ที่เลือกปัจจุบัน (เริ่มต้นที่ Home/Dashboard)
-  // ประกาศ GoogleSignIn ไว้สำหรับ Logout
+  int _selectedIndex = 0;
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
+  final NotificationManager _notificationManager = NotificationManager();
 
-
-  // รายชื่อหน้าจอทั้งหมดใน Navbar (4 รายการ, Index 2 ถูกข้าม)
-  late final List<Widget> _widgetOptions;
-
-  // ตั้งค่า List of Widgets ใน initState
   @override
   void initState() {
     super.initState();
-    _widgetOptions = <Widget>[
-      // ตรวจสอบว่า CrudPage และ BudgetPerMonthScreen มีอยู่จริง
-      const CrudPage(), // Index 0: Home (Dashboard)
-      const PlaceholderScreen(title: 'Notifications (แจ้งเตือน)'), // Index 1: Notification
-      // Index 2 ถูกข้ามไปใน List แต่มีใน BottomNavigationBar (ตำแหน่ง FAB)
-      const BudgetPerMonthScreen(), // Index 2 (แทน Index 3 เดิม): Budget
-      const PlaceholderScreen(title: 'Settings (ตั้งค่า)'), // Index 3 (แทน Index 4 เดิม): Setting
-    ];
+    _initNotifications();
   }
 
-  // ปรับการ Mapping Index ของ BottomNavigationBar (0, 1, 2, 3, 4) ไปยัง List _widgetOptions (0, 1, 2, 3)
-  void _onItemTapped(int index) {
-    // Index 2 คือตำแหน่งของ FAB ไม่มีการเปลี่ยนหน้าจอหลัก
-    if (index == 2) {
-      return;
+  Future<void> _initNotifications() async {
+    try {
+      await _notificationManager.initialize();
+    } catch (e) {
+      debugPrint("Notification init failed: $e");
     }
+  }
 
-    // Mapping Index:
-    // 0 -> 0 (Home)
-    // 1 -> 1 (Notification)
-    // 3 -> 2 (Budget) <--- Budget Page ยังคงอยู่
-    // 4 -> 3 (Setting)
-    int newSelectedIndex = index;
-    if (index > 2) {
-      newSelectedIndex = index - 1; // ข้าม Index 2 (ตำแหน่ง FAB)
-    }
+  void _onItemTapped(int index) {
+    int targetIndex;
+    if (index == 0) targetIndex = 0;
+    else if (index == 1) targetIndex = 1;
+    else if (index == 3) targetIndex = 2;
+    else if (index == 4) targetIndex = 3;
+    else return;
 
     setState(() {
-      _selectedIndex = newSelectedIndex;
+      _selectedIndex = targetIndex;
     });
   }
 
-  // ฟังก์ชันหาชื่อ Title ที่เหมาะสมสำหรับ AppBar
-  String _getAppBarTitle(int index) {
-    // ใช้ _selectedIndex (0, 1, 2, 3)
+  // สร้าง WidgetOptions ภายใน Build เพื่อส่ง Callback
+  List<Widget> _getWidgetOptions() {
+    return [
+      const CrudPage(),
+      const NotificationListScreen(),
+      const BudgetPerMonthScreen(),
+      ProfileScreen(onBack: () => setState(() => _selectedIndex = 0)), // ส่ง Callback ให้ปุ่ม Back
+    ];
+  }
+
+  String? _getAppBarTitle(int index) {
     switch(index) {
-      case 0:
-        return 'Dashboard (หน้าหลัก)';
-      case 1:
-        return 'แจ้งเตือน';
-      case 2:
-        return 'งบประมาณต่อเดือน'; // <--- Budget Page Title
-      case 3:
-        return 'ตั้งค่า';
-      default:
-        return 'Finance Care';
+      case 0: return 'Dashboard';
+      case 1: return 'การแจ้งเตือน';
+      case 2: return 'งบประมาณต่อเดือน';
+      case 3: return null; // หน้า Profile ใช้ AppBar ตัวเอง
+      default: return 'Finance Care';
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
+    final title = _getAppBarTitle(_selectedIndex);
+    final widgetOptions = _getWidgetOptions();
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_getAppBarTitle(_selectedIndex), style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Colors.white)),
-        backgroundColor: Theme.of(context).primaryColor,
+      appBar: title != null ? AppBar(
+        title: Text(title),
+        backgroundColor: const Color(0xFF00796B),
         foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              // ออกจากระบบ LINE SDK ด้วย
               try {
                 await LineSDK.instance.logout();
-                // ออกจากระบบ Google ด้วย
                 await _googleSignIn.signOut();
               } catch (e) {
-                print("Logout failed: $e");
+                debugPrint("Logout failed: $e");
               }
-              // กลับไปหน้า Welcome (Named Route '/')
               Navigator.of(context).pushReplacementNamed('/');
             },
           ),
         ],
-      ),
-
-      // เนื้อหาของหน้าจอปัจจุบัน
-      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
-
-      // ----------------------------------------------------
-      // Floating Action Button (ปุ่ม Calculate ที่โดดเด่น)
-      // เปลี่ยนการทำงานเป็นการนำทางไปหน้า Simulator ตรงๆ
-      // ----------------------------------------------------
+      ) : null,
+      body: widgetOptions[_selectedIndex],
       floatingActionButton: FloatingActionButton(
-        // **FAB นำทางไปยัง /simulator โดยตรง**
         onPressed: () => Navigator.of(context).pushNamed('/simulator'),
-        // ทำให้ปุ่มเด่นด้วยสีที่แตกต่าง
         backgroundColor: Colors.redAccent.shade700,
         foregroundColor: Colors.white,
         shape: const CircleBorder(),
-        elevation: 4.0,
         child: const Icon(Icons.calculate_outlined, size: 30),
       ),
-      // กำหนดตำแหน่งปุ่มให้อยู่ตรงกลางของ Bottom Navigation Bar
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
-      // ----------------------------------------------------
-      // Bottom Navigation Bar
-      // ----------------------------------------------------
       bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(), // ทำให้มีรอยเว้าสำหรับปุ่มกลาง
+        shape: const CircularNotchedRectangle(),
         notchMargin: 6.0,
-        color: Theme.of(context).primaryColor,
+        color: const Color(0xFF00796B),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
-            // 1. Home (Index 0)
             _buildNavItem(0, Icons.home, 'Home'),
-            // 2. Notification (Index 1)
             _buildNavItem(1, Icons.notifications, 'Notify'),
-            // ช่องว่างสำหรับปุ่มกลาง (Calculate, Index 2)
-            const Expanded(child: SizedBox(height: 1)),
-            // 4. Budget (Index 3) <--- ปุ่มนี้ยังอยู่และทำงานปกติ
+            const SizedBox(width: 48),
             _buildNavItem(3, Icons.account_balance_wallet, 'Budget'),
-            // 5. Setting (Index 4)
-            _buildNavItem(4, Icons.settings, 'Setting'),
+            _buildNavItem(4, Icons.person, 'Profile'),
           ],
         ),
       ),
     );
   }
 
-  // Widget สำหรับสร้างรายการใน Bottom Navigation Bar
   Widget _buildNavItem(int index, IconData icon, String label) {
-    // Mapping Index (0, 1, 3, 4) ไปยัง _selectedIndex (0, 1, 2, 3)
-    final int targetIndex = index == 0 ? 0 : (index == 1 ? 1 : (index == 3 ? 2 : 3));
-    final isSelected = _selectedIndex == targetIndex;
-    final color = isSelected ? Colors.white : Colors.white70;
+    int targetIndex;
+    if (index == 0) targetIndex = 0;
+    else if (index == 1) targetIndex = 1;
+    else if (index == 3) targetIndex = 2;
+    else targetIndex = 3;
 
-    return Expanded(
-      child: TextButton(
-        onPressed: () => _onItemTapped(index),
-        style: TextButton.styleFrom(
-          foregroundColor: color, // ใช้สีตามสถานะที่เลือก
-          minimumSize: const Size(48, 48), // กำหนดขนาดขั้นต่ำ
-          padding: const EdgeInsets.symmetric(vertical: 7.0),
-        ),
+    final isSelected = _selectedIndex == targetIndex;
+    final color = isSelected ? Colors.white : Colors.white60;
+
+    return InkWell(
+      onTap: () => _onItemTapped(index),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 24),
-            Text(label, style: const TextStyle(fontSize: 12.0)),
+            Icon(icon, color: color, size: 24),
+            Text(label, style: TextStyle(color: color, fontSize: 10)),
           ],
         ),
       ),
