@@ -1,20 +1,17 @@
 plugins {
     id("com.android.application")
-<<<<<<< Updated upstream
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
     // END: FlutterFire Configuration
     id("org.jetbrains.kotlin.android")
 
-=======
     id("kotlin-android")
->>>>>>> Stashed changes
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    namespace = "com.example.flutter_application_1"
+    namespace = "com.example.financeCare"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -32,7 +29,7 @@ android {
 
     defaultConfig {
         // แนะนำให้ตั้ง Application ID ของคุณที่นี่
-        applicationId = "com.example.flutter_application_1"
+        applicationId = "com.example.financeCare"
 
         // กำหนดค่า SDK โดยอ้างอิงจาก Flutter config
         // แนะนำให้ใช้ minSdk อย่างน้อย 21 เพื่อประสิทธิภาพที่ดีที่สุด
@@ -61,4 +58,8 @@ flutter {
 dependencies {
     // เพิ่มไลบรารีสำหรับการทำ Desugaring เพื่อแก้ปัญหา Error เกี่ยวกับ JDK APIs
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+        implementation("androidx.coordinatorlayout:coordinatorlayout:1.2.0")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+
 }

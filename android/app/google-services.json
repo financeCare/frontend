@@ -1,49 +1,50 @@
 {
   "project_info": {
-    "project_number": "574118687805",
-    "project_id": "financecare-ccc27",
-    "storage_bucket": "financecare-ccc27.firebasestorage.app"
+    "project_number": "756271821434",
+    "project_id": "financecare-bca58",
+    "storage_bucket": "financecare-bca58.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:574118687805:android:0599023b0dcb02ecade654",
+        "mobilesdk_app_id": "1:756271821434:android:8f60c830ccc522a5de41c3",
         "android_client_info": {
-          "package_name": "com.example.flutter_application_1"
+          "package_name": "com.example.financeCare"
         }
       },
       "oauth_client": [
         {
-          "client_id": "574118687805-pjorecukb9lr507397v0fptenn6j6p11.apps.googleusercontent.com",
+          "client_id": "756271821434-bnsvagn23pc4gueichi7pb7gj88b4c6a.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.flutter_application_1",
-            "certificate_hash": "6824fa49127e5df6eda829b602e7824e2c0ddd6c"
+            "package_name": "com.example.financeCare",
+            "certificate_hash": "80a5126c1233d1c1f4c354c769de72e9fa8b7015"
           }
         },
         {
-          "client_id": "574118687805-5o7ktmktaaq1sfofdepu51f3j9oa73j9.apps.googleusercontent.com",
+          "client_id": "756271821434-chjd4u5vepv1s1r8pqf421bge5ac8kso.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.financeCare",
+            "certificate_hash": "f4c04a2bd7245462dc8af38ab167abd56fa5bbe9"
+          }
+        },
+        {
+          "client_id": "756271821434-vpmof8n9b53p89osfrfeibtk83tvqo1h.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyB04D9m97UFVIhGUDI1BVRn_rY6XTAtIrU"
+          "current_key": "AIzaSyBIBrg5TLDvQY6Ya9yMl1c8B3bsoFlXEKE"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "574118687805-5o7ktmktaaq1sfofdepu51f3j9oa73j9.apps.googleusercontent.com",
+              "client_id": "756271821434-686i6a1bdvab62lqcik52ces5qo3c36f.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "574118687805-69osb1lfvms1te7bdaeqgm8tp87lab14.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.flutterApplication1"
-              }
             }
           ]
         }

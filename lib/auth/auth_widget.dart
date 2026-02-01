@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 // ต้องสร้างไฟล์ config.dart และมีตัวแปร baseUrl อยู่ในนั้น
-import '../utils/config.dart';
 import '../utils/config.dart' as Config;
 
 // 🌟 URL ฐานสำหรับการเรียก API

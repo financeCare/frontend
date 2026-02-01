@@ -2,12 +2,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart'; // 🚨 ต้องมี Package นี้
 import '../models/transaction.dart';
+import '../utils/config.dart' as Config;
+
 
 class TransactionService {
   // *** 🚨 สำคัญมาก: กรุณาแก้ไข URL จริงของคุณที่นี่ ***
   // ปัญหาส่วนใหญ่คือการใช้ URL ที่ไม่ถูกต้อง (เช่น "your-api-domain.com")
   // ทำให้เซิร์ฟเวอร์ส่งหน้า HTML Error (404/500) กลับมาแทน JSON
-  final String _baseUrl = 'http://10.4.153.6:8080';
+  final String _baseUrl = Config.baseUrl; // ใช้ URL จาก config.dart
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<dynamic> getOwnTransactions() async {

@@ -6,7 +6,7 @@ void main() {
   final libDir = Directory('lib');
   
   if (!libDir.existsSync()) {
-    print('Error: lib directory not found');
+    // Error: lib directory not found
     return;
   }
 
