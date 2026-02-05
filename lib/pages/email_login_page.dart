@@ -33,42 +33,57 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   }
 
   Future<void> _processAuth() async {
-    // 1. ตรวจสอบความถูกต้องของ Form
-    if (_formKey.currentState == null || !_formKey.currentState!.validate()) {
+  final form = _formKey.currentState;
+
+  if (form == null || !form.validate()) return;
+
+  if (_isRegisterMode &&
+      _passwordController.text != _confirmPasswordController.text) {
+    _showErrorDialog('Passwords do not match.');
+    return;
+  }
+
+  setState(() => _isLoading = true);
+
+  final authService = AuthService();
+  bool success = false;
+
+  final email = _emailController.text;
+  final password = _passwordController.text;
+
+  if (_isRegisterMode) {
+    success = await authService.register(email, password);
+
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OtpPage(
+            email: email,
+            password: password,
+          ),
+        ),
+      );
+      setState(() => _isLoading = false);
       return;
     }
-
-    if (mounted) setState(() => _isLoading = true);
-
-    bool success = false;
-
-    if (_isRegisterMode) {
-      // โหมด Register: ยังไม่ได้ Implement API
-      print('DEBUG: Calling Register API (Not implemented yet)');
-      _showErrorDialog("Register API is not implemented yet.");
-    } else {
-      // 🌟 โหมด Login: เรียกใช้ AuthService ตัวจริง
-      print('DEBUG: Calling Login API for Email: ${_emailController.text}');
-
-      success = await _authService.login(
-        _emailController.text,
-        _passwordController.text,
-      );
-
-      print('DEBUG: Login API Response Success: $success');
-    }
-
-    if (mounted) setState(() => _isLoading = false);
-
-    // จัดการนำทาง
-    if (success && mounted) {
-      print('Login success. Navigating to /home.');
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else if (mounted && !_isRegisterMode) {
-      // แสดง Error หาก Login ล้มเหลว (จากการจำลองหรือ API)
-      _showErrorDialog("Login failed. Please check your credentials.");
-    }
+  } else {
+    success = await authService.login(email, password);
   }
+
+  if (!mounted) return;
+
+  setState(() => _isLoading = false);
+
+  if (success) {
+    print('Login success. Navigating to /home.');
+    Navigator.of(context).pushReplacementNamed('/home');
+  } else if (!_isRegisterMode) {
+    _showErrorDialog("Email or password is incorrect");
+  }
+}
+
 
 
   void _showErrorDialog(String message) {
@@ -222,6 +237,144 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class OtpPage extends StatefulWidget {
+  final String email;
+  final String password;
+  const OtpPage({super.key, required this.email, required this.password});
+
+  @override
+  State<OtpPage> createState() => _OtpPageState();
+}
+
+class _OtpPageState extends State<OtpPage> {
+  final List<TextEditingController> _otpControllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
+
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+
+  bool _isLoading = false;
+  String get otpCode => _otpControllers.map((c) => c.text).join();
+
+  @override
+  void dispose() {
+    for (var c in _otpControllers) {
+      c.dispose();
+    }
+    for (var f in _focusNodes) {
+      f.dispose();
+    }
+    super.dispose();
+  }
+
+  // ฟังก์ชันส่ง verify OTP
+  Future<void> _verifyOtp() async {
+    if (otpCode.length != 6) {
+      _showError("Please fill all 6 digits.");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final authService = AuthService();
+    bool success = await authService.verifyOTP(
+      widget.email,
+      otpCode,
+      widget.password,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (success) {
+      Navigator.of(context).pushReplacementNamed('/home');
+    } else {
+      _showError("Invalid OTP. Please try again.");
+    }
+  }
+
+  void _showError(String msg) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Error"),
+        content: Text(msg),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOtpBox(int index) {
+    return SizedBox(
+      width: 50,
+      child: TextField(
+        controller: _otpControllers[index],
+        focusNode: _focusNodes[index],
+        keyboardType: TextInputType.number,
+        textAlign: TextAlign.center,
+        maxLength: 1,
+        style: const TextStyle(fontSize: 24),
+        decoration: const InputDecoration(
+          counterText: "",
+          border: OutlineInputBorder(),
+        ),
+        onChanged: (value) {
+          if (value.isNotEmpty && index < 5) {
+            _focusNodes[index + 1].requestFocus();
+          }
+          if (value.isEmpty && index > 0) {
+            _focusNodes[index - 1].requestFocus();
+          }
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Verify OTP")),
+      body: Padding(
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            Text(
+              "We sent a 6-digit OTP to:",
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            Text(widget.email, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 40),
+
+            // OTP Boxes
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(6, _buildOtpBox),
+            ),
+
+            const SizedBox(height: 40),
+
+            _isLoading
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: _verifyOtp,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 55),
+                    ),
+                    child: const Text("VERIFY OTP"),
+                  ),
+          ],
         ),
       ),
     );

@@ -1,57 +1,99 @@
 import 'dart:convert';
+import '../models/transaction_response.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart'; // 🚨 ต้องมี Package นี้
-import '../models/transaction.dart';
-import '../utils/config.dart' as Config;
-
+import '../models/transaction_request.dart';
+import '../utils/config.dart'; 
+import 'accessToken_service.dart';
 
 class TransactionService {
-  // *** 🚨 สำคัญมาก: กรุณาแก้ไข URL จริงของคุณที่นี่ ***
-  // ปัญหาส่วนใหญ่คือการใช้ URL ที่ไม่ถูกต้อง (เช่น "your-api-domain.com")
-  // ทำให้เซิร์ฟเวอร์ส่งหน้า HTML Error (404/500) กลับมาแทน JSON
-  final String _baseUrl = Config.baseUrl; // ใช้ URL จาก config.dart
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final String _transactionsUrl = '$baseUrl/api/transactions';
+  final storage = FlutterSecureStorage();
 
-  Future<dynamic> getOwnTransactions() async {
-    // 1. ดึง Token จาก Firebase Auth
-    final user = _auth.currentUser;
-    final String? token = await user?.getIdToken();
-
-    // **🚨 จุดตรวจสอบ Token**
-    if (token == null || token.isEmpty) {
-      print('Error: No authentication token found (User: ${user?.uid}).');
-      return null;
-    }
-
-    print('Auth Token successfully retrieved (Partial view: ${token.substring(0, 30)}...)');
-
-    // 2. กำหนด HTTP Headers พร้อม Token
-    final Map<String, String> headers = {
-      'Content-Type': 'application/json',
-      // นำ Token ใส่ในรูปแบบ Bearer
-      'Authorization': 'Bearer $token',
-    };
-
-    // 3. ทำการเรียก API
-    final uri = Uri.parse('$_baseUrl/transactions');
-    try {
-      final response = await http.get(uri, headers: headers);
-
-      if (response.statusCode == 200) {
-        // API success
-        final List<dynamic> jsonList = jsonDecode(response.body);
-        return jsonList;
-      } else {
-        // API call failed (เช่น 401 Unauthorized, 404 Not Found, 500 Server Error)
-        // 🚨 ถ้าเกิด Status Code อื่นที่ไม่ใช่ 200 และ Server ตอบกลับเป็น HTML
-        // จะเกิด FormatException ใน CrudPage (ซึ่งเรา Handle ไว้แล้ว)
-        print('API Error (Status ${response.statusCode}): ${response.body}');
-        return null;
+  Future<List<TransactionResponse>> getOwnTransactions() async {
+  String? accessToken = await AccesstokenService().getAccessToken();
+    final response = await http.get(
+      Uri.parse(_transactionsUrl),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+    print("transaction status code : ${response.statusCode}");
+    print("transaction body : ${response.body}");
+    if (response.statusCode == 200) {
+      if (response.body.isEmpty) return [];
+      final List<dynamic> jsonList = json.decode(response.body);
+      return jsonList.map((json) => TransactionResponse.fromJson(json)).toList();
+    } else if (response.statusCode == 401) {
+      throw Exception('Authorization failed (401). Please log in again.');
+    } else if (response.statusCode == 403) {
+      throw Exception(
+        'Forbidden (403). You do not have permission to access this resource.',
+      );
+    } else {
+      // 6. จัดการ Error อื่น ๆ
+      String errorMessage =
+          'Failed to load transactions (Status ${response.statusCode})';
+      try {
+        final errorBody = json.decode(response.body);
+        errorMessage = errorBody['message'] ?? errorMessage;
+      } catch (_) {
+        // Do nothing if body is not JSON
       }
-    } catch (e) {
-      // 🚨 Network level error (เช่น ไม่สามารถเชื่อมต่อกับโฮสต์ได้)
-      print('Network Error: $e');
-      return null;
+      throw Exception(errorMessage);
     }
   }
+
+Future<List<TransactionResponse>> getSalaryTransactions() async {
+  // ดึงรายการทั้งหมดก่อน
+  final allTransactions = await getOwnTransactions();
+  
+  // Filter เฉพาะ categoryName = "salary"
+  final salaryTransactions = allTransactions
+      .where((tx) => tx.categoryId == "salary")
+      .toList();
+
+  return salaryTransactions;
+}
+
+
+  Future <void> createTransaction(TransactionRequest transaction) async {
+  String? accessToken = await AccesstokenService().getAccessToken();
+
+  final response = await http.post(
+    Uri.parse("$_transactionsUrl"),
+    headers: {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({ 
+      'categoryId': transaction.categoryId,
+      'amount': transaction.amount,
+      'transactionDate': transaction.transactionDate.toIso8601String(),
+      'description': transaction.description,
+    }),
+  );
+
+  print("transaction status code : ${response.statusCode}");
+  print("transaction body : ${response.body}");
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    print("Transaction created successfully.");
+  }
+  else if (response.statusCode == 401) {
+    throw Exception('Authorization failed (401). Please log in again.');
+  } else if (response.statusCode == 403) {
+    throw Exception('Forbidden (403). You do not have permission to access this resource.');
+  } else {
+    String errorMessage = 'Failed to create transaction (Status ${response.statusCode})';
+    try {
+      final errorBody = json.decode(response.body);
+      errorMessage = errorBody['message'] ?? errorMessage;
+    } catch (_) {}
+    throw Exception(errorMessage);
+  }
+}
+
+  
 }

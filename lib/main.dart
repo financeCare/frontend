@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'services/notification_api.dart';
+import 'services/notification_service.dart';
 
 // 🚨 (1) เพิ่มการ Import ไฟล์ที่สร้างโดย FlutterFire CLI
 import 'firebase_options.dart';
@@ -16,111 +20,100 @@ import './pages/simulator/simulator_screen.dart';
 import 'pages/email_login_page.dart';
 import './pages/homepage.dart';
 import 'notification/notification_screen.dart';
+import 'utils/config.dart' as Config;
 
+final storage = FlutterSecureStorage();
 
 // 🚨 ฟังก์ชัน main() ต้องเป็น async และรวมการเริ่มต้น (Initialization) ของทั้งสองบริการ
-void main() async {
-  // 🚨 1. ตรวจสอบให้แน่ใจว่า Flutter Engine ถูกเชื่อมต่อก่อนเรียกใช้ Native Code
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // <<<< [สำคัญ] โหลด Token ที่บันทึกไว้ก่อนเริ่มแอป >>>>
+  try {
+    if (kIsWeb) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } else {
+      await Firebase.initializeApp();
+    }
+  } on FirebaseException catch (e) {
+    if (e.code == 'duplicate-app') {
+      Firebase.app();
+    } else {
+      rethrow;
+    }
+  }
+
   await AuthManager.init();
+  await LineSDK.instance.setup('2008279064');
 
-  // 🚨 2. เริ่มต้น Firebase App โดยส่ง DefaultFirebaseOptions เข้าไปโดยตรง
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    print('Firebase initialized successfully with options.');
-  } catch (e) {
-    print('Firebase initialization failed: $e');
-  }
-
-  // 3. เริ่มต้น LINE SDK
-  try {
-    // แทนที่ด้วย Channel ID ของคุณ
-    await LineSDK.instance.setup('2008279064');
-    debugPrint('LINE SDK initialized successfully');
-  } catch (e) {
-    debugPrint('LINE SDK initialization failed: $e');
-  }
-
-  // 4. เริ่มต้นแอป Flutter
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<MyApp> createState() => _MyAppState();
+}
 
-    // <<<< [สำคัญ] ตรวจสอบ Token และกำหนดหน้าจอแรกทันที >>>>
-    // ถ้ามี Token อยู่แล้ว ให้ไปยัง HomePage (หน้าหลัก)
-    // ถ้าไม่มี Token ให้ไปยัง WelcomePage (หน้าต้อนรับ/ล็อกอิน)
-    final initialScreen = AuthManager.token != null
-        ? const HomePage()
-        : const WelcomePage();
+class _MyAppState extends State<MyApp> {
+  final _navKey = GlobalKey<NavigatorState>();
+  late final NotificationService _notificationService;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _notificationService = NotificationService(
+      api: NotificationApi(baseUrl: Config.baseUrl), // ✅ ใช้ baseUrl ของคุณ
+      storage: storage,
+    );
+
+    _bootNotification();
+  }
+
+  Future<void> _bootNotification() async {
+    await _notificationService.init(onTap: ({refType, refId}) {
+      // เวลา user กดแจ้งเตือน -> ไปหน้า notify
+      _navKey.currentState?.pushNamed(
+        '/notify',
+        arguments: {'refType': refType, 'refId': refId},
+      );
+    });
+
+    // ถ้ามี token (login แล้ว) -> ส่ง token ขึ้น backend
+    final accessToken = AuthManager.token;
+    if (accessToken != null && accessToken.isNotEmpty) {
+      await _notificationService.registerTokenToBackend(accessToken: accessToken);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final initialScreen =
+        AuthManager.token != null ? const HomePage() : const WelcomePage();
 
     return MaterialApp(
+      navigatorKey: _navKey, // ✅ สำคัญ
       debugShowCheckedModeBanner: false,
       title: 'FINANCE CARE FC App',
       theme: ThemeData(
-        primaryColor: const Color(0xFF00796B), // Deep Teal
+        primaryColor: const Color(0xFF00796B),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF00796B),
           primary: const Color(0xFF00796B),
         ),
         useMaterial3: true,
-        // กำหนด Font หลักของแอปถ้ามี
-        // fontFamily: 'Kanit',
       ),
-
-      // เส้นทางเริ่มต้นเมื่อเปิดแอป
-      initialRoute: '/',
-
-      // การจัดการเส้นทาง (Routes) ทั้งหมดภายในแอป
+      home: initialScreen, // ✅ ใช้ home แทน initialRoute จะตรงกว่า
       routes: {
-        // หน้าต้อนรับ / เลือกวิธี Login
-        '/': (context) => const WelcomePage(),
-
-        // หน้าล็อคอินด้วยอีเมล
         '/email_login': (context) => const EmailLoginPage(),
-
-        // หน้าหลัก (ที่มี Bottom Navigation Bar)
         '/home': (context) => const HomePage(),
-
-        // หน้าบันทึกค่าใช้จ่าย
         '/expense_entry': (context) => const ExpenseEntryScreen(),
-
-        // หน้าเครื่องมือคำนวณ (Simulator)
         '/simulator': (context) => const SimulatorScreen(),
-
-        // --- เพิ่ม Route สำหรับการแจ้งเตือน ---
         '/notify': (context) => const NotificationScreen(),
       },
-    );
-  }
-}
-
-// Widget Helper สำหรับแสดงโลโก้
-class LogoHeader extends StatelessWidget {
-  const LogoHeader({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Image.asset(
-          'assets/logo_finance_care.png',
-          height: 280, // ปรับขนาดตามที่คุณต้องการ
-          width: 380,
-          errorBuilder: (context, error, stackTrace) {
-            return const Icon(Icons.account_balance_wallet, size: 100, color: Color(0xFF00796B));
-          },
-        ),
-      ],
     );
   }
 }

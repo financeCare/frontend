@@ -38,39 +38,56 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map?;
+    final String? refType = args?['refType']?.toString();
+    final String? refId = args?['refId']?.toString();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'การแจ้งเตือน',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF00796B),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            onPressed: () {
-              // ฟังก์ชันอ่านทั้งหมด
-              setState(() {
-                for (var n in notifications) {
-                  n['isRead'] = true;
-                }
-              });
-            },
-            icon: const Icon(Icons.done_all),
-            tooltip: 'อ่านทั้งหมด',
+        title: const Text('Notifications'),
+      ),
+      body: Column(
+        children: [
+          // ✅ ถ้ามาจากการกด notification: แสดงแถบ info ด้านบน
+          if ((refType != null && refType.isNotEmpty) ||
+              (refId != null && refId.isNotEmpty))
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              decoration: BoxDecoration(
+                color: Colors.teal.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.teal.withOpacity(0.25)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Color(0xFF00796B)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'เปิดจากแจ้งเตือน: refType=${refType ?? "-"}  refId=${refId ?? "-"}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // ✅ รายการแจ้งเตือน
+          Expanded(
+            child: notifications.isEmpty
+                ? _buildEmptyState()
+                : ListView.separated(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: notifications.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      return _buildNotificationItem(notifications[index]);
+                    },
+                  ),
           ),
         ],
-      ),
-      body: notifications.isEmpty
-          ? _buildEmptyState()
-          : ListView.separated(
-        itemCount: notifications.length,
-        separatorBuilder: (context, index) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final item = notifications[index];
-          return _buildNotificationItem(item);
-        },
       ),
     );
   }
@@ -79,7 +96,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
     IconData iconData;
     Color iconColor;
 
-    // เลือก Icon ตามประเภทการแจ้งเตือน
     switch (item['type']) {
       case 'bill':
         iconData = Icons.receipt_long;
@@ -94,37 +110,48 @@ class _NotificationScreenState extends State<NotificationScreen> {
         iconColor = const Color(0xFF00796B);
     }
 
+    final bool isRead = item['isRead'] == true;
+
     return Container(
-      color: item['isRead'] ? Colors.transparent : Colors.teal.withOpacity(0.05),
+      decoration: BoxDecoration(
+        color: isRead ? Colors.white : Colors.teal.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+      ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: CircleAvatar(
-          backgroundColor: iconColor.withOpacity(0.1),
+          backgroundColor: iconColor.withOpacity(0.12),
           child: Icon(iconData, color: iconColor),
         ),
         title: Text(
-          item['title'],
+          item['title']?.toString() ?? '',
           style: TextStyle(
-            fontWeight: item['isRead'] ? FontWeight.normal : FontWeight.bold,
+            fontWeight: isRead ? FontWeight.w500 : FontWeight.w700,
             fontSize: 16,
           ),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(item['description']),
-            const SizedBox(height: 4),
-            Text(
-              item['time'],
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item['description']?.toString() ?? ''),
+              const SizedBox(height: 6),
+              Text(
+                item['time']?.toString() ?? '',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
         ),
         onTap: () {
           setState(() {
             item['isRead'] = true;
           });
-          // สามารถใส่ Logic เพื่อเปิดหน้าละเอียดต่อไปได้ที่นี่
+
+          // TODO: ถ้าอยากเปิดหน้ารายละเอียดจริง ๆ:
+          // Navigator.pushNamed(context, '/debt_detail', arguments: {...});
         },
       ),
     );
@@ -135,7 +162,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.notifications_off_outlined, size: 80, color: Colors.grey[400]),
+          Icon(Icons.notifications_off_outlined,
+              size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'ไม่มีการแจ้งเตือนใหม่',

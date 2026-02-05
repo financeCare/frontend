@@ -1,12 +1,13 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../models/finance_item.dart';
+import '../models/debtDto.dart';
 import '../models/constants.dart';
 import '../services/dashboard_service.dart';
 
 class DashboardPage extends StatefulWidget {
-  final List<FinanceItem> incomes;
-  final List<FinanceItem> debts;
+  final List<DebtDto> incomes;
+  final List<DebtDto> debts;
 
   const DashboardPage({
     super.key,

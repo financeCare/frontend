@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/auth/auth_widget.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 // 🌟 เพิ่ม Firebase Auth เพื่อใช้ในการสร้าง Session หลัง Google Sign-In สำเร็จ
@@ -10,8 +11,10 @@ import 'package:http/http.dart' as http;
 import '../auth//logo_header.dart';
 import '../pages/email_login_page.dart'; // 🌟 Import EmailLoginPage ที่ถูกแยกออกไป
 import '../utils/config.dart' as Config;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+final storage = FlutterSecureStorage();
 
-const String _baseUrl = "${Config.baseUrl}/auth"; // สมมติว่า Config.baseUrl ถูกกำหนดไว้ใน config.dart
+const String _baseUrl = "${Config.baseUrl}/api/auth"; // สมมติว่า Config.baseUrl ถูกกำหนดไว้ใน config.dart
 
 // =========================================================
 // 1. WELCOME PAGE: หน้าจอเริ่มต้นให้เลือก LINE หรือ Email
@@ -46,56 +49,36 @@ class _WelcomePageState extends State<WelcomePage> {
     bool success = false;
 
     try {
-      // 1. เริ่มต้นการ Sign-In ผ่าน Google
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      GoogleSignIn googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+        serverClientId:
+            "756271821434-vpmof8n9b53p89osfrfeibtk83tvqo1h.apps.googleusercontent.com",
+      );
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser != null) {
-        try {
-
         print('Google Sign-In successful for user: ${googleUser.displayName}');
-
-        // 2. รับ Auth Credentials จาก Google
-        final GoogleSignInAuthentication? googleAuth = await googleUser.authentication;
-
-        // 3. สร้าง Firebase Credential
-        final AuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth?.accessToken,
-          idToken: googleAuth?.idToken,
+        final GoogleSignInAuthentication auth = await googleUser.authentication;
+        print("ID Token: ${auth.idToken}");
+        final url = Uri.parse('$_baseUrl/login/google');
+        print('$_baseUrl/login/google');
+        final response = await http.post(
+          url,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({"idToken": auth.idToken}),
         );
-
-        // 4. *** ขั้นตอนสำคัญ: ลงชื่อเข้าใช้ Firebase ด้วย Credential ที่ได้รับ ***
-        await FirebaseAuth.instance.signInWithCredential(credential);
-        final body = {
-          'idToken': googleAuth?.idToken,
-        };
-
-        final res = await http.post(
-          Uri.parse("$_baseUrl/login/google"),
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: jsonEncode(body),
-        );
-          if (res.statusCode == 200 || res.statusCode == 201) {
-            print('Created: ${res.body}');
-          } else {
-            print('Google login error: ${res.statusCode} ${res.body}');
-          }
-        // ถ้าถึงบรรทัดนี้แปลว่า Sign-In สำเร็จทั้ง Google และ Firebase
-        print('Firebase Sign-In Successful!');
-        success = true;
-        } catch (firebaseError) {
-          print('Firebase Sign-In Failed: $firebaseError');
-          _showErrorDialog("Firebase Sign-In Failed: $firebaseError");
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          String accessToken = data['accessToken'];
+          String refreshToken = data['refreshToken'];
+          await storage.write(key: "accessToken", value: accessToken);
+          await storage.write(key: "refreshToken", value: refreshToken);
+          success = true;
+        } else {
+          print("Google login failed with status: ${response.statusCode} and body: ${response.body}");
           success = false;
         }
-      } else {
-        // ผู้ใช้ยกเลิกการ Sign-In
-        success = false;
-        print('Google Sign-In cancelled by user.');
       }
-
     } catch (error) {
       print("Google Login Failed: $error");
       _showErrorDialog("Google Login Failed: $error");
@@ -104,14 +87,11 @@ class _WelcomePageState extends State<WelcomePage> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      await Future.delayed(const Duration(milliseconds: 500));
-
       if (success && mounted) {
         _navigateToHome();
       }
     }
   }
-
   // ------------------------------------------
   // Login with LINE (Logic เดิม)
   // ------------------------------------------
@@ -121,6 +101,7 @@ class _WelcomePageState extends State<WelcomePage> {
 
     try {
       final result = await LineSDK.instance.login(scopes: ["profile", "openid", "email"]);
+      print("LINE result: ${result.toString()}");
       print("LINE LOGIN CALLBACK HIT!");
       print("AccessToken: ${result.accessToken.value}");
       print("id token : ${result.accessToken.idToken}");

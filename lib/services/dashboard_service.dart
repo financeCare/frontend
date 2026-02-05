@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/finance_item.dart';
+import '../models/debtDto.dart';
 
 class DashboardService {
   final String baseUrl;
@@ -32,8 +33,8 @@ class DashboardService {
 
   /// ส่งรายได้และหนี้ไปยัง BE
   Future<bool> sendDashboardData({
-    required List<FinanceItem> incomes,
-    required List<FinanceItem> debts,
+    required List<DebtDto> incomes,
+    required List<DebtDto> debts,
   }) async {
     final url = Uri.parse('$baseUrl/dashboard');
     try {
