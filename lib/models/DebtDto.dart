@@ -1,5 +1,5 @@
 class DebtDto {
-  int id;
+  String id;
   String name;
   double amount;
   double interest;
@@ -17,7 +17,7 @@ class DebtDto {
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
+      "id": id.toString(),
       "name": name,
       "amount": amount,
       "interest": interest,
@@ -28,7 +28,7 @@ class DebtDto {
 
   factory DebtDto.fromJson(Map<String, dynamic> json) {
     return DebtDto(
-      id: json['id'],
+      id: json['id'].toString(),
       name: json['name'],
       amount: (json['amount'] as num).toDouble(),
       interest: json['interest'] != null ? (json['interest'] as num).toDouble() : 0,

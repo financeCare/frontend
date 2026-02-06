@@ -1,5 +1,5 @@
 class TransactionRequest {
-  final int categoryId;
+  final String categoryId;
   final double amount;
   final DateTime transactionDate;
   final String description;

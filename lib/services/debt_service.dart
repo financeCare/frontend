@@ -103,6 +103,7 @@ class DebtService {
 
   Future<List<DebtResponse>> getAllDebt() async {
     String? accessToken = await AccesstokenService().getAccessToken();
+    print("AccessToken in debt service: $accessToken");
     final response = await http.get(
       Uri.parse('$baseUrl/api/debts'),
       headers: {
@@ -134,7 +135,7 @@ class DebtService {
     }
   }
 
-Future<DebtResponse> getDebtDetail(int id) async {
+Future<DebtResponse> getDebtDetail(String id) async {
   String? accessToken = await AccesstokenService().getAccessToken();
   final response = await http.get(
     Uri.parse('$baseUrl/api/debts/$id'),
@@ -169,7 +170,7 @@ Future<DebtResponse> getDebtDetail(int id) async {
   }
 }
 
-    Future<void> deleteDebt(int debtId) async {
+    Future<void> deleteDebt(String debtId) async {
     String? accessToken = await AccesstokenService().getAccessToken();
     print(debtId);
     final response = await http.delete(
@@ -245,7 +246,7 @@ Future<DebtResponse> getDebtDetail(int id) async {
     }
   }
 
-  Future<void> updateDebt(int id, DebtRequest debtRequest) async {
+  Future<void> updateDebt(String id, DebtRequest debtRequest) async {
     print("Editing debt id: $id");
 
     String? accessToken = await AccesstokenService().getAccessToken();

@@ -1,5 +1,5 @@
 class Categories {
-  final int categoryId;        // ใช้ categoryId สำหรับ transaction
+  final String categoryId;        // ใช้ categoryId สำหรับ transaction
   final String userId;         // UUID เป็น String
   final String categoryName;
   final String type;

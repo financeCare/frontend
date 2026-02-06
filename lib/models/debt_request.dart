@@ -8,6 +8,8 @@ class DebtRequest {
   final int priority;
   final int debtTypeId;
   final String debtName;
+  final double minPayment;
+  final int dueDate;
 
   DebtRequest({
     required this.principalAmount,
@@ -19,6 +21,8 @@ class DebtRequest {
     required this.priority,
     required this.debtTypeId,
     required this.debtName,
+    required this.minPayment,
+    required this.dueDate,
   });
 
   factory DebtRequest.fromJson(Map<String, dynamic> json) {
@@ -32,6 +36,8 @@ class DebtRequest {
       priority: json['priority'] ?? 0,
       debtTypeId: json['debtTypeId'] ?? 0,
       debtName: json['debtName'] ?? '',
+      minPayment: (json['minPayment'] as num).toDouble(),
+      dueDate: json['dueDate'] ?? 0,
     );
   }
 
@@ -46,6 +52,8 @@ class DebtRequest {
       'priority': priority,
       'debtTypeId': debtTypeId,
       'debtName': debtName,
+      'minPayment': minPayment,
+      'dueDate': dueDate,
     };
   }
 }

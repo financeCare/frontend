@@ -2,7 +2,7 @@ import '../models/debtType_response.dart';
 import '../models/repaymentType_response.dart';
 
 class DebtResponse {
-  final int debtId;
+  final String debtId;
   final String userId;
   final double principalAmount;
   final double interestRate;
@@ -13,6 +13,8 @@ class DebtResponse {
   final DebtTypeResponse debtType;
   final String debtName;
   final bool isActive;
+  final double minPayment;
+  final int? dueDate;
 
   DebtResponse({
     required this.debtId,
@@ -26,6 +28,8 @@ class DebtResponse {
     required this.debtType,
     required this.debtName,
     required this.isActive,
+    required this.minPayment,
+    required this.dueDate,
   });
 
   factory DebtResponse.fromJson(Map<String, dynamic> json) {
@@ -41,6 +45,8 @@ class DebtResponse {
       debtType: DebtTypeResponse.fromJson(json['debtType']),
       debtName: json['debtName'],
       isActive: json['active'],
+      minPayment: (json['minPayment'] as num).toDouble(),
+      dueDate: json['dueDate'],
     );
   }
 }

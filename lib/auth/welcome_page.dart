@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/auth/auth_widget.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
@@ -7,6 +10,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 // 🌟 เพิ่ม Firebase Auth เพื่อใช้ในการสร้าง Session หลัง Google Sign-In สำเร็จ
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:uuid/uuid.dart';
 // 🌟 Import จากที่อยู่ใหม่
 import '../auth//logo_header.dart';
 import '../pages/email_login_page.dart'; // 🌟 Import EmailLoginPage ที่ถูกแยกออกไป
@@ -15,6 +19,114 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 final storage = FlutterSecureStorage();
 
 const String _baseUrl = "${Config.baseUrl}/api/auth"; // สมมติว่า Config.baseUrl ถูกกำหนดไว้ใน config.dart
+const _deviceKeyStorageKey = 'device_key';
+
+Future<void> setupFCM() async {
+  final messaging = FirebaseMessaging.instance;
+
+  // ขอ permission (iOS จำเป็น / Android 13+ ก็จำเป็น)
+  await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+}
+
+Future<Map<String, String>> getDeviceModelInfo() async {
+  final deviceInfo = DeviceInfoPlugin();
+
+  if (Platform.isAndroid) {
+    final android = await deviceInfo.androidInfo;
+    return {
+      "platform": "android",
+      "brand": android.brand ?? "",
+      "model": android.model ?? "",          // รุ่น เช่น "SM-A546E"
+      "device": android.device ?? "",        // ชื่อเครื่องภายใน
+      "manufacturer": android.manufacturer ?? "",
+      "osVersion": android.version.release ?? "",
+    };
+  }
+
+  if (Platform.isIOS) {
+    final ios = await deviceInfo.iosInfo;
+    return {
+      "platform": "ios",
+      "model": ios.utsname.machine ?? "",    // รหัสรุ่น เช่น "iPhone14,5"
+      "name": ios.name ?? "",                // ชื่อเครื่องที่ user ตั้ง (อาจมีข้อมูลส่วนตัว)
+      "systemVersion": ios.systemVersion ?? "",
+    };
+  }
+
+  return {"platform": "unknown"};
+}
+
+Future<String> getOrCreateDeviceKey() async {
+  String? deviceKey = await storage.read(key: _deviceKeyStorageKey);
+
+  if (deviceKey == null) {
+    deviceKey = const Uuid().v4();
+    await storage.write(key: _deviceKeyStorageKey, value: deviceKey);
+  }
+
+  return deviceKey;
+}
+void listenTokenRefresh() {
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+    print("🔁 Token refreshed: $newToken");
+    sentFCMTokenToServer(newToken);
+  });
+}
+
+Future<void> sentFCMTokenToServer(String token) async {
+  String? accessToken = await storage.read(key: "accessToken");
+  if (accessToken == null) {
+    print("No access token found. Cannot send FCM token to server.");
+    return;
+  }
+  final url = Uri.parse('$_baseUrl/devices/register');
+  final deviceInfo = await getDeviceModelInfo();
+  final response = await http.post(
+    url,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer $accessToken",
+    },  
+body: jsonEncode({
+  "deviceKey": await getOrCreateDeviceKey(),
+  "fcmToken": token,
+  "platform": deviceInfo['platform'],
+  "deviceName": deviceInfo['model'],
+}),
+  );
+  if (response.statusCode == 200) {
+    print("FCM token sent to server successfully.");
+  } else {
+    print("Failed to send FCM token to server. Status code: ${response.statusCode}");
+  }
+} 
+
+Future<String?> getFcmToken() async {
+  final token = await FirebaseMessaging.instance.getToken();
+  print("✅ FCM Token: $token");
+  return token;
+}
+
+Future<void> initFcmAndSendToBackend() async {
+  await setupFCM();
+
+  final token = await getFcmToken();
+  if (token != null) {
+    sentFCMTokenToServer(token);
+  }
+
+  listenTokenRefresh();
+}
+
+void listenForegroundMessages() {
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print("📩 Foreground message: ${message.notification?.title}");
+  });
+}
 
 // =========================================================
 // 1. WELCOME PAGE: หน้าจอเริ่มต้นให้เลือก LINE หรือ Email
@@ -36,7 +148,6 @@ class _WelcomePageState extends State<WelcomePage> {
   void _navigateToHome() {
     Navigator.of(context).pushReplacementNamed('/home');
   }
-
 
   // ------------------------------------------
   // Login with Google (แก้ไขให้เชื่อมต่อกับ Firebase Auth)
@@ -73,6 +184,7 @@ class _WelcomePageState extends State<WelcomePage> {
           String refreshToken = data['refreshToken'];
           await storage.write(key: "accessToken", value: accessToken);
           await storage.write(key: "refreshToken", value: refreshToken);
+          
           success = true;
         } else {
           print("Google login failed with status: ${response.statusCode} and body: ${response.body}");
@@ -121,6 +233,11 @@ class _WelcomePageState extends State<WelcomePage> {
         );
           if (res.statusCode == 200 || res.statusCode == 201) {
             print('Created: ${res.body}');
+          final data = jsonDecode(res.body);
+          String accessToken = data['accessToken'];
+          String refreshToken = data['refreshToken'];
+          await storage.write(key: "accessToken", value: accessToken);
+          await storage.write(key: "refreshToken", value: refreshToken);
             success = true;
           } else {
             print('LINE login error: ${res.statusCode} ${res.body}');

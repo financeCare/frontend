@@ -28,47 +28,44 @@ class _CrudPageState extends State<CrudPage> {
   final storage = FlutterSecureStorage();
   String? error;
 
-
   final TextEditingController incomeCtrl = TextEditingController();
   List<DebtDto> debts = [];
   List<DebtDto> incomes = [];
 
+  // ชื่อหนี้
+  final TextEditingController debtNameCtrl = TextEditingController();
+  final TextEditingController debtAmountCtrl = TextEditingController();
+  final TextEditingController debtInterestCtrl = TextEditingController();
+  final TextEditingController debtStartDateCtrl = TextEditingController();
+  final TextEditingController debtEndDateCtrl = TextEditingController();
+  final TextEditingController debtPriorityCtrl = TextEditingController();
+  final TextEditingController debtMinpaymentCtrl = TextEditingController();
+  final TextEditingController debtDueDateCtrl = TextEditingController();
+  final TextEditingController incomeNameCtrl = TextEditingController();
 
-    // ชื่อหนี้
-    final TextEditingController debtNameCtrl = TextEditingController();
-    final TextEditingController debtAmountCtrl = TextEditingController();
-    final TextEditingController debtInterestCtrl = TextEditingController();
-    final TextEditingController debtStartDateCtrl = TextEditingController();
-    final TextEditingController debtEndDateCtrl = TextEditingController();
-    final TextEditingController debtPriorityCtrl = TextEditingController();
-    final TextEditingController incomeNameCtrl = TextEditingController();
+  List<DebtTypeResponse> debtTypeList = [];
+  List<RepaymentTypeResponse> repaymentTypeList = [];
+  List<String> debtType = [];
+  List<String> repaymentType = [];
+  String? selectedDebtType;
+  String? selectedRepaymentType;
+  int selectedRepaymentTypeId = 0;
+  int selectedDebtTypeId = 0;
+  int selectedDueDate = 1;
 
-
-
-    List<DebtTypeResponse> debtTypeList = [];
-    List<RepaymentTypeResponse> repaymentTypeList = [];
-    List<String> debtType = [];
-    List<String> repaymentType = [];
-    String? selectedDebtType;
-    String? selectedRepaymentType;
-    int selectedRepaymentTypeId = 0;
-    int selectedDebtTypeId = 0;
-
-    bool incomeError = false;
-    bool debtNameError = false;
-    bool debtAmountError = false;
-    bool debtInterestError = false;
-    bool get isDebtFormValid {
-      return debtNameCtrl.text.trim().isNotEmpty &&
-          debtAmountCtrl.text.trim().isNotEmpty &&
-          debtInterestCtrl.text.trim().isNotEmpty;
-    }
+  bool incomeError = false;
+  bool debtNameError = false;
+  bool debtAmountError = false;
+  bool debtInterestError = false;
+  bool get isDebtFormValid {
+    return debtNameCtrl.text.trim().isNotEmpty &&
+        debtAmountCtrl.text.trim().isNotEmpty &&
+        debtInterestCtrl.text.trim().isNotEmpty;
+  }
 
   bool get isIncomeFormValid {
     return incomeCtrl.text.trim().isNotEmpty;
   }
-
-
 
   @override
   void initState() {
@@ -77,29 +74,31 @@ class _CrudPageState extends State<CrudPage> {
     fetchDebt();
   }
 
-Future<void> loadDebtTypeAndRepaymentType() async {
-  try {
-    final debt = await DebtService().getDebtType();
-    final repayment = await DebtService().getRepaymentType();
+  Future<void> loadDebtTypeAndRepaymentType() async {
+    try {
+      final debt = await DebtService().getDebtType();
+      final repayment = await DebtService().getRepaymentType();
 
-    if (!mounted) return; // ✅ กัน setState หลัง dispose
+      if (!mounted) return; // ✅ กัน setState หลัง dispose
 
-    setState(() {
-      debtTypeList = debt;
-      repaymentTypeList = repayment;
-      debtType = debt.map((e) => e.debtTypeName).toList();
-      repaymentType = repayment.map((e) => e.typeName).toList();
+      setState(() {
+        debtTypeList = debt;
+        repaymentTypeList = repayment;
+        debtType = debt.map((e) => e.debtTypeName).toList();
+        repaymentType = repayment.map((e) => e.typeName).toList();
 
-      if (debtType.isNotEmpty) selectedDebtType = debtType.first;
-      if (repaymentType.isNotEmpty) selectedRepaymentType = repaymentType.first;
-    });
-  } catch (e) {
-    if (!mounted) return; // ✅ กันใน catch ด้วย
-    setState(() {
-      error = e.toString();
-    });
+        if (debtType.isNotEmpty) selectedDebtType = debtType.first;
+        if (repaymentType.isNotEmpty)
+          selectedRepaymentType = repaymentType.first;
+      });
+    } catch (e) {
+      if (!mounted) return; // ✅ กันใน catch ด้วย
+      setState(() {
+        error = e.toString();
+      });
+    }
   }
-}
+
   void fetchDebt() async {
     final DebtResponseList = await DebtService().getAllDebt();
     setState(() {
@@ -115,15 +114,14 @@ Future<void> loadDebtTypeAndRepaymentType() async {
         amount: d.principalAmount,
         interest: d.interestRate,
         type: d.debtType.debtTypeName,
-        createdAt: d.startDate, 
+        createdAt: d.startDate,
       );
     }).toList();
   }
 
   Future<void> _loadIncomeData() async {
     try {
-      final incomeItems = await categoryService
-          .mapCategoryIncomeToDebtDto();
+      final incomeItems = await categoryService.mapCategoryIncomeToDebtDto();
       print("Income Items: $incomeItems");
 
       if (incomeItems.isEmpty) {
@@ -155,41 +153,41 @@ Future<void> loadDebtTypeAndRepaymentType() async {
 
     // เพิ่มลง list incomes เพื่อให้จำนวนรวมอัปเดต
     setState(() {
-      incomes.add(DebtDto(
-        id: DateTime.now().millisecondsSinceEpoch, // id ชั่วคราว
-        name: "รายรับที่เพิ่ม", // หรือใช้ incomeNameCtrl.text
-        amount: incomeAmount,
-        createdAt: DateTime.now(),
-      ));
+      incomes.add(
+        DebtDto(
+          id: DateTime.now().millisecondsSinceEpoch.toString(), // id ชั่วคราว
+          name: "รายรับที่เพิ่ม", // หรือใช้ incomeNameCtrl.text
+          amount: incomeAmount,
+          createdAt: DateTime.now(),
+        ),
+      );
     });
 
     categoryService
         .getCategories()
         .then((categories) {
-      for (var category in categories) {
-        if (category.type == 'Income' &&
-            category.categoryName == 'Salary') {
-          transactionService.createTransaction(
-            TransactionRequest(
-              categoryId: category.categoryId,
-              amount: incomeAmount,
-              transactionDate: DateTime.now(),
-              description: "Manual Salary Income",
-            ),
-          );
-        }
-      }
-    }).catchError((error) {
-      print('Error fetching categories: $error');
-    });
+          for (var category in categories) {
+            if (category.type == 'Income' &&
+                category.categoryName == 'Salary') {
+              transactionService.createTransaction(
+                TransactionRequest(
+                  categoryId: category.categoryId,
+                  amount: incomeAmount,
+                  transactionDate: DateTime.now(),
+                  description: "Manual Salary Income",
+                ),
+              );
+            }
+          }
+        })
+        .catchError((error) {
+          print('Error fetching categories: $error');
+        });
 
     incomeCtrl.clear();
   }
 
-
-
-
-// ฟังก์ชันแก้ไข
+  // ฟังก์ชันแก้ไข
   void editIncome(int index) {
     final income = incomes[index];
     final controller = TextEditingController(text: income.amount.toString());
@@ -212,7 +210,8 @@ Future<void> loadDebtTypeAndRepaymentType() async {
             ElevatedButton(
               onPressed: () {
                 setState(() {
-                  income.amount = double.tryParse(controller.text) ?? income.amount;
+                  income.amount =
+                      double.tryParse(controller.text) ?? income.amount;
                 });
                 Navigator.pop(context);
               },
@@ -224,7 +223,7 @@ Future<void> loadDebtTypeAndRepaymentType() async {
     );
   }
 
-// ฟังก์ชันลบ
+  // ฟังก์ชันลบ
   void deleteIncome(int index) {
     final income = incomes[index];
     showDialog(
@@ -250,11 +249,6 @@ Future<void> loadDebtTypeAndRepaymentType() async {
       ),
     );
   }
-
-
-
-
-
 
   void addDebt() async {
     setState(() {
@@ -298,6 +292,12 @@ Future<void> loadDebtTypeAndRepaymentType() async {
       debtTypeId: selectedDebtTypeId,
       repaymentTypeId: selectedRepaymentTypeId,
       isActive: true,
+      minPayment: debtMinpaymentCtrl.text.isNotEmpty
+          ? double.tryParse(debtMinpaymentCtrl.text) ?? 0
+          : 0,
+      dueDate: debtDueDateCtrl.text.isNotEmpty
+          ? int.tryParse(debtDueDateCtrl.text) ?? 0
+          : 0,
     );
 
     try {
@@ -312,11 +312,14 @@ Future<void> loadDebtTypeAndRepaymentType() async {
         debtPriorityCtrl.clear();
         selectedDebtTypeId = 0;
         selectedRepaymentTypeId = 0;
+        debtMinpaymentCtrl.clear();
+        selectedDueDate = 0;
       });
     } catch (e) {
       print("Error creating debt: $e");
     }
   }
+
   void editDebt(int index) async {
     final debt = debts[index];
 
@@ -371,10 +374,10 @@ Future<void> loadDebtTypeAndRepaymentType() async {
                       items: debtType
                           .map(
                             (type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        ),
-                      )
+                              value: type,
+                              child: Text(type),
+                            ),
+                          )
                           .toList(),
                       onChanged: (val) =>
                           setDialogState(() => tempDebtType = val!),
@@ -388,10 +391,10 @@ Future<void> loadDebtTypeAndRepaymentType() async {
                       items: repaymentType
                           .map(
                             (type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        ),
-                      )
+                              value: type,
+                              child: Text(type),
+                            ),
+                          )
                           .toList(),
                       onChanged: (val) =>
                           setDialogState(() => tempRepaymentType = val!),
@@ -427,7 +430,7 @@ Future<void> loadDebtTypeAndRepaymentType() async {
                         );
                         if (picked != null) {
                           setDialogState(
-                                () => startDateCtrl.text = picked
+                            () => startDateCtrl.text = picked
                                 .toIso8601String()
                                 .split('T')[0],
                           );
@@ -451,7 +454,7 @@ Future<void> loadDebtTypeAndRepaymentType() async {
                         );
                         if (picked != null) {
                           setDialogState(
-                                () => endDateCtrl.text = picked
+                            () => endDateCtrl.text = picked
                                 .toIso8601String()
                                 .split('T')[0],
                           );
@@ -506,6 +509,8 @@ Future<void> loadDebtTypeAndRepaymentType() async {
                       debtTypeId: newDebtTypeId,
                       repaymentTypeId: newRepaymentTypeId,
                       isActive: debtResponse.isActive,
+                      minPayment: debtResponse.principalAmount * 0.1,
+                      dueDate: 1,
                     );
 
                     try {
@@ -526,7 +531,7 @@ Future<void> loadDebtTypeAndRepaymentType() async {
     );
   }
 
-  DebtDto findDebtById(int id) {
+  DebtDto findDebtById(String id) {
     print(debts);
     for (DebtDto debtItem in debts) {
       if (debtItem.id == id) {
@@ -535,8 +540,6 @@ Future<void> loadDebtTypeAndRepaymentType() async {
     }
     throw Exception('not found debt id');
   }
-
-
 
   void deleteDebt(int index) {
     DebtDto debtItem = debts[index];
@@ -628,7 +631,6 @@ Future<void> loadDebtTypeAndRepaymentType() async {
 
           const SizedBox(height: 20),
 
-
           Row(
             children: [
               Expanded(
@@ -645,52 +647,53 @@ Future<void> loadDebtTypeAndRepaymentType() async {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: incomes.fold<double>(0, (sum, item) => sum + item.amount) <= 0
+                  onPressed:
+                      incomes.fold<double>(
+                            0,
+                            (sum, item) => sum + item.amount,
+                          ) <=
+                          0
                       ? null
                       : () {
-                    setState(() {
-                      currentStep = 2;
-                    });
-                  },
+                          setState(() {
+                            currentStep = 2;
+                          });
+                        },
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 48),
-                    backgroundColor: incomes.fold<double>(0, (sum, item) => sum + item.amount) <= 0
-                        ? Colors.grey.shade400 // สีปุ่ม disabled
-                        : Colors.deepOrange,    // สีปุ่มพร้อมกด (เด่นกว่าเทา)
+                    backgroundColor:
+                        incomes.fold<double>(
+                              0,
+                              (sum, item) => sum + item.amount,
+                            ) <=
+                            0
+                        ? Colors
+                              .grey
+                              .shade400 // สีปุ่ม disabled
+                        : Colors.deepOrange, // สีปุ่มพร้อมกด (เด่นกว่าเทา)
                     foregroundColor: Colors.white,
                   ),
                   child: const Text("ไปหน้าเพิ่มหนี้"),
                 ),
-              )
+              ),
             ],
-          )
-,
+          ),
 
           const SizedBox(height: 8),
 
           // แสดงจำนวนรายรับทั้งหมด
-            Text(
-              "รายรับทั้งหมด: ${DebtDto.totalAmount(incomes).toStringAsFixed(0)} บาท",
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+          Text(
+            "รายรับทั้งหมด: ${DebtDto.totalAmount(incomes).toStringAsFixed(0)} บาท",
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
 
           const SizedBox(height: 20),
 
           // แสดงรายการรายรับที่เพิ่มแล้ว
-
         ],
       ),
     );
   }
-
-
-
-
-
-
 
   Widget buildDebtStep() {
     return Column(
@@ -806,7 +809,6 @@ Future<void> loadDebtTypeAndRepaymentType() async {
                 ),
                 const SizedBox(height: 15),
 
-
                 TextField(
                   controller: debtEndDateCtrl,
                   readOnly: true,
@@ -823,25 +825,27 @@ Future<void> loadDebtTypeAndRepaymentType() async {
                     }
 
                     // วันสิ้นสุดต้องหลังวันเริ่มต้น 1 วัน
-                    DateTime firstEndDate = startDate.add(const Duration(days: 1));
+                    DateTime firstEndDate = startDate.add(
+                      const Duration(days: 1),
+                    );
 
                     DateTime? picked = await showDatePicker(
                       context: context,
                       initialDate: firstEndDate, // เริ่มต้นที่วันถัดไป
-                      firstDate: firstEndDate,   // ห้ามเลือกวันก่อนวันเริ่มต้น
+                      firstDate: firstEndDate, // ห้ามเลือกวันก่อนวันเริ่มต้น
                       lastDate: DateTime(2100),
                     );
                     if (picked != null) {
                       setState(() {
-                        debtEndDateCtrl.text = picked.toIso8601String().split('T')[0];
+                        debtEndDateCtrl.text = picked.toIso8601String().split(
+                          'T',
+                        )[0];
                       });
                     }
                   },
                 ),
 
-
                 const SizedBox(height: 15),
-
 
                 TextField(
                   controller: debtPriorityCtrl,
@@ -854,16 +858,52 @@ Future<void> loadDebtTypeAndRepaymentType() async {
                 ),
                 const SizedBox(height: 20),
 
+                TextField(
+                  controller: debtMinpaymentCtrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                    labelText: "จำนวนเงินขั้นต่ำที่ต้องชำระต่อเดือน",
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                TextField(
+                  controller: debtDueDateCtrl,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(2),
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      if (newValue.text.isEmpty) return newValue;
+
+                      final int? value = int.tryParse(newValue.text);
+                      if (value == null) return oldValue;
+
+                      if (value < 1 || value > 31) {
+                        return oldValue;
+                      }
+                      return newValue;
+                    }),
+                  ],
+                  decoration: const InputDecoration(
+                    labelText: "วันที่ต้องชำระของเดือน (1–31)",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
 
                 ElevatedButton(
-                onPressed: isDebtFormValid ? addDebt : null, // <-- ถ้า false จะ disabled
-    style: ElevatedButton.styleFrom(
-    minimumSize: const Size(double.infinity, 48),
-    backgroundColor: Theme.of(context).primaryColor,
-    foregroundColor: Colors.white,
-    ),
-    child: const Text("เพิ่มหนี้"),
-    ),
+                  onPressed: isDebtFormValid
+                      ? addDebt
+                      : null, // <-- ถ้า false จะ disabled
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text("เพิ่มหนี้"),
+                ),
 
                 const SizedBox(height: 20),
 
@@ -919,7 +959,6 @@ Future<void> loadDebtTypeAndRepaymentType() async {
             ),
           ),
         ),
-
 
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16),

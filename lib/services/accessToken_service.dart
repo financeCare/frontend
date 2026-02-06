@@ -10,12 +10,13 @@ class AccesstokenService {
 
 Future<String?> getAccessToken() async {
   String? accessToken = await storage.read(key: "accessToken");
-
+  print('accessToken from storage : $accessToken');
   if (accessToken == null) {
         return null;
   }
-
+  print('accessToken before check expiry : $accessToken');
   bool isTokenExpired = JwtDecoder.isExpired(accessToken);
+  print('isTokenExpired : $isTokenExpired');
   if (isTokenExpired) {
     String? refreshToken = await storage.read(key: "refreshToken");
 
