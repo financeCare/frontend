@@ -1,8 +1,38 @@
-import 'package:financeCare/models/budgetOverview.dart';
-import 'package:financeCare/services/budget_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+
+class ExpenseHistory {
+  double amount;
+  String detail;
+  DateTime date;
+
+  ExpenseHistory({
+    required this.amount,
+    required this.detail,
+    required this.date,
+  });
+}
+
+class BudgetOverview {
+  final String id;
+  final String budgetName;
+  double limitBudget;
+  double amount;
+  final List<ExpenseHistory> histories;
+
+  BudgetOverview({
+    required this.id,
+    required this.budgetName,
+    required this.limitBudget,
+    required this.amount,
+    List<ExpenseHistory>? histories,
+  }) : histories = histories ?? [];
+}
+
+/// ===============================
+/// SCREEN
+/// ===============================
 class BudgetPerMonthScreen extends StatefulWidget {
   const BudgetPerMonthScreen({super.key});
 
@@ -11,34 +41,111 @@ class BudgetPerMonthScreen extends StatefulWidget {
 }
 
 class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
-  final BudgetService _budgetService = BudgetService();
+  /// 🔹 MOCK DATA (แทน API)
+  final List<BudgetOverview> _budgetItems = [
+    BudgetOverview(
+      id: '1',
+      budgetName: 'อาหาร',
+      limitBudget: 5000,
+      amount: 0,
+    ),
+    BudgetOverview(
+      id: '2',
+      budgetName: 'เดินทาง',
+      limitBudget: 3000,
+      amount: 0,
+    ),
+    BudgetOverview(
+      id: '3',
+      budgetName: 'บันเทิง',
+      limitBudget: 2000,
+      amount: 0,
+    ),
+  ];
+  void _editHistory(BudgetOverview budget, int index) {
+    final h = budget.histories[index];
+    final amountCtrl =
+    TextEditingController(text: h.amount.toString());
+    final detailCtrl =
+    TextEditingController(text: h.detail);
 
-  Future<List<BudgetOverview>> _fetchApiData() async {
-    try {
-      return await _budgetService.getAmountInBudget();
-    } catch (e) {
-      print('API Error: $e');
-      return [];
-    }
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('แก้ไขรายจ่าย'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: amountCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'จำนวนเงิน'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: detailCtrl,
+              decoration: const InputDecoration(labelText: 'รายละเอียด'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ยกเลิก'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newAmount = double.tryParse(amountCtrl.text);
+              if (newAmount == null || newAmount <= 0) return;
+
+              setState(() {
+                budget.amount -= h.amount;
+                h.amount = newAmount;
+                h.detail = detailCtrl.text;
+                budget.amount += newAmount;
+              });
+
+              Navigator.pop(context);
+            },
+            child: const Text('บันทึก'),
+          ),
+        ],
+      ),
+    );
+  }
+  void _deleteHistory(BudgetOverview budget, int index) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('ยืนยันการลบ'),
+        content: const Text('ต้องการลบรายการนี้หรือไม่'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ยกเลิก'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              setState(() {
+                budget.amount -= budget.histories[index].amount;
+                budget.histories.removeAt(index);
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('ลบ'),
+          ),
+        ],
+      ),
+    );
   }
 
-  List<BudgetOverview> _budgetItems = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBudgetData();
-  }
-
-  Future<void> _loadBudgetData() async {
-    final data = await _fetchApiData();
-    setState(() => _budgetItems = data);
-  }
-
-  // เมื่อคลิกหมวดหมู่ -> เปิด dialog บันทึกรายจ่าย
-  void _onBudgetItemTapped(int index) {
-    final TextEditingController amountCtrl = TextEditingController();
-    final TextEditingController detailCtrl = TextEditingController();
+  /// ===============================
+  /// ADD EXPENSE
+  /// ===============================
+  void _addExpense(BudgetOverview budget) {
+    final amountCtrl = TextEditingController();
+    final detailCtrl = TextEditingController();
     DateTime selectedDate = DateTime.now();
 
     showDialog(
@@ -46,11 +153,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            backgroundColor: Colors.green[50],
-            title: Text(
-              'บันทึกรายจ่าย: ${_budgetItems[index].budgetName}',
-              style: const TextStyle(color: Colors.green),
-            ),
+            title: Text('บันทึกรายจ่าย: ${budget.budgetName}'),
             content: SingleChildScrollView(
               child: Column(
                 children: [
@@ -59,26 +162,20 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d+\.?\d{0,2}'))
-                    ],
-                    decoration: InputDecoration(
-                      labelText: 'จำนวนเงิน',
-                      labelStyle: const TextStyle(color: Colors.green),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.green.shade700),
+                        RegExp(r'^\d+\.?\d{0,2}'),
                       ),
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'จำนวนเงิน',
+                      border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: detailCtrl,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      labelText: 'รายละเอียดเพิ่มเติม',
-                      labelStyle: const TextStyle(color: Colors.green),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.green.shade700),
-                      ),
+                    decoration: const InputDecoration(
+                      labelText: 'รายละเอียด',
+                      border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -96,12 +193,10 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                     },
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_today,
-                            size: 20, color: Colors.green),
-                        const SizedBox(width: 10),
+                        const Icon(Icons.calendar_today, size: 18),
+                        const SizedBox(width: 8),
                         Text(
-                          "วันที่: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                          style: const TextStyle(color: Colors.green),
+                          '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
                         ),
                       ],
                     ),
@@ -112,23 +207,25 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('ยกเลิก', style: TextStyle(color: Colors.green)),
+                child: const Text('ยกเลิก'),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 onPressed: () {
                   final amount = double.tryParse(amountCtrl.text);
+                  if (amount == null || amount <= 0) return;
 
-                  if (amount != null && amount > 0) {
-                    setState(() {
-                      _budgetItems[index].amount += amount;
-                    });
-                    Navigator.pop(context);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('กรุณากรอกจำนวนเงินที่ถูกต้อง')),
+                  setState(() {
+                    budget.amount += amount;
+                    budget.histories.add(
+                      ExpenseHistory(
+                        amount: amount,
+                        detail: detailCtrl.text,
+                        date: selectedDate,
+                      ),
                     );
-                  }
+                  });
+
+                  Navigator.pop(context);
                 },
                 child: const Text('บันทึก'),
               ),
@@ -139,197 +236,189 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
     );
   }
 
-  // dialog สำหรับแก้ limitBudget
-  void _showEditBudgetDialog(int index) {
-    final item = _budgetItems[index];
-    final TextEditingController controller =
-        TextEditingController(text: item.limitBudget.toString());
-
+  /// ===============================
+  /// HISTORY
+  /// ===============================
+  void _showHistory(BudgetOverview budget) {
     showDialog(
       context: context,
-      builder: (_) {
-        return AlertDialog(
-          backgroundColor: Colors.green[50],
-          title: Text('ปรับวงเงินงบประมาณ: ${item.budgetName}'),
-          content: TextField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              labelText: 'วงเงินใหม่ (บาท)',
-              labelStyle: const TextStyle(color: Colors.green),
-              border: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.green.shade700),
-              ),
-            ),
+      builder: (_) => AlertDialog(
+        title: Text('ประวัติรายจ่าย: ${budget.budgetName}'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: budget.histories.isEmpty
+              ? const Text('ยังไม่มีประวัติรายจ่าย')
+              : ListView.builder(
+            shrinkWrap: true,
+            itemCount: budget.histories.length,
+            itemBuilder: (context, index) {
+              final h = budget.histories[index];
+              return ListTile(
+                leading: const Icon(Icons.payments, color: Colors.green),
+                title: Text('${h.amount.toStringAsFixed(2)} บาท'),
+                subtitle: Text(
+                  '${h.detail.isEmpty ? "-" : h.detail}\n'
+                      '${h.date.day}/${h.date.month}/${h.date.year}',
+                ),
+                isThreeLine: true,
+
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _editHistory(budget, index);
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _deleteHistory(budget, index);
+                      },
+                    ),
+                  ],
+                ),
+              );
+
+            },
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('ยกเลิก'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              onPressed: () {
-                final newBudget = double.tryParse(controller.text);
-                if (newBudget != null) {
-                  setState(() {
-                    _budgetItems[index].limitBudget = newBudget;
-                  });
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('บันทึก'),
-            ),
-          ],
-        );
-      },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ปิด'),
+          ),
+        ],
+      ),
     );
   }
 
+  /// ===============================
+  /// EDIT BUDGET
+  /// ===============================
+  void _editBudget(BudgetOverview budget) {
+    final ctrl = TextEditingController(text: budget.limitBudget.toString());
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('แก้ไขงบ: ${budget.budgetName}'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: const InputDecoration(
+            labelText: 'วงเงินใหม่',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ยกเลิก'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final value = double.tryParse(ctrl.text);
+              if (value != null) {
+                setState(() => budget.limitBudget = value);
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('บันทึก'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ===============================
+  /// UI
+  /// ===============================
   @override
   Widget build(BuildContext context) {
-    final double totalBudget =
-        _budgetItems.fold(0.0, (sum, item) => sum + item.limitBudget);
+    final totalBudget =
+    _budgetItems.fold(0.0, (sum, b) => sum + b.limitBudget);
 
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'ภาพรวมงบประมาณเดือนนี้',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge!
-                  .copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
 
-            /// Summary card
-            Card(
-              elevation: 4,
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'งบประมาณรวม: ${totalBudget.toStringAsFixed(2)} บาท',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+
+          ..._budgetItems.map((budget) {
+            final remaining = budget.limitBudget - budget.amount;
+            final percent = budget.limitBudget > 0
+                ? (budget.amount / budget.limitBudget).clamp(0.0, 1.0)
+                : 0.0;
+
+            final color = remaining < 0
+                ? Colors.red
+                : remaining < budget.limitBudget * 0.2
+                ? Colors.orange
+                : Colors.green;
+
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
               child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
                       children: [
-                        const Text('งบประมาณรวมที่ตั้งไว้',
-                            style: TextStyle(color: Colors.grey)),
-                        Text(
-                          '${totalBudget.toStringAsFixed(2)} บาท',
-                          style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepPurple),
+                        Expanded(
+                          child: Text(
+                            budget.budgetName,
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.history,
+                              color: Colors.orange),
+                          onPressed: () => _showHistory(budget),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle,
+                              color: Colors.green),
+                          onPressed: () => _addExpense(budget),
+                        ),
+                        IconButton(
+                          icon:
+                          const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () => _editBudget(budget),
                         ),
                       ],
                     ),
-                    const Icon(Icons.pie_chart,
-                        size: 40, color: Colors.deepPurple),
+                    Text(
+                      'เหลือ: ${remaining.toStringAsFixed(2)} บาท',
+                      style:
+                      TextStyle(color: color, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: percent,
+                      minHeight: 8,
+                      color: color,
+                      backgroundColor: Colors.grey.shade300,
+                    ),
+                    const SizedBox(height: 6),
+                    Text('ใช้ไป: ${budget.amount.toStringAsFixed(2)} บาท'),
                   ],
                 ),
               ),
-            ),
-
-            const SizedBox(height: 20),
-
-            Text(
-              'รายละเอียดงบประมาณรายหมวดหมู่ (คลิกเพื่อบันทึกรายการ)',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium!
-                  .copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-
-            ..._budgetItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-
-              final budgeted = item.limitBudget;
-              final spent = item.amount;
-              final remaining = budgeted - spent;
-              final percentage =
-                  budgeted > 0 ? (spent / budgeted).clamp(0.0, 1.0) : 0.0;
-
-              final progressColor = remaining < 0
-                  ? Colors.red
-                  : (remaining < budgeted * 0.2
-                      ? Colors.orange
-                      : Colors.lightGreen);
-
-              return Card(
-                elevation: 1,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.budgetName,
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.edit,
-                                size: 20, color: Colors.blue),
-                            onPressed: () => _showEditBudgetDialog(index),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      LinearProgressIndicator(
-                        value: percentage,
-                        backgroundColor: Colors.grey.shade300,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(progressColor),
-                        minHeight: 8,
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          InkWell(
-                            onTap: () => _onBudgetItemTapped(index),
-                            child: Text(
-                              'ใช้ไป: ${spent.toStringAsFixed(2)} บาท',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.blue,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'เหลือ: ${remaining.toStringAsFixed(2)} บาท',
-                            style: TextStyle(
-                              color: progressColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
-        ),
+            );
+          }),
+        ],
       ),
     );
   }

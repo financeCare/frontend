@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "756271821434-bnsvagn23pc4gueichi7pb7gj88b4c6a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.financeCare",
+            "certificate_hash": "80a5126c1233d1c1f4c354c769de72e9fa8b7015"
+          }
+        },
+        {
+          "client_id": "756271821434-chjd4u5vepv1s1r8pqf421bge5ac8kso.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.financeCare",
+            "certificate_hash": "f4c04a2bd7245462dc8af38ab167abd56fa5bbe9"
+          }
+        },
+        {
           "client_id": "756271821434-vpmof8n9b53p89osfrfeibtk83tvqo1h.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -27,7 +43,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "756271821434-vpmof8n9b53p89osfrfeibtk83tvqo1h.apps.googleusercontent.com",
+              "client_id": "756271821434-686i6a1bdvab62lqcik52ces5qo3c36f.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
