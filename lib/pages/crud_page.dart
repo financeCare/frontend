@@ -181,7 +181,8 @@ class _CrudPageState extends State<CrudPage> {
           }
         })
         .catchError((error) {
-          print('Error fetching categories: $error');
+          print(error.toString());
+  // Navigator.of(context).pushReplacementNamed('/');
         });
 
     incomeCtrl.clear();
@@ -209,6 +210,7 @@ class _CrudPageState extends State<CrudPage> {
             ),
             ElevatedButton(
               onPressed: () {
+                
                 setState(() {
                   income.amount =
                       double.tryParse(controller.text) ?? income.amount;
@@ -296,10 +298,10 @@ class _CrudPageState extends State<CrudPage> {
           ? double.tryParse(debtMinpaymentCtrl.text) ?? 0
           : 0,
       dueDate: debtDueDateCtrl.text.isNotEmpty
-          ? int.tryParse(debtDueDateCtrl.text) ?? 0
+          ? int.tryParse(debtDueDateCtrl.text) ?? 1
           : 0,
     );
-
+    print("Min Payment: ${double.tryParse(debtMinpaymentCtrl.text) ?? 0}");
     try {
       await debtService.createDebt(debtRequest);
       fetchDebt();
@@ -313,10 +315,11 @@ class _CrudPageState extends State<CrudPage> {
         selectedDebtTypeId = 0;
         selectedRepaymentTypeId = 0;
         debtMinpaymentCtrl.clear();
+        debtDueDateCtrl.clear();
         selectedDueDate = 0;
       });
     } catch (e) {
-      print("Error creating debt: $e");
+  Navigator.of(context).pushReplacementNamed('/');
     }
   }
 
@@ -327,7 +330,7 @@ class _CrudPageState extends State<CrudPage> {
     try {
       debtResponse = await DebtService().getDebtDetail(debt.id);
     } catch (e) {
-      print("Error fetching debt detail: $e");
+  Navigator.of(context).pushReplacementNamed('/');
       return;
     }
 
@@ -518,7 +521,7 @@ class _CrudPageState extends State<CrudPage> {
                       fetchDebt();
                       Navigator.pop(context);
                     } catch (e) {
-                      print("Error updating debt: $e");
+                      Navigator.of(context).pushReplacementNamed('/');
                     }
                   },
                   child: const Text("บันทึก"),
@@ -555,9 +558,13 @@ class _CrudPageState extends State<CrudPage> {
           ),
           ElevatedButton(
             onPressed: () async {
+              try{
               await DebtService().deleteDebt(debtItem.id);
               fetchDebt();
               Navigator.pop(context);
+              } catch (e) {
+              Navigator.of(context).pushReplacementNamed('/');
+              }
             },
             child: const Text("ลบ"),
           ),

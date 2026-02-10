@@ -1,5 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../services/notification_api.dart';
+import '../models/notification_api.dart';
 import '../services/notification_service.dart';
 import '../utils/config.dart' as Config;
 import '../auth/auth_manager.dart';

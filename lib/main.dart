@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/services/pushService.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'services/notification_api.dart';
+import 'models/notification_api.dart';
 import 'services/notification_service.dart';
 
 // 🚨 (1) เพิ่มการ Import ไฟล์ที่สร้างโดย FlutterFire CLI
@@ -46,6 +47,7 @@ Future<void> main() async {
 
   await AuthManager.init();
   await LineSDK.instance.setup('2008279064');
+  await PushService().init();
 
   runApp(const MyApp());
 }

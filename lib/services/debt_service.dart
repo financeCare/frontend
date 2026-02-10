@@ -204,7 +204,6 @@ Future<DebtResponse> getDebtDetail(String id) async {
 
   Future<void> createDebt(DebtRequest debtRequest) async {
     String? accessToken = await AccesstokenService().getAccessToken();
-
     final response = await http.post(
       Uri.parse("$url"),
       headers: {
@@ -221,6 +220,8 @@ Future<DebtResponse> getDebtDetail(String id) async {
         'priority': debtRequest.priority,
         'debtTypeId': debtRequest.debtTypeId,
         'debtName': debtRequest.debtName,
+        'minPayment': debtRequest.minPayment,
+        'dueDate': debtRequest.dueDate,
       }),
     );
 

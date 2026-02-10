@@ -113,7 +113,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
               subtitle: Text(n.body),
               trailing: Text(
                 _timeText(n.sentAt),
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: const TextStyle(fontSize: 20, color: Colors.grey),
               ),
               onTap: () {
                 // TODO: ถ้าจะไปหน้าหนี้:

@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:uuid/uuid.dart';
 
-import 'notification_api.dart';
+import '../models/notification_api.dart';
 
 typedef OnNotificationTap = void Function({
   required String? refType,

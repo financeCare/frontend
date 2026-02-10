@@ -82,9 +82,6 @@ class ApiService {
   }
 
   /// เมธอดสำหรับสร้างรายการธุรกรรมใหม่
-  Future<dynamic> createTransaction(Map<String, dynamic> data) async {
-    return post('transactions', data);
-  }
 
   // เมธอด placeholder สำหรับ 'getBudgetSummary'
   Future<BudgetSummary> getBudgetSummary() async {
