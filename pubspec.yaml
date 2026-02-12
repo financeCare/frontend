@@ -14,7 +14,9 @@ dependencies:
   firebase_auth: ^4.20.0 # 🚨 แก้ไขตรงนี้: ใส่เลขเวอร์ชันจริง
   firebase_core: ^2.32.0  # ใช้เวอร์ชันล่าสุดที่คุณมี
   cloud_firestore: ^4.17.5 # ใช้เวอร์ชันล่าสุดที่คุณมี
-  intl: ^0.18.1
+  intl: ^0.20.2
+  flutter_localizations:
+    sdk: flutter
   # iOS-style icons
   cupertino_icons: ^1.0.8
 
@@ -33,6 +35,7 @@ dependencies:
   firebase_messaging: ^14.9.4
   device_info_plus: ^10.1.2
   uuid: ^4.5.1
+  google_fonts: ^8.0.1
 
 
 dev_dependencies:
