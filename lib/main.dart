@@ -16,7 +16,7 @@ import './auth/auth_manager.dart';
 // Screens
 import './auth/welcome_page.dart';
 import 'pages/expense_entry_screen.dart';
-import './pages/simulator/simulator_screen.dart';
+import './pages/simulator/simulatorScreen.dart';
 import 'pages/email_login_page.dart';
 import './pages/homepage.dart';
 import 'notification/notification_screen.dart';

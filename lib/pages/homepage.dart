@@ -501,7 +501,10 @@ Future<void> _fetchUnreadCount() async {
           : null,
       body: widgetOptions[_selectedIndex],
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(context).pushNamed('/simulator'),
+        onPressed: () {
+          debugPrint("OPEN SIMULATOR");
+          Navigator.of(context).pushNamed('/simulator');
+        },
         backgroundColor: Colors.redAccent.shade700,
         foregroundColor: Colors.white,
         shape: const CircleBorder(),
