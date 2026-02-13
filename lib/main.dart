@@ -19,8 +19,7 @@ import 'features/auth/presentation/auth_manager.dart';
 // Screens
 import 'features/auth/presentation/welcome_page.dart';
 import 'features/budget/presentation/pages/expense_entry_screen.dart';
-import 'features/debt/presentation/pages/simulator/simulator_screen.dart';
-import 'features/auth/presentation/pages/email_login_page.dart';
+import 'features/simulator/presentation/RepaymentStrategyScreen.dart';
 import 'features/dashboard/presentation/pages/homepage.dart';
 import 'features/notification/presentation/notification_screen.dart';
 import 'features/debt/presentation/pages/debt_management_page.dart';
@@ -116,20 +115,19 @@ class _MyAppState extends State<MyApp> {
       supportedLocales: const [Locale('th', 'TH'), Locale('en', 'US')],
       locale: const Locale('th', 'TH'),
       theme: ThemeData(
-        primaryColor: const Color(0xFF00796B),
+        primaryColor: const Color(0xFF2D955F),
         textTheme: GoogleFonts.kanitTextTheme(ThemeData.light().textTheme),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00796B),
-          primary: const Color(0xFF00796B),
+          seedColor: const Color(0xFF2D955F),
+          primary: const Color(0xFF2D955F),
         ),
         useMaterial3: true,
       ),
       home: initialScreen, // ✅ ใช้ home แทน initialRoute จะตรงกว่า
       routes: {
-        '/email_login': (context) => const EmailLoginPage(),
         '/home': (context) => const HomePage(),
         '/expense_entry': (context) => const ExpenseEntryScreen(),
-        '/simulator': (context) => const SimulatorScreen(),
+        '/simulator': (context) => const RepaymentStrategyScreen(),
         '/notify': (context) => const NotificationScreen(),
         '/add_debt': (context) => const AddDebtPage(),
       },

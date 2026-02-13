@@ -1,138 +1,17 @@
 import 'dart:convert';
-import 'dart:io';
-
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'auth_widget.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-// 🌟 เพิ่ม Firebase Auth เพื่อใช้ในการสร้าง Session หลัง Google Sign-In สำเร็จ
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
-import 'package:uuid/uuid.dart';
-// 🌟 Import จากที่อยู่ใหม่
-import 'logo_header.dart';
-import 'pages/email_login_page.dart'; // 🌟 Import EmailLoginPage ที่ถูกแยกออกไป
-import '../../../core/config/config.dart' as Config;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'pages/otp_page.dart';
+import 'auth_widget.dart';
+import '../../../core/config/config.dart' as Config;
+import '../data/services/device_service.dart';
 
 final storage = FlutterSecureStorage();
-
-const String _baseUrl =
-    "${Config.baseUrl}/api/auth"; // สมมติว่า Config.baseUrl ถูกกำหนดไว้ใน config.dart
-const _deviceKeyStorageKey = 'device_key';
-
-Future<void> setupFCM() async {
-  final messaging = FirebaseMessaging.instance;
-
-  // ขอ permission (iOS จำเป็น / Android 13+ ก็จำเป็น)
-  await messaging.requestPermission(alert: true, badge: true, sound: true);
-}
-
-Future<Map<String, String>> getDeviceModelInfo() async {
-  final deviceInfo = DeviceInfoPlugin();
-
-  if (Platform.isAndroid) {
-    final android = await deviceInfo.androidInfo;
-    return {
-      "platform": "android",
-      "brand": android.brand ?? "",
-      "model": android.model ?? "", // รุ่น เช่น "SM-A546E"
-      "device": android.device ?? "", // ชื่อเครื่องภายใน
-      "manufacturer": android.manufacturer ?? "",
-      "osVersion": android.version.release ?? "",
-    };
-  }
-
-  if (Platform.isIOS) {
-    final ios = await deviceInfo.iosInfo;
-    return {
-      "platform": "ios",
-      "model": ios.utsname.machine ?? "", // รหัสรุ่น เช่น "iPhone14,5"
-      "name": ios.name ?? "", // ชื่อเครื่องที่ user ตั้ง (อาจมีข้อมูลส่วนตัว)
-      "systemVersion": ios.systemVersion ?? "",
-    };
-  }
-
-  return {"platform": "unknown"};
-}
-
-Future<String> getOrCreateDeviceKey() async {
-  String? deviceKey = await storage.read(key: _deviceKeyStorageKey);
-
-  if (deviceKey == null) {
-    deviceKey = const Uuid().v4();
-    await storage.write(key: _deviceKeyStorageKey, value: deviceKey);
-  }
-
-  return deviceKey;
-}
-
-void listenTokenRefresh() {
-  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-    print("🔁 Token refreshed: $newToken");
-    sentFCMTokenToServer(newToken);
-  });
-}
-
-Future<void> sentFCMTokenToServer(String token) async {
-  String? accessToken = await storage.read(key: "accessToken");
-  if (accessToken == null) {
-    print("No access token found. Cannot send FCM token to server.");
-    return;
-  }
-  final url = Uri.parse('${Config.baseUrl}/api/notifications/devices/register');
-  final deviceInfo = await getDeviceModelInfo();
-  final response = await http.post(
-    url,
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $accessToken",
-    },
-    body: jsonEncode({
-      "deviceKey": await getOrCreateDeviceKey(),
-      "fcmToken": token,
-      "platform": deviceInfo['platform'],
-      "deviceName": deviceInfo['model'],
-    }),
-  );
-  if (response.statusCode == 200) {
-    print("FCM token sent to server successfully.");
-  } else {
-    print(
-      "Failed to send FCM token to server. Status code: ${response.statusCode}",
-    );
-  }
-}
-
-Future<String?> getFcmToken() async {
-  final token = await FirebaseMessaging.instance.getToken();
-  print("✅ FCM Token: $token");
-  return token;
-}
-
-Future<void> initFcmAndSendToBackend() async {
-  await setupFCM();
-
-  final token = await getFcmToken();
-  if (token != null) {
-    sentFCMTokenToServer(token);
-  }
-
-  listenTokenRefresh();
-}
-
-void listenForegroundMessages() {
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print("📩 Foreground message: ${message.notification?.title}");
-  });
-}
-
-// =========================================================
-// 1. WELCOME PAGE: หน้าจอเริ่มต้นให้เลือก LINE หรือ Email
-// UI ถูกเก็บไว้ครบถ้วน
-// =========================================================
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
@@ -143,22 +22,34 @@ class WelcomePage extends StatefulWidget {
 
 class _WelcomePageState extends State<WelcomePage> {
   bool _isLoading = false;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
+  bool _isLoginMode = true;
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
+  final AuthService _authService = AuthService();
+  final String _baseUrl = "${Config.baseUrl}/api/auth";
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   void _navigateToHome() {
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
-  // ------------------------------------------
-  // Login with Google (แก้ไขให้เชื่อมต่อกับ Firebase Auth)
-  // ------------------------------------------
   Future<void> _loginWithGoogle() async {
-    if (mounted) {
-      setState(() => _isLoading = true);
-    }
-
+    setState(() => _isLoading = true);
     bool success = false;
-
     try {
       GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
@@ -166,92 +57,96 @@ class _WelcomePageState extends State<WelcomePage> {
             "756271821434-vpmof8n9b53p89osfrfeibtk83tvqo1h.apps.googleusercontent.com",
       );
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-
       if (googleUser != null) {
-        print('Google Sign-In successful for user: ${googleUser.displayName}');
         final GoogleSignInAuthentication auth = await googleUser.authentication;
-        print("ID Token: ${auth.idToken}");
-        final url = Uri.parse('$_baseUrl/login/google');
-        print('$_baseUrl/login/google');
         final response = await http.post(
-          url,
+          Uri.parse('$_baseUrl/login/google'),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({"idToken": auth.idToken}),
         );
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
-          String accessToken = data['accessToken'];
-          String refreshToken = data['refreshToken'];
-          await storage.write(key: "accessToken", value: accessToken);
-          await storage.write(key: "refreshToken", value: refreshToken);
-          await initFcmAndSendToBackend();
+          await storage.write(key: "accessToken", value: data['accessToken']);
+          await storage.write(key: "refreshToken", value: data['refreshToken']);
           success = true;
-        } else {
-          print(
-            "Google login failed with status: ${response.statusCode} and body: ${response.body}",
-          );
-          success = false;
         }
       }
     } catch (error) {
-      print("Google Login Failed: $error");
       _showErrorDialog("Google Login Failed: $error");
-      success = false;
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-      if (success && mounted) {
-        _navigateToHome();
-      }
+      setState(() => _isLoading = false);
+      if (success) _navigateToHome();
     }
   }
 
-  // ------------------------------------------
-  // Login with LINE (Logic เดิม)
-  // ------------------------------------------
   Future<void> _loginWithLine() async {
-    if (mounted) setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
     bool success = false;
-
     try {
       final result = await LineSDK.instance.login(
         scopes: ["profile", "openid", "email"],
       );
-      print("LINE result: ${result.toString()}");
-      print("LINE LOGIN CALLBACK HIT!");
-      print("AccessToken: ${result.accessToken.value}");
-      print("id token : ${result.accessToken.idToken}");
-      final jwtIdToken = result.data["id_token"];
-      print("raw id token: ${result.accessToken.idTokenRaw}");
-      final body = {'idToken': result.accessToken.idTokenRaw};
-
       final res = await http.post(
         Uri.parse("$_baseUrl/login/line"),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(body),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'idToken': result.accessToken.idTokenRaw}),
       );
       if (res.statusCode == 200 || res.statusCode == 201) {
-        print('Created: ${res.body}');
         final data = jsonDecode(res.body);
-        String accessToken = data['accessToken'];
-        String refreshToken = data['refreshToken'];
-        await storage.write(key: "accessToken", value: accessToken);
-        await storage.write(key: "refreshToken", value: refreshToken);
-        await initFcmAndSendToBackend();
+        await storage.write(key: "accessToken", value: data['accessToken']);
+        await storage.write(key: "refreshToken", value: data['refreshToken']);
         success = true;
-      } else {
-        print('LINE login error: ${res.statusCode} ${res.body}');
-        success = false;
       }
     } catch (e) {
-      print("LINE login error: $e");
+      _showErrorDialog("LINE Login Failed: $e");
     } finally {
-      if (mounted) setState(() => _isLoading = false);
-      if (success && mounted) _navigateToHome();
+      setState(() => _isLoading = false);
+      if (success) _navigateToHome();
+    }
+  }
+
+  Future<void> _processAuth() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (!_isLoginMode &&
+        _passwordController.text != _confirmPasswordController.text) {
+      _showErrorDialog('Passwords do not match.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    bool success = false;
+    try {
+      if (_isLoginMode) {
+        success = await _authService.login(
+          _emailController.text,
+          _passwordController.text,
+        );
+      } else {
+        success = await _authService.register(
+          _emailController.text,
+          _passwordController.text,
+        );
+        if (success && mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => OtpPage(
+                email: _emailController.text,
+                password: _passwordController.text,
+              ),
+            ),
+          );
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+    } catch (e) {
+      _showErrorDialog(e.toString());
+    } finally {
+      setState(() => _isLoading = false);
+      if (success && _isLoginMode)
+        _navigateToHome();
+      else if (!success && _isLoginMode)
+        _showErrorDialog("Email or password is incorrect");
     }
   }
 
@@ -259,11 +154,11 @@ class _WelcomePageState extends State<WelcomePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Login Failed'),
+        title: const Text('Authentication Error'),
         content: Text(message),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.pop(context),
             child: const Text('OK'),
           ),
         ],
@@ -271,116 +166,426 @@ class _WelcomePageState extends State<WelcomePage> {
     );
   }
 
-  Widget _buildLineLoginButton() {
-    return ElevatedButton.icon(
-      onPressed: _isLoading ? null : _loginWithLine,
-      icon: Image.asset(
-        'assets/line_icon.png',
-        height: 24,
-        errorBuilder: (context, error, stackTrace) =>
-            const Icon(Icons.forum, color: Colors.white),
-      ),
-      label: Text(
-        'Login with LINE',
-        style: Theme.of(
-          context,
-        ).textTheme.labelLarge!.copyWith(color: Colors.white),
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF06C755),
-        foregroundColor: Colors.white,
-        minimumSize: const Size(double.infinity, 55),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
-  Widget _buildGoogleLoginButton() {
-    return ElevatedButton.icon(
-      onPressed: _isLoading ? null : _loginWithGoogle,
-      icon: Image.asset(
-        'assets/google_icon.png',
-        height: 24,
-        errorBuilder: (context, error, stackTrace) => Image.network(
-          'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/480px-Google_%22G%22_logo.svg.png',
-          height: 24,
-          width: 24,
-        ),
-      ),
-      label: Text(
-        'Login with Google',
-        style: Theme.of(context).textTheme.labelLarge,
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        minimumSize: const Size(double.infinity, 55),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: Colors.grey, width: 0.5),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(30),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // LogoHeader ถูกย้ายไปที่ไฟล์ auth/logo_header.dart
-              const LogoHeader(),
-              const SizedBox(height: 30),
-
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else ...[
-                // ปุ่ม Google
-                _buildGoogleLoginButton(),
-                const SizedBox(height: 15),
-                // ปุ่ม LINE
-                _buildLineLoginButton(),
-              ],
-
-              const SizedBox(height: 25),
-              const Divider(height: 40, thickness: 1),
-
-              // ปุ่ม Login / Register with Email
-              ElevatedButton(
-                onPressed: _isLoading
-                    ? null
-                    : () {
-                        // 🌟 นำทางไป EmailLoginPage ที่ถูกแยกไฟล์
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const EmailLoginPage(),
-                          ),
-                        );
-                      },
-                child: Text(
-                  'Login / Register with Email',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelLarge!.copyWith(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueGrey,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
+                const SizedBox(height: 32),
+                Text(
+                  'Welcome Back',
+                  style: GoogleFonts.kanit(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  _isLoginMode
+                      ? 'Sign in to your account to continue'
+                      : 'Create a new account to get started',
+                  style: GoogleFonts.kanit(fontSize: 14, color: Colors.black54),
+                ),
+                const SizedBox(height: 32),
+                _buildAuthCard(),
+                const SizedBox(height: 24),
+                _buildFooter(),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAuthCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            _buildTabToggle(),
+            const SizedBox(height: 24),
+            _buildSocialButtons(),
+            const SizedBox(height: 24),
+            _buildSeparator(),
+            const SizedBox(height: 24),
+            _buildTextField(
+              label: 'Email',
+              controller: _emailController,
+              icon: Icons.email_outlined,
+              hint: 'you@example.com',
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 16),
+            _buildTextField(
+              label: 'Password',
+              controller: _passwordController,
+              icon: Icons.lock_outline,
+              hint: _isLoginMode ? 'Enter your password' : 'Create a password',
+              isPassword: true,
+              showPassword: _isPasswordVisible,
+              onTogglePassword: () =>
+                  setState(() => _isPasswordVisible = !_isPasswordVisible),
+              suffix: _isLoginMode ? _buildForgotPassword() : null,
+            ),
+            if (!_isLoginMode) ...[
+              const SizedBox(height: 16),
+              _buildTextField(
+                label: 'Confirm Password',
+                controller: _confirmPasswordController,
+                icon: Icons.lock_outline,
+                hint: 'Confirm your password',
+                isPassword: true,
+                showPassword: _isConfirmPasswordVisible,
+                onTogglePassword: () => setState(
+                  () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
+                ),
+              ),
+            ],
+            const SizedBox(height: 32),
+            _buildActionButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F3F5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildTabButton(
+              'Sign In',
+              _isLoginMode,
+              () => setState(() => _isLoginMode = true),
+            ),
+          ),
+          Expanded(
+            child: _buildTabButton(
+              'Register',
+              !_isLoginMode,
+              () => setState(() => _isLoginMode = false),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabButton(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.kanit(
+              fontSize: 16,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected ? Colors.black87 : Colors.black38,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialButtons() {
+    return Column(
+      children: [
+        _buildSocialBtn(
+          label: 'Continue with LINE',
+          icon: 'assets/line_icon.png',
+          onTap: _loginWithLine,
+          color: const Color(0xFF06C755),
+        ),
+        const SizedBox(height: 12),
+        _buildSocialBtn(
+          label: 'Continue with Google',
+          icon: 'assets/google_icon.png',
+          onTap: _loginWithGoogle,
+          isGoogle: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSocialBtn({
+    required String label,
+    required String icon,
+    required VoidCallback onTap,
+    Color? color,
+    bool isGoogle = false,
+  }) {
+    return InkWell(
+      onTap: _isLoading ? null : onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.black.withOpacity(0.1)),
+          color: Colors.white,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isGoogle)
+              Image.network(
+                'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/480px-Google_%22G%22_logo.svg.png',
+                height: 20,
+              )
+            else
+              Image.asset(
+                icon,
+                height: 20,
+                errorBuilder: (_, __, ___) => const Icon(Icons.forum, size: 20),
+              ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: GoogleFonts.kanit(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeparator() {
+    return Row(
+      children: [
+        Expanded(child: Divider(color: Colors.black.withOpacity(0.1))),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            _isLoginMode ? 'OR CONTINUE WITH EMAIL' : 'OR REGISTER WITH EMAIL',
+            style: GoogleFonts.kanit(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.black26,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        Expanded(child: Divider(color: Colors.black.withOpacity(0.1))),
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    required String hint,
+    bool isPassword = false,
+    bool showPassword = false,
+    VoidCallback? onTogglePassword,
+    Widget? suffix,
+    TextInputType? keyboardType,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.kanit(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            if (suffix != null) suffix,
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          obscureText: isPassword && !showPassword,
+          keyboardType: keyboardType,
+          style: GoogleFonts.kanit(fontSize: 15),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.kanit(color: Colors.black26, fontSize: 14),
+            prefixIcon: Icon(icon, color: Colors.black26, size: 20),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      showPassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: Colors.black26,
+                      size: 20,
+                    ),
+                    onPressed: onTogglePassword,
+                  )
+                : null,
+            filled: true,
+            fillColor: const Color(0xFFF8F9FA),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF2D955F), width: 1),
+            ),
+          ),
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'Required field';
+            if (label == 'Email' &&
+                !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v))
+              return 'Invalid email';
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildForgotPassword() {
+    return GestureDetector(
+      onTap: () {},
+      child: Text(
+        'Forgot password?',
+        style: GoogleFonts.kanit(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF2D955F),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _processAuth,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2D955F),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(
+                _isLoginMode ? 'Sign In' : 'Create Account',
+                style: GoogleFonts.kanit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Column(
+      children: [
+        Text(
+          'By continuing, you agree to our Terms of Service and Privacy Policy',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.kanit(fontSize: 11, color: Colors.black38),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              child: Text(
+                'Terms of Service',
+                style: GoogleFonts.kanit(
+                  fontSize: 11,
+                  color: const Color(0xFF2D955F),
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+            Text(
+              ' and ',
+              style: GoogleFonts.kanit(fontSize: 11, color: Colors.black38),
+            ),
+            GestureDetector(
+              child: Text(
+                'Privacy Policy',
+                style: GoogleFonts.kanit(
+                  fontSize: 11,
+                  color: const Color(0xFF2D955F),
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

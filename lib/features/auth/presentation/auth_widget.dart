@@ -5,7 +5,8 @@ import '../../../core/config/config.dart' as Config;
 
 final storage = FlutterSecureStorage();
 // 🌟 URL ฐานสำหรับการเรียก API
-const String _baseUrl = Config.baseUrl; // สมมติว่า Config.baseUrl ถูกกำหนดไว้ใน config.dart
+const String _baseUrl =
+    Config.baseUrl; // สมมติว่า Config.baseUrl ถูกกำหนดไว้ใน config.dart
 
 class AuthService {
   Future<bool> login(String email, String password) async {
@@ -61,13 +62,13 @@ class AuthService {
     }
   }
 
-  Future<bool> register(String email, String password) async {
+  Future<bool> register(String email, String password, {String? name}) async {
     final url = Uri.parse('$_baseUrl/api/auth/register');
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
-        "username": email,
+        "username": name ?? email,
         "email": email,
         "password": password,
       }),
@@ -82,4 +83,3 @@ class AuthService {
     return true;
   }
 }
-

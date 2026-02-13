@@ -27,8 +27,14 @@ class NotificationLogApi {
       query['refId'] = refId;
     }
 
-    final uri = Uri.parse('$baseUrl/api/notifications/logs')
-        .replace(queryParameters: query);
+    String path = '/api/notifications/logs';
+    if (refType == 'BUDGET') {
+      path = '/api/notifications/logs/filter-refType/BUDGET';
+    } else if (refType == 'DEBT') {
+      path = '/api/notifications/logs/filter-refType/DEBT';
+    }
+
+    final uri = Uri.parse('$baseUrl$path').replace(queryParameters: query);
 
     final res = await http.get(
       uri,
@@ -39,19 +45,16 @@ class NotificationLogApi {
     );
 
     if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception(
-        'getLogs failed: ${res.statusCode} ${res.body}',
-      );
+      throw Exception('getLogs failed: ${res.statusCode} ${res.body}');
     }
 
     final decoded = jsonDecode(res.body);
 
     // รองรับทั้ง response แบบ Page และแบบ List ตรง ๆ
-    final List list =
-        decoded is List ? decoded : (decoded['content'] as List? ?? []);
+    final List list = decoded is List
+        ? decoded
+        : (decoded['content'] as List? ?? []);
 
-    return list
-        .map((e) => NotificationLogItem.fromJson(e))
-        .toList();
+    return list.map((e) => NotificationLogItem.fromJson(e)).toList();
   }
 }

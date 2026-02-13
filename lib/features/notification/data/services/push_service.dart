@@ -2,15 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_application_1/features/auth/data/services/device_service.dart';
 import '../../../../core/config/config.dart' as Config;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:uuid/uuid.dart';
 
 class PushService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
 
   // เปลี่ยนเป็นของคุณ
   final String baseUrl = "${Config.baseUrl}";
@@ -64,32 +63,9 @@ class PushService {
     }
   }
 
-  Future<String> _getOrCreateDeviceKey() async {
-    String? deviceKey = await _storage.read(key: "deviceKey");
-    if (deviceKey == null) {
-      deviceKey = const Uuid().v4();
-      await _storage.write(key: "deviceKey", value: deviceKey);
-    }
-    return deviceKey;
-  }
-
-  Future<Map<String, String>> _getDeviceInfo() async {
-    if (Platform.isAndroid) {
-      final android = await _deviceInfo.androidInfo;
-      return {
-        "platform": "android",
-        "deviceName": "${android.manufacturer} ${android.model}",
-      };
-    } else if (Platform.isIOS) {
-      final ios = await _deviceInfo.iosInfo;
-      return {"platform": "ios", "deviceName": "${ios.name} ${ios.model}"};
-    }
-    return {"platform": "unknown", "deviceName": "unknown"};
-  }
-
   Future<void> _registerDevice(String fcmToken) async {
-    final deviceKey = await _getOrCreateDeviceKey();
-    final info = await _getDeviceInfo();
+    final deviceKey = await DeviceService.getOrCreateDeviceId();
+    final info = await DeviceService.getDeviceInfo();
 
     // ถ้าคุณใช้ JWT ให้แนบ token ด้วย
     final accessToken = await _storage.read(key: "accessToken");

@@ -11,6 +11,9 @@ import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import '../../../settings/presentation/pages/user_settings_page.dart';
 
 // Import เดิมของคุณ
 import '../../../debt/presentation/pages/debt_overview_page.dart';
@@ -25,224 +28,405 @@ class NotificationListScreen extends StatefulWidget {
     this.refType,
     this.refId,
     required this.onConsumedOpenArgs,
+    required this.unreadCount,
+    required this.onRefreshCount,
   });
 
   final String? refType;
   final String? refId;
   final VoidCallback onConsumedOpenArgs;
+  final int unreadCount;
+  final VoidCallback onRefreshCount;
 
   @override
   State<NotificationListScreen> createState() => _NotificationListScreenState();
 }
 
+enum NotificationFilter { all, budget, debt }
+
 class _NotificationListScreenState extends State<NotificationListScreen> {
   late final NotificationLogApi api;
-  late Future<List<NotificationLogItem>> _future;
+  NotificationFilter _selectedFilter = NotificationFilter.all;
+  List<NotificationLogItem> _notifications = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     api = NotificationLogApi(baseUrl: Config.baseUrl);
-    _future = _loadLogs();
+    _loadLogs();
   }
 
   @override
   void didUpdateWidget(covariant NotificationListScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    // ถ้ามี refType/refId ใหม่เข้ามาจากการกดแจ้งเตือน -> reload ได้
-    final changed =
-        oldWidget.refType != widget.refType || oldWidget.refId != widget.refId;
-    if (changed) {
-      setState(() => _future = _loadLogs());
+    if (oldWidget.refType != widget.refType ||
+        oldWidget.refId != widget.refId) {
+      _loadLogs();
     }
   }
 
-  Future<List<NotificationLogItem>> _loadLogs() async {
+  Future<void> _loadLogs() async {
+    setState(() => _isLoading = true);
     String? accessToken = await AccesstokenService().getAccessToken();
-    if (accessToken == null || accessToken.isEmpty) return [];
+    if (accessToken == null || accessToken.isEmpty) return;
 
-    final items = await api.getLogs(
-      accessToken: accessToken,
-      page: 0,
-      size: 50,
-      refType: widget.refType,
-      refId: widget.refId,
-    );
+    String? refTypeFilter;
+    if (_selectedFilter == NotificationFilter.budget) refTypeFilter = 'BUDGET';
+    if (_selectedFilter == NotificationFilter.debt) refTypeFilter = 'DEBT';
 
-    // เคลียร์ args หลังใช้งาน เพื่อไม่ให้กรองค้าง
-    if ((widget.refType?.isNotEmpty ?? false) ||
-        (widget.refId?.isNotEmpty ?? false)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    try {
+      final items = await api.getLogs(
+        accessToken: accessToken,
+        page: 0,
+        size: 50,
+        refType: refTypeFilter ?? widget.refType,
+      );
+
+      // เคลียร์ args หลังใช้งาน
+      if ((widget.refType?.isNotEmpty ?? false) ||
+          (widget.refId?.isNotEmpty ?? false)) {
         widget.onConsumedOpenArgs();
-      });
-    }
+      }
 
-    return items;
+      if (mounted) {
+        setState(() {
+          _notifications = items;
+          _isLoading = false;
+        });
+        widget.onRefreshCount();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Map<String, List<NotificationLogItem>> _groupNotifications() {
+    final Map<String, List<NotificationLogItem>> groups = {};
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    for (var item in _notifications) {
+      final date = DateTime(
+        item.sentAt.year,
+        item.sentAt.month,
+        item.sentAt.day,
+      );
+      String key;
+      if (date == today) {
+        key = "วันนี้";
+      } else if (date == yesterday) {
+        key = "เมื่อวาน";
+      } else {
+        key = DateFormat('d MMM yyyy', 'th').format(date);
+      }
+
+      if (!groups.containsKey(key)) {
+        groups[key] = [];
+      }
+      groups[key]!.add(item);
+    }
+    return groups;
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<NotificationLogItem>>(
-      future: _future,
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snap.hasError) {
-          return Center(child: Text('โหลดแจ้งเตือนไม่ได้: ${snap.error}'));
-        }
+    return Column(
+      children: [
+        _buildHeader(),
+        _buildFilters(),
+        Expanded(
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF2D955F)),
+                )
+              : _notifications.isEmpty
+              ? _buildEmptyState()
+              : _buildNotificationList(),
+        ),
+      ],
+    );
+  }
 
-        final items = snap.data ?? [];
-        if (items.isEmpty) {
-          return const Center(child: Text('ไม่มีการแจ้งเตือน'));
-        }
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.only(top: 20, left: 24, right: 24, bottom: 30),
+      decoration: const BoxDecoration(color: Color(0xFF2D955F)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'การแจ้งเตือน',
+                style: GoogleFonts.kanit(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                '${widget.unreadCount} รายการที่ยังไม่ได้อ่าน',
+                style: GoogleFonts.kanit(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              _buildHeaderIcon(
+                icon: Icons.notifications_none_outlined,
+                badgeCount: widget.unreadCount,
+              ),
+              const SizedBox(width: 12),
+              _buildHeaderIcon(icon: Icons.settings_outlined),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: items.length,
-          separatorBuilder: (context, index) => const Divider(),
-          itemBuilder: (context, index) {
-            final n = items[index];
-            return ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Colors.orangeAccent,
-                child: Icon(Icons.notifications_active, color: Colors.white),
+  Widget _buildHeaderIcon({required IconData icon, int badgeCount = 0}) {
+    return Stack(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: Colors.white, size: 28),
+        ),
+        if (badgeCount > 0)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Color(0xFFEB5757),
+                shape: BoxShape.circle,
               ),
-              title: Text(n.title),
-              subtitle: Text(n.body),
-              trailing: Text(
-                _timeText(n.sentAt),
-                style: const TextStyle(fontSize: 20, color: Colors.grey),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              child: Text(
+                badgeCount > 9 ? '9+' : '$badgeCount',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-              onTap: () {
-                // TODO: ถ้าจะไปหน้าหนี้:
-                // if (n.refType == 'DEBT') Navigator.pushNamed(context, '/debt_detail', arguments: n.refId);
-              },
-            );
-          },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFilters() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+      child: Row(
+        children: [
+          _buildFilterChip('ทั้งหมด', NotificationFilter.all),
+          const SizedBox(width: 12),
+          _buildFilterChip('งบประมาณ', NotificationFilter.budget),
+          const SizedBox(width: 12),
+          _buildFilterChip('หนี้สิน', NotificationFilter.debt),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, NotificationFilter filter) {
+    bool isSelected = _selectedFilter == filter;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFilter = filter;
+        });
+        _loadLogs();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF2D955F) : Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.kanit(
+            color: isSelected ? Colors.white : Colors.black54,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationList() {
+    final grouped = _groupNotifications();
+    final keys = grouped.keys.toList();
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      itemCount: keys.length,
+      itemBuilder: (context, index) {
+        final dateKey = keys[index];
+        final items = grouped[dateKey]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 10, bottom: 15),
+              child: Row(
+                children: [
+                  Text(
+                    dateKey,
+                    style: GoogleFonts.kanit(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${items.length} รายการ',
+                    style: GoogleFonts.kanit(
+                      color: Colors.black38,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Expanded(child: Divider(indent: 8)),
+                ],
+              ),
+            ),
+            ...items.map((item) => _buildNotificationCard(item, dateKey)),
+          ],
         );
       },
     );
   }
 
-  String _timeText(DateTime dt) {
-    final local = dt.toLocal();
-    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
-  }
-}
-
-// =========================================================
-// 2. PROFILE SCREEN (หน้าโปรไฟล์ที่ปรับปรุงตามบรีฟ)
-// =========================================================
-class ProfileScreen extends StatelessWidget {
-  final VoidCallback onBack;
-
-  const ProfileScreen({super.key, required this.onBack});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      // แถบสีเขียวด้านบนพร้อมปุ่ม Back ตามภาพที่ต้องการ
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: onBack, // กดแล้วกลับไปหน้า Home (index 0)
+  Widget _buildNotificationCard(NotificationLogItem item, String dateKey) {
+    bool isBudget = item.refType == 'BUDGET';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border(
+          left: BorderSide(
+            color: isBudget ? const Color(0xFFF2994A) : const Color(0xFFEB5757),
+            width: 8,
+          ),
         ),
-        title: const Text('โปรไฟล์ผู้ใช้งาน'),
-        backgroundColor: const Color(0xFF00796B),
-        foregroundColor: Colors.white,
-        elevation: 0,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              decoration: const BoxDecoration(
-                color: Color(0xFF00796B),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color:
+                    (isBudget
+                            ? const Color(0xFFF2994A)
+                            : const Color(0xFFEB5757))
+                        .withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: Icon(
+                isBudget
+                    ? Icons.warning_amber_rounded
+                    : Icons.calendar_today_rounded,
+                color: isBudget
+                    ? const Color(0xFFF2994A)
+                    : const Color(0xFFEB5757),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.white,
-                        child: CircleAvatar(
-                          radius: 56,
-                          backgroundImage: NetworkImage(
-                            'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
-                          ), // รูปตัวอย่าง
+                      Flexible(
+                        child: Text(
+                          item.title,
+                          style: GoogleFonts.kanit(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.black87,
+                          ),
                         ),
                       ),
-                      CircleAvatar(
-                        backgroundColor: Colors.orangeAccent,
-                        radius: 18,
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.camera_alt,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                          onPressed: () {},
+                      Text(
+                        DateFormat('HH:mm').format(item.sentAt.toLocal()),
+                        style: GoogleFonts.kanit(
+                          color: Colors.black38,
+                          fontSize: 13,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 15),
-                  const Text(
-                    'สมชาย ใจดี',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  const SizedBox(height: 4),
+                  Text(
+                    item.body,
+                    style: GoogleFonts.kanit(
+                      color: Colors.black54,
+                      fontSize: 13,
+                      height: 1.4,
                     ),
                   ),
-                  const Text(
-                    'somchai.j@example.com',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildProfileItem(
-                    Icons.person_outline,
-                    'ชื่อ-นามสกุล',
-                    'สมชาย ใจดี',
-                  ),
-                  _buildProfileItem(
-                    Icons.phone_android,
-                    'เบอร์โทรศัพท์',
-                    '081-234-5678',
-                  ),
-                  _buildProfileItem(
-                    Icons.cake_outlined,
-                    'วันเกิด',
-                    '12 มกราคม 2535',
-                  ),
-                  const Divider(height: 40),
-                  ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.redAccent),
-                    title: const Text(
-                      'ออกจากระบบ',
-                      style: TextStyle(color: Colors.redAccent),
-                    ),
-                    onTap: () {
-                      // Logic logout เดิมของคุณ
-                      Navigator.of(context).pushReplacementNamed('/');
-                    },
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE0E0E0).withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          dateKey,
+                          style: GoogleFonts.kanit(
+                            fontSize: 11,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.chevron_right, color: Colors.black26),
+                    ],
                   ),
                 ],
               ),
@@ -253,35 +437,20 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileItem(IconData icon, String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: const Color(0xFF00796B)),
+          Icon(
+            Icons.notifications_off_outlined,
+            size: 80,
+            color: Colors.grey[300],
           ),
-          const SizedBox(width: 15),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          const SizedBox(height: 16),
+          Text(
+            'ไม่มีการแจ้งเตือน',
+            style: GoogleFonts.kanit(fontSize: 18, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -441,8 +610,9 @@ class _HomePageState extends State<HomePage> {
       NotificationListScreen(
         refType: _openRefType,
         refId: _openRefId,
+        unreadCount: unreadNotificationCount,
+        onRefreshCount: _fetchUnreadCount,
         onConsumedOpenArgs: () {
-          // กัน filter ค้าง: เมื่อหน้าเปิดแล้ว เคลียร์ค่า
           setState(() {
             _openRefType = null;
             _openRefId = null;
@@ -451,7 +621,7 @@ class _HomePageState extends State<HomePage> {
       ),
 
       const BudgetPerMonthScreen(),
-      ProfileScreen(onBack: () => setState(() => _selectedIndex = 0)),
+      UserSettingsPage(onBack: () => setState(() => _selectedIndex = 0)),
     ];
   }
 
@@ -460,7 +630,7 @@ class _HomePageState extends State<HomePage> {
       case 0:
         return 'Dashboard';
       case 1:
-        return 'การแจ้งเตือน';
+        return null; // ใช้ Header ตัวเอง
       case 2:
         return 'งบประมาณต่อเดือน';
       case 3:
