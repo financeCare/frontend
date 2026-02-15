@@ -8,11 +8,13 @@ import '../data/services/repaymentTypeService.dart';
 class RepaymentSimulatorPage extends StatefulWidget {
   final double monthlyBudget;
   final String strategy;
+  final bool showConfirmButton;
 
   const RepaymentSimulatorPage({
     super.key,
     required this.monthlyBudget,
     required this.strategy,
+    this.showConfirmButton = false,
   });
 
   @override
@@ -73,14 +75,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             ),
           ],
         ),
-        actions: [
-          _buildActionButton(
-            Icons.refresh,
-            'Re-simulate',
-            () => Navigator.pop(context),
-          ),
-          const SizedBox(width: 16),
-        ],
+        actions: const [SizedBox(width: 16)],
       ),
       body: FutureBuilder<RepaymentSimulationResponse>(
         future: _simulationFuture,
@@ -91,10 +86,10 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             );
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return _buildErrorState(snapshot.error!);
           }
           if (!snapshot.hasData) {
-            return const Center(child: Text('No data found'));
+            return const Center(child: Text('ไม่พบข้อมูล'));
           }
 
           final data = snapshot.data!;
@@ -103,10 +98,10 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSimulationCompleteBadge(),
+                // _buildSimulationCompleteBadge(), removed
                 const SizedBox(height: 12),
                 Text(
-                  'Your Repayment Plan',
+                  'แผนการชำระหนี้ของคุณ',
                   style: GoogleFonts.outfit(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -122,10 +117,10 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                     children: [
                       const TextSpan(
                         text:
-                            'Based on your selected strategy, here is the projected timeline to become debt-free in ',
+                            'จากกลยุทธ์ที่คุณเลือก นี่คือระยะเวลาที่คาดการณ์ว่าคุณจะหมดหนี้ภายใน ',
                       ),
                       TextSpan(
-                        text: '${data.estimatedMonths} months',
+                        text: '${data.estimatedMonths} เดือน',
                         style: const TextStyle(
                           color: Color(0xFF2D955F),
                           fontWeight: FontWeight.bold,
@@ -147,119 +142,56 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
           );
         },
       ),
-      bottomNavigationBar: _buildBottomConfirmFooter(),
-    );
-  }
-
-  Widget _buildActionButton(
-    IconData icon,
-    String label,
-    VoidCallback onTap, {
-    bool isPrimary = false,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isPrimary ? const Color(0xFF2D955F) : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isPrimary ? const Color(0xFF2D955F) : Colors.grey.shade300,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isPrimary ? Colors.white : Colors.black,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.kanit(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isPrimary ? Colors.white : Colors.black,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSimulationCompleteBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.check_circle, size: 14, color: Color(0xFF2D955F)),
-          const SizedBox(width: 8),
-          Text(
-            'Simulation Complete',
-            style: GoogleFonts.kanit(
-              fontSize: 12,
-              color: const Color(0xFF2D955F),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+      bottomNavigationBar: widget.showConfirmButton
+          ? _buildBottomConfirmFooter()
+          : null,
     );
   }
 
   Widget _buildSummaryCards(RepaymentSimulationResponse data) {
-    // principal paid calculation: totalPaid - totalInterest
     final principalPaid = data.totalPaid - data.totalInterest;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _buildSummaryCard(
-            'Estimated Duration',
-            '${data.estimatedMonths} months',
-            'Until debt-free',
-            Icons.calendar_today_outlined,
-            const Color(0xFFE8F5E9),
-            const Color(0xFF2D955F),
-          ),
-          const SizedBox(width: 16),
-          _buildSummaryCard(
-            'Total Payment',
-            _currencyFormat.format(data.totalPaid),
-            'Principal + Interest',
-            Icons.payments_outlined,
-            const Color(0xFFE3F2FD),
-            const Color(0xFF1976D2),
-          ),
-          const SizedBox(width: 16),
-          _buildSummaryCard(
-            'Total Interest',
-            _currencyFormat.format(data.totalInterest),
-            'Cost of borrowing',
-            Icons.trending_up,
-            const Color(0xFFFFF3E0),
-            const Color(0xFFF57C00),
-          ),
-          const SizedBox(width: 16),
-          _buildSummaryCard(
-            'Principal Paid',
-            _currencyFormat.format(principalPaid),
-            'Actual debt cleared',
-            Icons.account_balance_wallet_outlined,
-            const Color(0xFFF3E5F5),
-            const Color(0xFF7B1FA2),
-          ),
-        ],
-      ),
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.2, // Adjust for card proportions
+      children: [
+        _buildSummaryCard(
+          'ระยะเวลาที่คาดการณ์',
+          '${data.estimatedMonths} เดือน',
+          'จนกว่าจะหมดหนี้',
+          Icons.calendar_today_outlined,
+          const Color(0xFFE8F5E9),
+          const Color(0xFF2D955F),
+        ),
+        _buildSummaryCard(
+          'ยอดชำระทั้งหมด',
+          _currencyFormat.format(data.totalPaid),
+          'เงินต้น + ดอกเบี้ย',
+          Icons.account_balance_wallet_outlined,
+          const Color(0xFFE8F5E9),
+          const Color(0xFF2D955F),
+        ),
+        _buildSummaryCard(
+          'ดอกเบี้ยรวม',
+          _currencyFormat.format(data.totalInterest),
+          'ต้นทุนจากการกู้ยืม',
+          Icons.trending_down,
+          const Color(0xFFFFF1F1),
+          const Color(0xFFEF5350),
+        ),
+        _buildSummaryCard(
+          'ชำระเงินต้นแล้ว',
+          _currencyFormat.format(principalPaid),
+          'หนี้ที่ชำระจริง',
+          Icons.monetization_on_outlined,
+          const Color(0xFFE8F5E9),
+          const Color(0xFF2D955F),
+        ),
+      ],
     );
   }
 
@@ -272,8 +204,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
     Color color,
   ) {
     return Container(
-      width: 180,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -281,31 +212,45 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 20),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.kanit(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Text(
-            title,
-            style: GoogleFonts.kanit(fontSize: 13, color: Colors.grey.shade600),
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
-            value,
-            style: GoogleFonts.outfit(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
             sub,
-            style: GoogleFonts.kanit(fontSize: 12, color: Colors.grey.shade500),
+            style: GoogleFonts.kanit(fontSize: 11, color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -317,9 +262,9 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
       children: [
         Row(
           children: [
-            _buildTabButton('Charts', true),
+            _buildTabButton('กราฟ', true),
             const SizedBox(width: 12),
-            _buildTabButton('Payoff Order', false),
+            _buildTabButton('ลำดับการชำระ', false),
           ],
         ),
         const SizedBox(height: 24),
@@ -361,14 +306,14 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Remaining Debt Over Time',
+            'หนี้คงเหลือตามระยะเวลา',
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           Text(
-            'Projected balance decrease month by month',
+            'การลดลงของยอดหนี้ที่คาดการณ์รายเดือน',
             style: GoogleFonts.kanit(fontSize: 13, color: Colors.grey.shade500),
           ),
           const SizedBox(height: 32),
@@ -383,6 +328,32 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                       FlLine(color: Colors.grey.shade100, strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 44,
+                      getTitlesWidget: (value, meta) {
+                        if (value == meta.max) return const SizedBox();
+                        String text = '';
+                        if (value >= 1000) {
+                          text = '${(value / 1000).toStringAsFixed(0)}K';
+                        } else {
+                          text = value.toStringAsFixed(0);
+                        }
+                        return SideTitleWidget(
+                          axisSide: meta.axisSide,
+                          space: 8,
+                          child: Text(
+                            text,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                   rightTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
@@ -455,7 +426,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             runSpacing: 8,
             children: [
               Text(
-                'Monthly Payment Breakdown',
+                'รายละเอียดการชำระเงินรายเดือน',
                 style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -464,15 +435,15 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildLegendCircle(const Color(0xFF2D955F), 'Paid'),
+                  _buildLegendCircle(const Color(0xFF2D955F), 'ชำระแล้ว'),
                   const SizedBox(width: 12),
-                  _buildLegendCircle(const Color(0xFFEF5350), 'Interest'),
+                  _buildLegendCircle(const Color(0xFFEF5350), 'ดอกเบี้ย'),
                 ],
               ),
             ],
           ),
           Text(
-            'Payment applied vs interest charged each month',
+            'ยอดชำระเทียบกับดอกเบี้ยในแต่ละเดือน',
             style: GoogleFonts.kanit(fontSize: 13, color: Colors.grey.shade500),
           ),
           const SizedBox(height: 32),
@@ -483,6 +454,32 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                 alignment: BarChartAlignment.spaceAround,
                 gridData: const FlGridData(show: false),
                 titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 44,
+                      getTitlesWidget: (value, meta) {
+                        if (value == meta.max) return const SizedBox();
+                        String text = '';
+                        if (value >= 1000) {
+                          text = '${(value / 1000).toStringAsFixed(0)}K';
+                        } else {
+                          text = value.toStringAsFixed(0);
+                        }
+                        return SideTitleWidget(
+                          axisSide: meta.axisSide,
+                          space: 8,
+                          child: Text(
+                            text,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                   rightTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
@@ -569,7 +566,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
           runSpacing: 8,
           children: [
             Text(
-              'Monthly Breakdown',
+              'รายละเอียดรายเดือน',
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -582,7 +579,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                '${data.estimatedMonths} months',
+                '${data.estimatedMonths} เดือน',
                 style: GoogleFonts.kanit(
                   fontSize: 11,
                   color: Colors.grey.shade600,
@@ -592,7 +589,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
           ],
         ),
         Text(
-          'Click on a month to see individual debt details',
+          'คลิกที่เดือนเพื่อดูรายละเอียดของแต่ละหนี้',
           style: GoogleFonts.kanit(fontSize: 13, color: Colors.grey.shade500),
         ),
         const SizedBox(height: 24),
@@ -684,7 +681,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Month ${month.monthNo}',
+                                'เดือนที่ ${month.monthNo}',
                                 style: GoogleFonts.outfit(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -704,19 +701,19 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                           Row(
                             children: [
                               _buildMonthStat(
-                                'Paid',
+                                'ชำระแล้ว',
                                 _currencyFormat.format(month.paidThisMonth),
                                 Colors.black,
                               ),
                               const SizedBox(width: 16),
                               _buildMonthStat(
-                                'Interest',
+                                'ดอกเบี้ย',
                                 _currencyFormat.format(month.monthInterest),
                                 Colors.red.shade400,
                               ),
                               const SizedBox(width: 16),
                               _buildMonthStat(
-                                'Remaining',
+                                'คงเหลือ',
                                 _currencyFormat.format(
                                   month.remainingDebtTotal,
                                 ),
@@ -832,89 +829,129 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
     );
   }
 
-  Widget _buildBottomConfirmFooter() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border.all(color: const Color(0xFF2D955F).withOpacity(0.3)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Ready to start your repayment journey?',
-                      style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Confirm this plan and we will set up automatic reminders for you.',
-                      style: GoogleFonts.kanit(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
+  Widget _buildErrorState(Object error) {
+    final errorStr = error.toString();
+    final bool isBudgetError = errorStr.contains('400');
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isBudgetError
+                    ? const Color(0xFFFFF3E0)
+                    : const Color(0xFFFFEBEE),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    await RepaymentStrategyService().createPlan(
-                      monthlyBudget: widget.monthlyBudget,
-                      strategyId: widget.strategy,
-                    );
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Plan confirmed successfully!'),
-                        ),
-                      );
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                    }
-                  } catch (e) {
-                    if (mounted)
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                  }
-                },
+              child: Icon(
+                isBudgetError
+                    ? Icons.account_balance_wallet_outlined
+                    : Icons.error_outline_rounded,
+                size: 64,
+                color: isBudgetError
+                    ? const Color(0xFFF57C00)
+                    : const Color(0xFFEB5757),
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              isBudgetError
+                  ? 'Monthly budget is not enough'
+                  : 'Oops! Something went wrong',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isBudgetError
+                  ? 'Your current monthly budget is lower than the minimum required to pay off your debts. Please increase your budget and try again.'
+                  : 'We encountered an error while calculating your repayment plan. Please try again later or contact support if the issue persists.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.kanit(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2D955F),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 0,
                 ),
                 child: Text(
-                  'Confirm Plan',
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                  isBudgetError ? 'Adjust Budget' : 'Go Back',
+                  style: GoogleFonts.kanit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'This is a simulation based on current data. Actual results may vary based on payment timing and interest rate changes.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.kanit(fontSize: 10, color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomConfirmFooter() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
           ),
         ],
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2D955F),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'ยืนยันแผน',
+              style: GoogleFonts.kanit(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

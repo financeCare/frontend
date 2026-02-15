@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../features/simulator/data/services/repaymentTypeService.dart';
+import '../../../../features/simulator/presentation/RepaymentSimulatorPage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/services/debt_service.dart';
 import '../../domain/models/debt_response.dart';
@@ -205,6 +207,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
   }) {
     return Container(
       width: double.infinity,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: const Color(0xFFEB5757),
         borderRadius: BorderRadius.circular(24),
@@ -217,68 +220,97 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              const Icon(
+                Icons.monetization_on_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'ยอดหนี้คงเหลือทั้งหมด',
+                style: GoogleFonts.kanit(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '฿${NumberFormat('#,###.00').format(totalPrincipal)}',
+            style: GoogleFonts.kanit(
+              color: Colors.white,
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.monetization_on_outlined,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
                     Text(
-                      'ยอดหนี้คงเหลือทั้งหมด',
+                      'จำนวนหนี้ที่ใช้งาน',
                       style: GoogleFonts.kanit(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$activeCount / $totalCount รายการ',
+                      style: GoogleFonts.kanit(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '฿${NumberFormat('#,###.00').format(totalPrincipal)}',
-                  style: GoogleFonts.kanit(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
+              ),
+              Container(
+                height: 40,
+                width: 1,
+                color: Colors.white.withOpacity(0.2),
+              ),
+              const SizedBox(width: 24),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSummaryStat(
-                      'จำนวนหนี้ที่ใช้งาน',
-                      '$activeCount / $totalCount รายการ',
-                    ),
-                    Container(
-                      height: 30,
-                      width: 1,
-                      color: Colors.white.withOpacity(0.2),
-                      margin: const EdgeInsets.symmetric(horizontal: 24),
-                    ),
-                    _buildSummaryStat(
+                    Text(
                       'ดอกเบี้ยเฉลี่ย',
+                      style: GoogleFonts.kanit(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
                       '${avgInterest.toStringAsFixed(1)}% ต่อปี',
+                      style: GoogleFonts.kanit(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          const SizedBox(height: 24),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.1),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
@@ -286,40 +318,13 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                 const SizedBox(width: 8),
                 Text(
                   'ยอดจ่ายขั้นต่ำรวม: ฿${NumberFormat('#,###.00').format(minPayment)}/เดือน',
-                  style: GoogleFonts.kanit(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: GoogleFonts.kanit(color: Colors.white, fontSize: 14),
                 ),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildSummaryStat(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.kanit(
-            color: Colors.white.withOpacity(0.7),
-            fontSize: 12,
-          ),
-        ),
-        Text(
-          value,
-          style: GoogleFonts.kanit(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
     );
   }
 
@@ -333,15 +338,22 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
         'route': '/add_debt',
       },
       {
+        'icon': Icons.track_changes_outlined,
+        'label': 'กลยุทธ์ชำระ',
+        'color': const Color(0xFFFFF3E0),
+        'iconColor': const Color(0xFFFF9800),
+        'route': '/simulator', // Needs to go to strategy screen
+      },
+      {
         'icon': Icons.bar_chart,
-        'label': 'จำลองหนี้',
+        'label': 'ดูแผนของคุณ',
         'color': const Color(0xFFE3F2FD),
-        'iconColor': const Color(0xFF00B0FF),
-        'route': '/simulator',
+        'iconColor': const Color(0xFF1976D2),
+        'route': '/simulator_results', // Placeholder for results
       },
       {
         'icon': Icons.account_balance_wallet_outlined,
-        'label': 'บันทึกรายรับรายจ่าย',
+        'label': 'รายรับ/รายจ่าย',
         'color': const Color(0xFFF1F8E9),
         'iconColor': const Color(0xFF8BC34A),
         'route': '/expense_entry',
@@ -350,7 +362,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
         'icon': Icons.credit_card,
         'label': 'ชำระหนี้',
         'color': const Color(0xFFE8F5E9),
-        'iconColor': const Color(0xFFEB5757),
+        'iconColor': const Color(0xFF2D955F),
         'route': '/pay_debt',
       },
     ];
@@ -362,14 +374,48 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
           return Padding(
             padding: const EdgeInsets.only(right: 20),
             child: GestureDetector(
-              onTap: () => Navigator.pushNamed(
-                context,
-                menu['route'] as String,
-              ).then((_) => _loadData()),
+              onTap: () async {
+                if (menu['route'] == '/simulator_results') {
+                  setState(() => _isLoading = true);
+                  try {
+                    final overview = await RepaymentStrategyService()
+                        .fetchStrategies();
+                    if (!mounted) return;
+                    // Navigate to simulator with existing budget and first strategy as fallback
+                    final strategyId = overview.strategies.isNotEmpty
+                        ? overview.strategies.first.strategyId
+                        : "snowball"; // Fallback
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RepaymentSimulatorPage(
+                          monthlyBudget: overview.monthlyBudget,
+                          strategy: strategyId,
+                          showConfirmButton: false,
+                        ),
+                      ),
+                    );
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('ไม่พบข้อมูลแผนของคุณ: $e')),
+                      );
+                    }
+                  } finally {
+                    if (mounted) setState(() => _isLoading = false);
+                  }
+                } else {
+                  Navigator.pushNamed(
+                    context,
+                    menu['route'] as String,
+                  ).then((_) => _loadData());
+                }
+              },
               child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    width: 56, // Fixed width for alignment as in Image 1
+                    height: 56,
                     decoration: BoxDecoration(
                       color: menu['color'] as Color,
                       borderRadius: BorderRadius.circular(16),
@@ -377,7 +423,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                     child: Icon(
                       menu['icon'] as IconData,
                       color: menu['iconColor'] as Color,
-                      size: 28,
+                      size: 24,
                     ),
                   ),
                   const SizedBox(height: 8),

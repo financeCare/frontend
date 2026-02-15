@@ -133,4 +133,21 @@ class BudgetService {
       );
     }
   }
+
+  Future<double> getIncomeAmount() async {
+    String? accessToken = await AccesstokenService().getAccessToken();
+    final response = await http.get(
+      Uri.parse("$url/income-amount"),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return double.tryParse(response.body.trim()) ?? 0.0;
+    } else {
+      return 0.0;
+    }
+  }
 }

@@ -43,13 +43,13 @@ class _LineLoginPageState extends State<LineLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login with LINE")),
+      appBar: AppBar(title: const Text("เข้าสู่ระบบด้วย LINE")),
       body: Center(
         child: _isLoading
             ? const CircularProgressIndicator()
             : ElevatedButton(
                 onPressed: _login,
-                child: const Text("Login with LINE"),
+                child: const Text("เข้าสู่ระบบด้วย LINE"),
               ),
       ),
     );

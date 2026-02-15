@@ -78,4 +78,42 @@ class UserSettingService {
       throw Exception("Failed to delete device: ${response.statusCode}");
     }
   }
+
+  Future<double> getSalary() async {
+    final token = await AccesstokenService().getAccessToken();
+    final url = Uri.parse("${Config.baseUrl}/api/budget/salary");
+
+    final response = await http.get(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return double.tryParse(response.body) ?? 0.0;
+    } else {
+      throw Exception("Failed to get salary: ${response.statusCode}");
+    }
+  }
+
+  Future<void> setSalary(double amount) async {
+    final token = await AccesstokenService().getAccessToken();
+    final url = Uri.parse("${Config.baseUrl}/api/budget/salary/$amount");
+
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception(
+        "Failed to set salary: ${response.statusCode} ${response.body}",
+      );
+    }
+  }
 }

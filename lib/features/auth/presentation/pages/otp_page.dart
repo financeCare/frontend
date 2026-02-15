@@ -59,7 +59,7 @@ class _OtpPageState extends State<OtpPage> {
     if (success && mounted) {
       Navigator.of(context).pushReplacementNamed('/home');
     } else {
-      _showError("Invalid OTP. Please try again.");
+      _showError("รหัส OTP ไม่ถูกต้อง โปรดลองอีกครั้ง");
     }
   }
 
@@ -89,7 +89,7 @@ class _OtpPageState extends State<OtpPage> {
             _buildVerifyIcon(),
             const SizedBox(height: 32),
             Text(
-              "Verify your email",
+              "ยืนยันอีเมลของคุณ",
               style: GoogleFonts.kanit(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -102,9 +102,7 @@ class _OtpPageState extends State<OtpPage> {
               text: TextSpan(
                 style: GoogleFonts.kanit(fontSize: 14, color: Colors.black54),
                 children: [
-                  const TextSpan(
-                    text: "We've sent a 6-digit verification code to\n",
-                  ),
+                  const TextSpan(text: "เราได้ส่งรหัสยืนยัน 6 หลักไปที่\n"),
                   TextSpan(
                     text: widget.email,
                     style: const TextStyle(
@@ -125,7 +123,7 @@ class _OtpPageState extends State<OtpPage> {
             _buildBackToRegistration(),
             const SizedBox(height: 40),
             Text(
-              "Please check your inbox and spam folder for the verification code.",
+              "โปรดตรวจสอบในกล่องจดหมายและโฟลเดอร์สแปมสำหรับรหัสยืนยัน",
               textAlign: TextAlign.center,
               style: GoogleFonts.kanit(fontSize: 12, color: Colors.black38),
             ),
@@ -213,7 +211,7 @@ class _OtpPageState extends State<OtpPage> {
                 ),
               )
             : Text(
-                "Verify & Continue",
+                "ยืนยันและดำเนินการต่อ",
                 style: GoogleFonts.kanit(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -228,12 +226,12 @@ class _OtpPageState extends State<OtpPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          "Didn't receive the code? ",
+          "ไม่ได้รับรหัสใช่หรือไม่? ",
           style: GoogleFonts.kanit(fontSize: 13, color: Colors.black54),
         ),
         if (_resendTimer > 0)
           Text(
-            "Resend in ${_resendTimer}s",
+            "ส่งอีกครั้งใน ${_resendTimer} วินาที",
             style: GoogleFonts.kanit(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -249,7 +247,7 @@ class _OtpPageState extends State<OtpPage> {
               AuthService().sendOTP(widget.email);
             },
             child: Text(
-              "Resend code",
+              "ส่งรหัสอีกครั้ง",
               style: GoogleFonts.kanit(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
@@ -270,7 +268,7 @@ class _OtpPageState extends State<OtpPage> {
           const Icon(Icons.arrow_back, size: 16, color: Colors.black38),
           const SizedBox(width: 8),
           Text(
-            "Back to registration",
+            "กลับไปหน้าสมัครสมาชิก",
             style: GoogleFonts.kanit(fontSize: 13, color: Colors.black38),
           ),
         ],
