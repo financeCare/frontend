@@ -36,18 +36,30 @@ class RepaymentStrategyService {
     debugPrint("RAW BODY => ${response.body}");
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> data = jsonDecode(response.body);
-      final List strategiesJson = data['repaymentStrategyList'] ?? [];
-      final double budget = (data['monthlyBudget'] as num?)?.toDouble() ?? 0.0;
+      try {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final List strategiesJson = data['repaymentStrategyList'] ?? [];
+        final double budget =
+            (data['monthlyBudget'] as num?)?.toDouble() ?? 0.0;
 
-      final strategies = strategiesJson
-          .map((e) => RepaymentStrategyResponse.fromJson(e))
-          .toList();
+        final strategies = strategiesJson
+            .map(
+              (e) =>
+                  RepaymentStrategyResponse.fromJson(e as Map<String, dynamic>),
+            )
+            .toList();
 
-      return RepaymentStrategiesOverview(
-        monthlyBudget: budget,
-        strategies: strategies,
-      );
+        debugPrint("Parsed ${strategies.length} strategies, budget: $budget");
+
+        return RepaymentStrategiesOverview(
+          monthlyBudget: budget,
+          strategies: strategies,
+        );
+      } catch (parseError, stackTrace) {
+        debugPrint("PARSE ERROR in fetchStrategies: $parseError");
+        debugPrint("STACKTRACE: $stackTrace");
+        throw Exception("Failed to parse strategy data: $parseError");
+      }
     } else {
       throw Exception("Strategy API failed: ${response.statusCode}");
     }

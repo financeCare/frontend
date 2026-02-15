@@ -77,8 +77,8 @@ class DebtPayment {
 
   factory DebtPayment.fromJson(Map<String, dynamic> json) {
     return DebtPayment(
-      debtId: json['debtId'] ?? '',
-      debtName: json['debtName'] ?? '',
+      debtId: json['debtId']?.toString() ?? '',
+      debtName: json['debtName']?.toString() ?? '',
       beforeBalance: (json['beforeBalance'] as num?)?.toDouble() ?? 0.0,
       interestAdded: (json['interestAdded'] as num?)?.toDouble() ?? 0.0,
       minPaid: (json['minPaid'] as num?)?.toDouble() ?? 0.0,

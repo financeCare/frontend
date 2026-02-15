@@ -64,7 +64,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             ),
             const SizedBox(width: 8),
             Text(
-              'DebtFree',
+              'FinanceCare',
               style: GoogleFonts.outfit(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,

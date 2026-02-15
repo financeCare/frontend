@@ -4,7 +4,6 @@ import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'features/notification/data/models/notification_api.dart';
 import 'features/notification/data/services/notification_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -23,9 +22,12 @@ import 'features/simulator/presentation/RepaymentStrategyScreen.dart';
 import 'features/dashboard/presentation/pages/homepage.dart';
 import 'features/notification/presentation/notification_screen.dart';
 import 'features/debt/presentation/pages/debt_management_page.dart';
+import 'features/debt/presentation/pages/debt_payment_page.dart';
+import 'features/debt/domain/models/debt_response.dart';
 import 'core/config/config.dart' as Config;
+import 'features/auth/data/services/access_token_service.dart';
 
-final storage = FlutterSecureStorage();
+// final storage = FlutterSecureStorage(); // Removed in favor of AccesstokenService.sharedStorage
 
 // 🚨 ฟังก์ชัน main() ต้องเป็น async และรวมการเริ่มต้น (Initialization) ของทั้งสองบริการ
 Future<void> main() async {
@@ -71,7 +73,7 @@ class _MyAppState extends State<MyApp> {
 
     _notificationService = NotificationService(
       api: NotificationApi(baseUrl: Config.baseUrl), // ✅ ใช้ baseUrl ของคุณ
-      storage: storage,
+      storage: AccesstokenService.sharedStorage,
     );
 
     _bootNotification();
@@ -129,7 +131,12 @@ class _MyAppState extends State<MyApp> {
         '/expense_entry': (context) => const ExpenseEntryScreen(),
         '/simulator': (context) => const RepaymentStrategyScreen(),
         '/notify': (context) => const NotificationScreen(),
-        '/add_debt': (context) => const AddDebtPage(),
+        '/add_debt': (context) {
+          final debt =
+              ModalRoute.of(context)?.settings.arguments as DebtResponse?;
+          return AddDebtPage(debtToEdit: debt);
+        },
+        '/pay_debt': (context) => const DebtPaymentPage(),
       },
     );
   }

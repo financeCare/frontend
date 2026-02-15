@@ -212,8 +212,8 @@ class DebtService {
         'principalAmount': debtRequest.principalAmount,
         'interestRate': debtRequest.interestRate,
         'repaymentTypeId': debtRequest.repaymentTypeId,
-        'startDate': debtRequest.startDate.toIso8601String(),
-        'endDate': debtRequest.endDate.toIso8601String(),
+        'startDate': debtRequest.startDate.toIso8601String().split('T')[0],
+        'endDate': debtRequest.endDate.toIso8601String().split('T')[0],
         'isActive': debtRequest.isActive,
         'priority': debtRequest.priority,
         'debtTypeId': debtRequest.debtTypeId,
@@ -252,15 +252,15 @@ class DebtService {
     print("AccessToken: $accessToken");
 
     final body = {
-      'debtName': debtRequest.debtName,
       'principalAmount': debtRequest.principalAmount,
       'interestRate': debtRequest.interestRate,
-      'debtTypeId': debtRequest.debtTypeId,
       'repaymentTypeId': debtRequest.repaymentTypeId,
-      'startDate': debtRequest.startDate.toIso8601String(),
-      'endDate': debtRequest.endDate.toIso8601String(),
-      'priority': debtRequest.priority,
+      'startDate': debtRequest.startDate.toIso8601String().split('T')[0],
+      'endDate': debtRequest.endDate.toIso8601String().split('T')[0],
       'isActive': debtRequest.isActive,
+      'priority': debtRequest.priority,
+      'debtTypeId': debtRequest.debtTypeId,
+      'debtName': debtRequest.debtName,
     };
     print("Request body: $body");
 
@@ -287,6 +287,39 @@ class DebtService {
     } else {
       String errorMessage =
           'Failed to update debt (Status ${response.statusCode})';
+      try {
+        final errorBody = json.decode(response.body);
+        errorMessage = errorBody['message'] ?? errorMessage;
+      } catch (_) {}
+      throw Exception(errorMessage);
+    }
+  }
+
+  Future<void> payDebt(String debtId, double amount, String paidAt) async {
+    String? accessToken = await AccesstokenService().getAccessToken();
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/debts/pays'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'debtId': debtId, 'amount': amount, 'paidAt': paidAt}),
+    );
+
+    print("Pay debt status code : ${response.statusCode}");
+    print("Pay debt body : ${response.body}");
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      print("Debt paid successfully.");
+    } else if (response.statusCode == 401) {
+      throw Exception('Authorization failed (401). Please log in again.');
+    } else if (response.statusCode == 403) {
+      throw Exception(
+        'Forbidden (403). You do not have permission to access this resource.',
+      );
+    } else {
+      String errorMessage =
+          'Failed to pay debt (Status ${response.statusCode})';
       try {
         final errorBody = json.decode(response.body);
         errorMessage = errorBody['message'] ?? errorMessage;

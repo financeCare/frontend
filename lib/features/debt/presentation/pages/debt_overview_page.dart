@@ -1,7 +1,7 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../data/services/debt_service.dart';
-import '../../domain/models/debt_dto.dart';
 import '../../domain/models/debt_response.dart';
 
 class DebtOverviewPage extends StatefulWidget {
@@ -13,7 +13,7 @@ class DebtOverviewPage extends StatefulWidget {
 
 class _DebtOverviewPageState extends State<DebtOverviewPage> {
   final DebtService _debtService = DebtService();
-  List<DebtDto> _debts = [];
+  List<DebtResponse> _debtResponses = [];
   bool _isLoading = true;
 
   @override
@@ -23,222 +23,631 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final List<DebtResponse> responses = await _debtService.getAllDebt();
+      if (!mounted) return;
       setState(() {
-        _debts = responses
-            .map(
-              (d) => DebtDto(
-                id: d.debtId,
-                name: d.debtName,
-                amount: d.principalAmount,
-                interest: d.interestRate,
-                type: d.debtType.debtTypeName,
-              ),
-            )
-            .toList();
+        _debtResponses = responses;
       });
     } catch (e) {
       debugPrint("Error loading debts: $e");
     } finally {
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
 
-  void _deleteDebt(int index) async {
-    final debt = _debts[index];
-    final confirmed = await showDialog<bool>(
+  Future<void> _deleteDebt(DebtResponse debt) async {
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("ยืนยันการลบ"),
-        content: Text("คุณแน่ใจหรือไม่ว่าต้องการลบ '${debt.name}'?"),
+        title: Text(
+          'ยืนยันการลบ',
+          style: GoogleFonts.kanit(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'คุณแน่ใจหรือไม่ว่าต้องการลบรายการหนี้ "${debt.debtName}"? รายการนี้จะถูกลบถาวร',
+          style: GoogleFonts.kanit(),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("ยกเลิก"),
+            child: Text(
+              'ยกเลิก',
+              style: GoogleFonts.kanit(color: Colors.black45),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("ลบ"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEB5757),
+              foregroundColor: Colors.white,
+            ),
+            child: Text('ลบ', style: GoogleFonts.kanit()),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
+    if (confirm == true) {
+      setState(() => _isLoading = true);
       try {
-        await _debtService.deleteDebt(debt.id);
-        _loadData();
-      } catch (e) {
+        await _debtService.deleteDebt(debt.debtId);
+        await _loadData();
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text("ลบไม่สำเร็จ: $e")));
+          ).showSnackBar(const SnackBar(content: Text('ลบรายการหนี้สำเร็จ')));
         }
+      } catch (e) {
+        debugPrint("Error deleting debt: $e");
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาดในการลบ: $e')));
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    double totalDebt = DebtDto.totalAmount(_debts);
+    final activeDebts = _debtResponses.where((d) => d.isActive).toList()
+      ..sort((a, b) => a.principalAmount.compareTo(b.principalAmount));
+    final closedDebts = _debtResponses.where((d) => !d.isActive).toList();
+
+    double totalPrincipal = activeDebts.fold(
+      0.0,
+      (sum, d) => sum + d.principalAmount,
+    );
+    double avgInterest = activeDebts.isEmpty
+        ? 0.0
+        : activeDebts.fold(0.0, (sum, d) => sum + d.interestRate) /
+              activeDebts.length;
+    double totalMinPayment = activeDebts.fold(
+      0.0,
+      (sum, d) => sum + d.minPayment,
+    );
 
     return Scaffold(
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadData,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "ภาพรวมหนี้สิน",
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildSummaryCard(totalDebt),
-                    const SizedBox(height: 30),
-                    if (_debts.isNotEmpty) ...[
-                      SizedBox(height: 200, child: _buildChart()),
-                      const SizedBox(height: 30),
-                    ],
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "รายการหนี้ของคุณ",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFFEB5757)),
+              )
+            : RefreshIndicator(
+                onRefresh: _loadData,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'สวัสดี, ยินดีต้อนรับ',
+                        style: GoogleFonts.kanit(
+                          fontSize: 14,
+                          color: Colors.black45,
                         ),
-                        ElevatedButton.icon(
-                          onPressed: () => Navigator.pushNamed(
-                            context,
-                            '/add_debt',
-                          ).then((_) => _loadData()),
-                          icon: const Icon(Icons.add),
-                          label: const Text("เพิ่มหนี้"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orangeAccent,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    if (_debts.isEmpty)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(40.0),
-                          child: Text("ยังไม่มีรายการหนี้"),
-                        ),
-                      )
-                    else
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _debts.length,
-                        itemBuilder: (context, index) {
-                          final debt = _debts[index];
-                          return Card(
-                            elevation: 2,
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            child: ListTile(
-                              title: Text(
-                                debt.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Text(
-                                "ยอดหนี้: ${debt.amount.toStringAsFixed(2)} บาท\nดอกเบี้ย: ${debt.interest}% | ${debt.type}",
-                              ),
-                              isThreeLine: true,
-                              trailing: IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () => _deleteDebt(index),
-                              ),
-                              onTap: () {
-                                // Optional: Detail view
-                              },
-                            ),
-                          );
-                        },
                       ),
-                  ],
-                ),
-              ),
-            ),
-    );
-  }
-
-  Widget _buildSummaryCard(double total) {
-    return Card(
-      elevation: 4,
-      color: Colors.redAccent.shade100,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "ยอดหนี้รวมทั้งหมด",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-                Text(
-                  "${total.toStringAsFixed(2)} บาท",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                      Text(
+                        'ภาพรวมหนี้สิน',
+                        style: GoogleFonts.kanit(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildSummaryCard(
+                        totalPrincipal: totalPrincipal,
+                        activeCount: activeDebts.length,
+                        totalCount: _debtResponses.length,
+                        avgInterest: avgInterest,
+                        minPayment: totalMinPayment,
+                      ),
+                      const SizedBox(height: 32),
+                      Text(
+                        'เมนูลัด',
+                        style: GoogleFonts.kanit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildQuickMenu(),
+                      const SizedBox(height: 32),
+                      _buildSectionHeader(
+                        'หนี้ที่ใช้งานอยู่',
+                        activeDebts.length,
+                      ),
+                      const SizedBox(height: 16),
+                      if (activeDebts.isEmpty)
+                        _buildEmptyState('ไม่มีรายการหนี้ที่ใช้งานอยู่')
+                      else
+                        ...activeDebts.map((debt) => _buildDebtCard(debt)),
+                      const SizedBox(height: 32),
+                      _buildSectionHeader(
+                        'หนี้ที่ปิดการใช้งาน',
+                        closedDebts.length,
+                      ),
+                      const SizedBox(height: 16),
+                      if (closedDebts.isEmpty)
+                        _buildEmptyState('ไม่มีรายการหนี้ที่ปิดการใช้งาน')
+                      else
+                        ...closedDebts.map(
+                          (debt) => _buildClosedDebtCard(debt),
+                        ),
+                      const SizedBox(height: 40),
+                    ],
                   ),
                 ),
-              ],
-            ),
-            const Icon(Icons.account_balance, color: Colors.white, size: 40),
-          ],
-        ),
+              ),
       ),
     );
   }
 
-  Widget _buildChart() {
-    List<PieChartSectionData> sections = _debts.asMap().entries.map((entry) {
-      final index = entry.key;
-      final debt = entry.value;
-      final colors = [
-        Colors.redAccent,
-        Colors.orangeAccent,
-        Colors.pinkAccent,
-        Colors.purpleAccent,
-      ];
-      return PieChartSectionData(
-        value: debt.amount,
-        title: debt.name,
-        color: colors[index % colors.length],
-        radius: 50,
-        titleStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      );
-    }).toList();
+  Widget _buildSummaryCard({
+    required double totalPrincipal,
+    required int activeCount,
+    required int totalCount,
+    required double avgInterest,
+    required double minPayment,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEB5757),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFEB5757).withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.monetization_on_outlined,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'ยอดหนี้คงเหลือทั้งหมด',
+                      style: GoogleFonts.kanit(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '฿${NumberFormat('#,###.00').format(totalPrincipal)}',
+                  style: GoogleFonts.kanit(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    _buildSummaryStat(
+                      'จำนวนหนี้ที่ใช้งาน',
+                      '$activeCount / $totalCount รายการ',
+                    ),
+                    Container(
+                      height: 30,
+                      width: 1,
+                      color: Colors.white.withOpacity(0.2),
+                      margin: const EdgeInsets.symmetric(horizontal: 24),
+                    ),
+                    _buildSummaryStat(
+                      'ดอกเบี้ยเฉลี่ย',
+                      '${avgInterest.toStringAsFixed(1)}% ต่อปี',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.trending_down, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'ยอดจ่ายขั้นต่ำรวม: ฿${NumberFormat('#,###.00').format(minPayment)}/เดือน',
+                  style: GoogleFonts.kanit(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    return PieChart(
-      PieChartData(sections: sections, centerSpaceRadius: 40, sectionsSpace: 2),
+  Widget _buildSummaryStat(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.kanit(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 12,
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.kanit(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickMenu() {
+    final menus = [
+      {
+        'icon': Icons.add_circle_outline,
+        'label': 'สร้างหนี้',
+        'color': const Color(0xFFFFEBEE),
+        'iconColor': const Color(0xFFEB5757),
+        'route': '/add_debt',
+      },
+      {
+        'icon': Icons.bar_chart,
+        'label': 'จำลองหนี้',
+        'color': const Color(0xFFE3F2FD),
+        'iconColor': const Color(0xFF00B0FF),
+        'route': '/simulator',
+      },
+      {
+        'icon': Icons.account_balance_wallet_outlined,
+        'label': 'บันทึกรายรับรายจ่าย',
+        'color': const Color(0xFFF1F8E9),
+        'iconColor': const Color(0xFF8BC34A),
+        'route': '/expense_entry',
+      },
+      {
+        'icon': Icons.credit_card,
+        'label': 'ชำระหนี้',
+        'color': const Color(0xFFE8F5E9),
+        'iconColor': const Color(0xFFEB5757),
+        'route': '/pay_debt',
+      },
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: menus.map((menu) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(
+                context,
+                menu['route'] as String,
+              ).then((_) => _loadData()),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: menu['color'] as Color,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      menu['icon'] as IconData,
+                      color: menu['iconColor'] as Color,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    menu['label'] as String,
+                    style: GoogleFonts.kanit(
+                      fontSize: 12,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, int count) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.kanit(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        Text(
+          '$count รายการ',
+          style: GoogleFonts.kanit(fontSize: 13, color: Colors.black26),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDebtCard(DebtResponse debt) {
+    final remainingDays = debt.endDate.difference(DateTime.now()).inDays;
+    final totalDays = debt.endDate.difference(debt.startDate).inDays;
+    final progress = totalDays > 0
+        ? (1 - (remainingDays / totalDays)).clamp(0.0, 1.0)
+        : 1.0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.credit_card_outlined,
+                  color: Color(0xFFEB5757),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      debt.debtName,
+                      style: GoogleFonts.kanit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '${debt.debtType.debtTypeName} / ${debt.repaymentType.typeName}',
+                      style: GoogleFonts.kanit(
+                        fontSize: 12,
+                        color: Colors.black45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.black12),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '฿${NumberFormat('#,###.00').format(debt.principalAmount)}',
+                style: GoogleFonts.kanit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                      color: Color(0xFF2196F3),
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        Navigator.pushNamed(
+                          context,
+                          '/add_debt',
+                          arguments: debt,
+                        ).then((value) {
+                          if (value == true) _loadData();
+                        }),
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(8),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xFFEB5757),
+                      size: 20,
+                    ),
+                    onPressed: () => _deleteDebt(debt),
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(8),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Text(
+            'ดอกเบี้ย ${debt.interestRate}%',
+            style: GoogleFonts.kanit(fontSize: 13, color: Colors.black45),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.access_time,
+                    size: 14,
+                    color: Colors.black26,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'เหลืออีก $remainingDays วัน',
+                    style: GoogleFonts.kanit(
+                      fontSize: 12,
+                      color: Colors.black38,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                DateFormat('dd MMM yy', 'th').format(debt.endDate),
+                style: GoogleFonts.kanit(fontSize: 12, color: Colors.black38),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 4,
+              backgroundColor: const Color(0xFFF1F3F4),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFFEB5757),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClosedDebtCard(DebtResponse debt) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F3F4).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.02)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.block, color: Colors.black26, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  debt.debtName,
+                  style: GoogleFonts.kanit(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black45,
+                  ),
+                ),
+                Text(
+                  '฿${NumberFormat('#,###.00').format(debt.principalAmount)} - ${debt.debtType.debtTypeName}',
+                  style: GoogleFonts.kanit(fontSize: 12, color: Colors.black26),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'ปิดใช้งาน',
+              style: GoogleFonts.kanit(fontSize: 11, color: Colors.black26),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.02)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.inbox_outlined, size: 48, color: Colors.black12),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: GoogleFonts.kanit(color: Colors.black26, fontSize: 14),
+          ),
+        ],
+      ),
     );
   }
 }

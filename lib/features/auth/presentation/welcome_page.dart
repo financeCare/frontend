@@ -5,13 +5,13 @@ import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'pages/otp_page.dart';
 import 'auth_widget.dart';
 import '../../../core/config/config.dart' as Config;
+import '../data/services/access_token_service.dart';
 import '../data/services/device_service.dart';
 
-final storage = FlutterSecureStorage();
+final storage = AccesstokenService.sharedStorage;
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});

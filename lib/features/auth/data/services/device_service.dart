@@ -2,10 +2,11 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
+import 'access_token_service.dart';
 
 class DeviceService {
   static const String _deviceKeyStorageKey = 'device_key';
-  static final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  static final FlutterSecureStorage _storage = AccesstokenService.sharedStorage;
   static final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
 
   /// Gets the existing device ID or creates a new one if it doesn't exist.

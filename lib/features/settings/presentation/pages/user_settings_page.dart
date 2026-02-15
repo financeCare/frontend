@@ -4,6 +4,9 @@ import 'package:flutter_application_1/features/settings/data/models/user_setting
 import 'package:flutter_application_1/features/settings/data/services/user_setting_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:flutter_line_sdk/flutter_line_sdk.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
 class UserSettingsPage extends StatefulWidget {
   final VoidCallback onBack;
 
@@ -15,6 +18,7 @@ class UserSettingsPage extends StatefulWidget {
 
 class _UserSettingsPageState extends State<UserSettingsPage> {
   final UserSettingService _service = UserSettingService();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
   bool _isLoading = true;
   UserSettingOverview? _data;
   String? _currentDeviceId;
@@ -30,11 +34,24 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _loadSettings();
   }
 
+  Future<void> _handleLogout() async {
+    try {
+      await LineSDK.instance.logout();
+      await _googleSignIn.signOut();
+    } catch (e) {
+      debugPrint("Logout failed: $e");
+    }
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed('/');
+    }
+  }
+
   Future<void> _loadSettings() async {
     try {
       final deviceKey = await DeviceService.getOrCreateDeviceId();
 
       final data = await _service.fetchUserSettings();
+      if (!mounted) return;
       setState(() {
         _data = data;
         _currentDeviceId = deviceKey;
@@ -45,9 +62,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading settings: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('มีข้อผิดพลาดในการโหลดการตั้งค่า: $e')),
+        );
         setState(() => _isLoading = false);
       }
     }
@@ -63,15 +80,15 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings saved successfully')),
+          const SnackBar(content: Text('บันทึกการตั้งค่าเสร็จสมบูรณ์')),
         );
       }
       await _loadSettings();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving settings: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('มีข้อผิดพลาดในการบันทึกการตั้งค่า: $e')),
+        );
         setState(() => _isLoading = false);
       }
     }
@@ -81,19 +98,19 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Device', style: GoogleFonts.kanit()),
+        title: Text('ลบอุปกรณ์', style: GoogleFonts.kanit()),
         content: Text(
-          'Are you sure you want to remove this device?',
+          'คุณแน่ใจหรือไม่ว่าต้องการลบอุปกรณ์นี้?',
           style: GoogleFonts.kanit(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text('ยกเลิก'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('ลบ', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -106,9 +123,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         await _loadSettings();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error deleting device: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('มีข้อผิดพลาดในการลบอุปกรณ์: $e')),
+          );
           setState(() => _isLoading = false);
         }
       }
@@ -128,6 +145,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     );
 
     if (picked != null) {
+      if (!mounted) return;
       setState(() {
         _defaultNotifyTime =
             "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}:00";
@@ -165,7 +183,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Settings',
+                  'ตั้งค่า',
                   style: GoogleFonts.kanit(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -173,7 +191,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                   ),
                 ),
                 Text(
-                  'Manage your preferences and configurations',
+                  'จัดการการตั้งค่าและกำหนดค่าของคุณ',
                   style: GoogleFonts.kanit(fontSize: 12, color: Colors.black45),
                 ),
               ],
@@ -194,6 +212,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       if (_data != null) _buildDeviceSection(_data!.devices),
                       const SizedBox(height: 24),
                       _buildActionButtons(),
+                      const SizedBox(height: 24),
+                      _buildLogoutButton(),
                       const SizedBox(height: 40),
                     ],
                   ),
@@ -264,8 +284,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       children: [
         _buildSectionHeader(
           Icons.notifications_none,
-          'Notifications',
-          'Configure how and when you receive reminders about upcoming payments.',
+          'การแจ้งเตือน',
+          'ตั้งค่าวิธีการและเวลาที่คุณจะได้รับข้อความแจ้งเตือนเกี่ยวกับการชำระเงินที่กำลังจะมาถึง',
         ),
         Container(
           padding: const EdgeInsets.all(16),
@@ -281,14 +301,14 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Enable Notifications',
+                      'เปิดใช้งานการแจ้งเตือน',
                       style: GoogleFonts.kanit(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      'Receive alerts before your payment due dates',
+                      'รับการแจ้งเตือนก่อนวันครบกำหนดชำระเงินของคุณ',
                       style: GoogleFonts.kanit(
                         fontSize: 12,
                         color: Colors.black45,
@@ -307,11 +327,11 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         ),
         const SizedBox(height: 16),
         Text(
-          'Default Notification Time',
+          'เวลาแจ้งเตือนเริ่มต้น',
           style: GoogleFonts.kanit(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         Text(
-          'Set the time of day you want to receive your reminders.',
+          'ตั้งเวลาที่คุณต้องการรับการแจ้งเตือนในแต่ละวัน',
           style: GoogleFonts.kanit(fontSize: 12, color: Colors.black45),
         ),
         const SizedBox(height: 8),
@@ -339,11 +359,11 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         ),
         const SizedBox(height: 16),
         Text(
-          'Days Before Due Date',
+          'จำนวนวันที่แจ้งเตือนก่อนวันครบกำหนด',
           style: GoogleFonts.kanit(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         Text(
-          'How many days in advance should we notify you?',
+          'คุณต้องการให้เราแจ้งเตือนล่วงหน้ากี่วัน?',
           style: GoogleFonts.kanit(fontSize: 12, color: Colors.black45),
         ),
         const SizedBox(height: 8),
@@ -362,7 +382,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                 return DropdownMenuItem<int>(
                   value: val,
                   child: Text(
-                    '$val days before',
+                    '$val วันก่อนหน้า',
                     style: GoogleFonts.kanit(fontSize: 14),
                   ),
                 );
@@ -392,7 +412,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Devices',
+                  'อุปกรณ์',
                   style: GoogleFonts.kanit(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -408,7 +428,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                '${devices.length} devices',
+                '${devices.length} เครื่อง',
                 style: GoogleFonts.kanit(fontSize: 10, color: Colors.black54),
               ),
             ),
@@ -416,7 +436,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Manage the devices that are currently signed in to your account.',
+          'จัดการอุปกรณ์ที่เข้าสู่ระบบด้วยบัญชีของคุณในปัจจุบัน',
           style: GoogleFonts.kanit(fontSize: 13, color: Colors.black45),
         ),
         const SizedBox(height: 16),
@@ -489,7 +509,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          'This device',
+                          'อุปกรณ์นี้',
                           style: GoogleFonts.kanit(
                             fontSize: 10,
                             color: const Color(0xFF27AE60),
@@ -508,10 +528,10 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                     _buildInfoItem(Icons.language, device.platform, size: 12),
                     _buildInfoItem(
                       Icons.location_on_outlined,
-                      'Bangkok, Thailand',
+                      'กรุงเทพมหานคร, ประเทศไทย',
                       size: 12,
                     ),
-                    _buildInfoItem(Icons.access_time, 'Active now', size: 12),
+                    _buildInfoItem(Icons.access_time, 'ใช้งานอยู่', size: 12),
                   ],
                 ),
               ],
@@ -559,7 +579,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               side: BorderSide(color: Colors.black.withOpacity(0.1)),
             ),
             child: Text(
-              'Reset',
+              'รีเซ็ต',
               style: GoogleFonts.kanit(
                 color: Colors.black54,
                 fontWeight: FontWeight.w600,
@@ -585,7 +605,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                 const Icon(Icons.save, size: 18, color: Colors.white),
                 const SizedBox(width: 8),
                 Text(
-                  'Save Settings',
+                  'บันทึกการตั้งค่า',
                   style: GoogleFonts.kanit(
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
@@ -596,6 +616,36 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: _handleLogout,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          side: const BorderSide(color: Color(0xFFEB5757)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.logout, color: Color(0xFFEB5757), size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'ออกจากระบบ',
+              style: GoogleFonts.kanit(
+                color: const Color(0xFFEB5757),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -17,13 +17,13 @@ class RepaymentStrategyResponse {
 
   factory RepaymentStrategyResponse.fromJson(Map<String, dynamic> json) {
     return RepaymentStrategyResponse(
-      strategyId: json['strategyId'],
-      strategyName: json['strategyName'],
-      description: json['description'],
-      isActive: json['isActive'],
-      tags: List<String>.from(json['tags'] ?? []),
+      strategyId: json['strategyId']?.toString() ?? '',
+      strategyName: json['strategyName']?.toString() ?? 'Unknown Strategy',
+      description: json['description']?.toString() ?? '',
+      isActive: json['isActive'] == true || json['isActive'] == 1,
+      tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
       createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
+          ? DateTime.tryParse(json['createdAt'].toString())
           : null,
     );
   }
