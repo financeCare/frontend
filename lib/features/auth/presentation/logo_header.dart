@@ -13,8 +13,8 @@ class LogoHeader extends StatelessWidget {
         // 1. Image.asset: โหลดรูปภาพจากโฟลเดอร์ assets
         Image.asset(
           'assets/logo_finance_care.png',
-          height: 200,
-          width: 200,
+          height: 100,
+          fit: BoxFit.contain,
           // 2. errorBuilder: จัดการเมื่อหารูปภาพไม่เจอ
           errorBuilder: (context, error, stackTrace) {
             // แสดงข้อความแทนถ้าหาไฟล์รูปภาพไม่เจอ
