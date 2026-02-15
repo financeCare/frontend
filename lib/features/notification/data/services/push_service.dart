@@ -1,15 +1,14 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_application_1/features/auth/data/services/device_service.dart';
 import '../../../../core/config/config.dart' as Config;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import '../../../../features/auth/data/services/access_token_service.dart';
 
 class PushService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = AccesstokenService.sharedStorage;
 
   // เปลี่ยนเป็นของคุณ
   final String baseUrl = "${Config.baseUrl}";

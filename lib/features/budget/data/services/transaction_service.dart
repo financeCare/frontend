@@ -3,15 +3,16 @@ import '../../domain/models/transaction_response.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../../domain/models/transaction_request.dart';
-import '../../../../core/config/config.dart'; 
+import '../../../../core/config/config.dart';
 import '../../../../features/auth/data/services/access_token_service.dart';
+import '../../domain/models/transaction_detail.dart';
 
 class TransactionService {
   final String _transactionsUrl = '$baseUrl/api/transactions';
   final storage = FlutterSecureStorage();
 
   Future<List<TransactionResponse>> getOwnTransactions() async {
-  String? accessToken = await AccesstokenService().getAccessToken();
+    String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.get(
       Uri.parse(_transactionsUrl),
       headers: {
@@ -24,7 +25,9 @@ class TransactionService {
     if (response.statusCode == 200) {
       if (response.body.isEmpty) return [];
       final List<dynamic> jsonList = json.decode(response.body);
-      return jsonList.map((json) => TransactionResponse.fromJson(json)).toList();
+      return jsonList
+          .map((json) => TransactionResponse.fromJson(json))
+          .toList();
     } else if (response.statusCode == 401) {
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
@@ -45,55 +48,83 @@ class TransactionService {
     }
   }
 
-Future<List<TransactionResponse>> getSalaryTransactions() async {
-  // ดึงรายการทั้งหมดก่อน
-  final allTransactions = await getOwnTransactions();
-  
-  // Filter เฉพาะ categoryName = "salary"
-  final salaryTransactions = allTransactions
-      .where((tx) => tx.categoryId == "salary")
-      .toList();
+  Future<List<TransactionResponse>> getSalaryTransactions() async {
+    // ดึงรายการทั้งหมดก่อน
+    final allTransactions = await getOwnTransactions();
 
-  return salaryTransactions;
-}
+    // Filter เฉพาะ categoryName = "salary"
+    final salaryTransactions = allTransactions
+        .where((tx) => tx.categoryId == "salary")
+        .toList();
 
-
-  Future <void> createTransaction(TransactionRequest transaction) async {
-  String? accessToken = await AccesstokenService().getAccessToken();
-
-  final response = await http.post(
-    Uri.parse("$_transactionsUrl"),
-    headers: {
-      'Authorization': 'Bearer $accessToken',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode({ 
-      'categoryId': transaction.categoryId,
-      'amount': transaction.amount,
-      'transactionDate': transaction.transactionDate.toIso8601String(),
-      'description': transaction.description,
-    }),
-  );
-
-  print("transaction status code : ${response.statusCode}");
-  print("transaction body : ${response.body}");
-
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    print("Transaction created successfully.");
+    return salaryTransactions;
   }
-  else if (response.statusCode == 401) {
-    throw Exception('Authorization failed (401). Please log in again.');
-  } else if (response.statusCode == 403) {
-    throw Exception('Forbidden (403). You do not have permission to access this resource.');
-  } else {
-    String errorMessage = 'Failed to create transaction (Status ${response.statusCode})';
-    try {
-      final errorBody = json.decode(response.body);
-      errorMessage = errorBody['message'] ?? errorMessage;
-    } catch (_) {}
-    throw Exception(errorMessage);
-  }
-}
 
-  
+  Future<List<TransactionDetail>> getTransactionsByCategory(
+    int categoryId,
+  ) async {
+    String? accessToken = await AccesstokenService().getAccessToken();
+    final url = '$_transactionsUrl/category/$categoryId';
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    print("transactions by category status: ${response.statusCode}");
+    print("transactions by category body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      if (response.body.isEmpty) return [];
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      // Page<Transaction> typically has a 'content' field
+      final List<dynamic> content = data['content'] ?? [];
+      return content.map((json) => TransactionDetail.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load transactions for category $categoryId');
+    }
+  }
+
+  Future<void> createTransaction(TransactionRequest transaction) async {
+    String? accessToken = await AccesstokenService().getAccessToken();
+
+    final response = await http.post(
+      Uri.parse("$_transactionsUrl"),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'categoryId': transaction.categoryId,
+        'amount': transaction.amount,
+        'transactionDate': transaction.transactionDate.toIso8601String(),
+        'description': transaction.description,
+      }),
+    );
+
+    print("transaction status code : ${response.statusCode}");
+    print("transaction body : ${response.body}");
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      print("Transaction created successfully.");
+    } else if (response.statusCode == 401) {
+      throw Exception('Authorization failed (401). Please log in again.');
+    } else if (response.statusCode == 403) {
+      throw Exception(
+        'Forbidden (403). You do not have permission to access this resource.',
+      );
+    } else {
+      String errorMessage =
+          'Failed to create transaction (Status ${response.statusCode})';
+      try {
+        final errorBody = json.decode(response.body);
+        errorMessage = errorBody['message'] ?? errorMessage;
+      } catch (_) {}
+      throw Exception(errorMessage);
+    }
+  }
 }

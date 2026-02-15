@@ -107,4 +107,30 @@ class BudgetService {
       throw Exception(errorMessage);
     }
   }
+
+  Future<List<BudgetOverview>> getTransactionsOverview() async {
+    String? accessToken = await AccesstokenService().getAccessToken();
+    final response = await http.get(
+      Uri.parse("$url/transactions-overview"),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+    print("transactions-overview status code : ${response.statusCode}");
+    print("transactions-overview body : ${response.body}");
+    if (response.statusCode == 200) {
+      if (response.body.isEmpty) return [];
+      final List<dynamic> jsonList = json.decode(response.body);
+      return jsonList.map((json) => BudgetOverview.fromJson(json)).toList();
+    } else if (response.statusCode == 401) {
+      throw Exception('Authorization failed (401). Please log in again.');
+    } else if (response.statusCode == 403) {
+      throw Exception('Forbidden (403).');
+    } else {
+      throw Exception(
+        'Failed to load transaction overview (${response.statusCode})',
+      );
+    }
+  }
 }

@@ -24,12 +24,16 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint("Entering RepaymentStrategyScreen");
     _loadStrategies();
   }
 
   Future<void> _loadStrategies() async {
     try {
+      debugPrint("fetchStrategies started");
       final overview = await RepaymentStrategyService().fetchStrategies();
+      debugPrint("fetchStrategies finished");
+      if (!mounted) return;
       setState(() {
         _strategies = overview.strategies;
         _monthlyBudget = overview.monthlyBudget;
@@ -39,12 +43,18 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
         }
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() => _isLoading = false);
+    } catch (e, stackTrace) {
+      debugPrint("-------------------------------");
+      debugPrint("CRITICAL EXCEPTION in _loadStrategies");
+      debugPrint("Error: $e");
+      debugPrint("Type: ${e.runtimeType}");
+      debugPrint("StackTrace: $stackTrace");
+      debugPrint("-------------------------------");
       if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text("Error loading strategies: $e")));
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
       }
     }
   }
@@ -86,7 +96,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              'DebtFree',
+              'FinanceCare',
               style: GoogleFonts.outfit(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/config/config.dart' as Config;
@@ -7,9 +6,7 @@ import 'package:flutter_application_1/features/auth/data/services/access_token_s
 import 'package:flutter_application_1/features/notification/data/models/notification_log_item.dart';
 import 'package:flutter_application_1/features/notification/data/services/notification_log_api.dart';
 import 'package:flutter_application_1/features/notification/presentation/notification_manager.dart';
-import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -474,7 +471,6 @@ class _HomePageState extends State<HomePage> {
   int unreadNotificationCount = 0;
 
   int _selectedIndex = 0;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
 
   final _storage = const FlutterSecureStorage();
   NotificationManager? _notificationManager;
@@ -555,53 +551,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _onItemTapped(int index) async {
-    int targetIndex;
-    if (index == 0)
-      targetIndex = 0;
-    else if (index == 1) {
-      targetIndex = 1;
-      String url = "${Config.baseUrl}/api/notifications/logs/read-all";
-      String? accessToken = await AccesstokenService().getAccessToken();
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
-      );
-      if (response.statusCode == 200) {
-        setState(() {
-          unreadNotificationCount = 0;
-        });
-      } else if (response.statusCode == 401) {
-        throw Exception('Authorization failed (401). Please log in again.');
-      } else if (response.statusCode == 403) {
-        throw Exception(
-          'Forbidden (403). You do not have permission to access this resource.',
-        );
-      } else {
-        String errorMessage =
-            'Failed to mark notifications as read (Status ${response.statusCode})';
-        try {
-          final errorBody = json.decode(response.body);
-          errorMessage = errorBody['message'] ?? errorMessage;
-        } catch (_) {
-          // Do nothing if body is not JSON
-        }
-        throw Exception(errorMessage);
-      }
-    } else if (index == 3)
-      targetIndex = 2;
-    else if (index == 4)
-      targetIndex = 3;
-    else
-      return;
-    setState(() {
-      _selectedIndex = targetIndex;
-    });
-  }
-
   List<Widget> _getWidgetOptions() {
     return [
       const DebtOverviewPage(),
@@ -628,11 +577,11 @@ class _HomePageState extends State<HomePage> {
   String? _getAppBarTitle(int index) {
     switch (index) {
       case 0:
-        return 'Dashboard';
+        return null;
       case 1:
         return null; // ใช้ Header ตัวเอง
       case 2:
-        return 'งบประมาณต่อเดือน';
+        return null; // hide AppBar for Budget screen
       case 3:
         return null; // หน้า Profile ใช้ AppBar ตัวเอง
       default:
@@ -651,106 +600,152 @@ class _HomePageState extends State<HomePage> {
               title: Text(title),
               backgroundColor: const Color(0xFF00796B),
               foregroundColor: Colors.white,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: () async {
-                    try {
-                      await LineSDK.instance.logout();
-                      await _googleSignIn.signOut();
-                    } catch (e) {
-                      debugPrint("Logout failed: $e");
-                    }
-                    Navigator.of(context).pushReplacementNamed('/');
-                  },
-                ),
-              ],
             )
           : null,
       body: widgetOptions[_selectedIndex],
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(context).pushNamed('/simulator'),
-        backgroundColor: Colors.redAccent.shade700,
-        foregroundColor: Colors.white,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.calculate_outlined, size: 30),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 6.0,
-        color: const Color(0xFF00796B),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: <Widget>[
-            _buildNavItem(0, Icons.home, 'Home'),
-            _buildNavItem(1, Icons.notifications, 'Notify'),
-            const SizedBox(width: 48),
-            _buildNavItem(3, Icons.account_balance_wallet, 'Budget'),
-            _buildNavItem(4, Icons.person, 'Profile'),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+            // Handle read-all for notifications if tab is selected
+            if (index == 1) {
+              _markNotificationsAsRead();
+            }
+          },
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: const Color(0xFF2D955F),
+          unselectedItemColor: Colors.black45,
+          selectedLabelStyle: GoogleFonts.kanit(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+          unselectedLabelStyle: GoogleFonts.kanit(fontSize: 12),
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'หน้าหลัก',
+            ),
+            BottomNavigationBarItem(
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.notifications_none_outlined),
+                  if (unreadNotificationCount > 0)
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEB5757),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 14,
+                          minHeight: 14,
+                        ),
+                        child: Text(
+                          unreadNotificationCount > 9
+                              ? '9+'
+                              : '$unreadNotificationCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              activeIcon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.notifications),
+                  if (unreadNotificationCount > 0)
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEB5757),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 14,
+                          minHeight: 14,
+                        ),
+                        child: Text(
+                          unreadNotificationCount > 9
+                              ? '9+'
+                              : '$unreadNotificationCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              label: 'แจ้งเตือน',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.account_balance_wallet_outlined),
+              activeIcon: Icon(Icons.account_balance_wallet),
+              label: 'งบประมาณ',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.account_circle_outlined),
+              activeIcon: Icon(Icons.account_circle),
+              label: 'ตั้งค่า',
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    int targetIndex;
-    if (index == 0)
-      targetIndex = 0;
-    else if (index == 1)
-      targetIndex = 1;
-    else if (index == 3)
-      targetIndex = 2;
-    else
-      targetIndex = 3;
+  Future<void> _markNotificationsAsRead() async {
+    try {
+      String url = "${Config.baseUrl}/api/notifications/logs/read-all";
+      String? accessToken = await AccesstokenService().getAccessToken();
+      if (accessToken == null) return;
 
-    final isSelected = _selectedIndex == targetIndex;
-    final color = isSelected ? Colors.white : Colors.white60;
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
 
-    final showBadge = index == 1 && unreadNotificationCount > 0;
-
-    return InkWell(
-      onTap: () => _onItemTapped(index),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(icon, color: color, size: 24),
-                if (showBadge)
-                  Positioned(
-                    right: -6,
-                    top: -6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        unreadNotificationCount > 99
-                            ? "99+"
-                            : "$unreadNotificationCount",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            Text(label, style: TextStyle(color: color, fontSize: 10)),
-          ],
-        ),
-      ),
-    );
+      if (response.statusCode == 200) {
+        setState(() {
+          unreadNotificationCount = 0;
+        });
+      }
+    } catch (e) {
+      debugPrint("Failed to mark notifications as read: $e");
+    }
   }
 }

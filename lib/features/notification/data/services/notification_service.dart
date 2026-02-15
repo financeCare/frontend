@@ -1,22 +1,17 @@
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/notification_api.dart';
 
-typedef OnNotificationTap = void Function({
-  required String? refType,
-  required String? refId,
-});
+typedef OnNotificationTap =
+    void Function({required String? refType, required String? refId});
 
 class NotificationService {
-  NotificationService({
-    required this.api,
-    required this.storage,
-  });
+  NotificationService({required this.api, required this.storage});
 
   final NotificationApi api;
   final FlutterSecureStorage storage;
@@ -26,18 +21,14 @@ class NotificationService {
 
   static const _deviceKeyStorageKey = 'device_key_v1';
 
-  Future<void> init({
-    required OnNotificationTap onTap,
-  }) async {
+  Future<void> init({required OnNotificationTap onTap}) async {
     await FirebaseMessaging.instance.requestPermission();
 
     await _initLocal(onTap: onTap);
     _initFcmHandlers(onTap: onTap);
   }
 
-  Future<void> registerTokenToBackend({
-    required String accessToken,
-  }) async {
+  Future<void> registerTokenToBackend({required String accessToken}) async {
     final fcmToken = await FirebaseMessaging.instance.getToken();
     if (fcmToken == null || fcmToken.isEmpty) return;
 
@@ -83,7 +74,9 @@ class NotificationService {
       onDidReceiveNotificationResponse: (resp) {
         final payload = resp.payload ?? '';
         final parts = payload.split('|');
-        final refType = parts.isNotEmpty && parts[0].isNotEmpty ? parts[0] : null;
+        final refType = parts.isNotEmpty && parts[0].isNotEmpty
+            ? parts[0]
+            : null;
         final refId = parts.length > 1 && parts[1].isNotEmpty ? parts[1] : null;
         onTap(refType: refType, refId: refId);
       },
