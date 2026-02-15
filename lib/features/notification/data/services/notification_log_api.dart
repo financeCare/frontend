@@ -57,4 +57,25 @@ class NotificationLogApi {
 
     return list.map((e) => NotificationLogItem.fromJson(e)).toList();
   }
+
+  Future<bool> markAsClicked({
+    required String accessToken,
+    required String logId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/notifications/logs/$logId/clicked');
+    final res = await http.get(
+      uri,
+      headers: {'Authorization': 'Bearer $accessToken'},
+    );
+    return res.statusCode == 200;
+  }
+
+  Future<bool> markAllAsRead({required String accessToken}) async {
+    final uri = Uri.parse('$baseUrl/api/notifications/logs/read-all');
+    final res = await http.get(
+      uri,
+      headers: {'Authorization': 'Bearer $accessToken'},
+    );
+    return res.statusCode == 200;
+  }
 }

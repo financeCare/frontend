@@ -127,7 +127,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Step 1 of 2',
+                    'ขั้นตอนที่ 1 จาก 2',
                     style: GoogleFonts.kanit(
                       fontSize: 12,
                       color: const Color(0xFF2D955F),
@@ -151,7 +151,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Choose Your Repayment Strategy',
+                  'เลือกยุทธวิธีการชำระหนี้ของคุณ',
                   style: GoogleFonts.outfit(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -161,7 +161,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Set your monthly budget and pick the strategy that works best for your lifestyle. We will create a personalized repayment plan for you.',
+                  'ตั้งงบประมาณรายเดือนและเลือกกลยุทธ์ที่เหมาะกับไลฟ์สไตล์ของคุณ เราจะสร้างแผนการชำระหนี้ที่เหมาะกับคุณโดยเฉพาะ',
                   style: GoogleFonts.kanit(
                     fontSize: 16,
                     color: Colors.grey.shade600,
@@ -174,7 +174,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                 Row(
                   children: [
                     Text(
-                      'Select a Strategy',
+                      'เลือกกลยุทธ์',
                       style: GoogleFonts.outfit(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -192,7 +192,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        'Selected',
+                        'เลือกแล้ว',
                         style: GoogleFonts.kanit(
                           fontSize: 12,
                           color: const Color(0xFF00796B),
@@ -208,7 +208,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                 else if (_strategies.isEmpty)
                   Center(
                     child: Text(
-                      'No strategies found.',
+                      'ไม่พบข้อมูลกลยุทธ์',
                       style: GoogleFonts.kanit(color: Colors.grey),
                     ),
                   )
@@ -276,7 +276,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Monthly Budget',
+                      'งบประมาณรายเดือน',
                       style: GoogleFonts.outfit(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -284,7 +284,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                       ),
                     ),
                     Text(
-                      'How much can you allocate to debt repayment each month?',
+                      'คุณสามารถชำระหนี้ได้เท่าไหร่ในแต่ละเดือน?',
                       style: GoogleFonts.kanit(
                         fontSize: 13,
                         color: Colors.grey.shade600,
@@ -331,7 +331,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                   ),
                 ),
                 Text(
-                  '/ month',
+                  '/ เดือน',
                   style: GoogleFonts.kanit(
                     fontSize: 14,
                     color: Colors.grey.shade600,
@@ -358,7 +358,9 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                       color: const Color(0xFF1B5E20),
                     ),
                     children: [
-                      const TextSpan(text: 'Monthly budget need at least: '),
+                      const TextSpan(
+                        text: 'งบประมาณรายเดือนขั้นต่ำที่ต้องใช้: ',
+                      ),
                       TextSpan(
                         text: '฿${_monthlyBudget.toStringAsFixed(0)}',
                         style: const TextStyle(fontWeight: FontWeight.bold),
@@ -571,7 +573,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Your Plan Summary',
+                  'สรุปแผนของคุณ',
                   style: GoogleFonts.kanit(
                     fontSize: 12,
                     color: Colors.grey.shade600,
@@ -585,10 +587,10 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                     ),
                     children: [
                       TextSpan(
-                        text: '฿${_budgetController.text}/month',
+                        text: '฿${_budgetController.text}/เดือน',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      const TextSpan(text: ' with '),
+                      const TextSpan(text: ' ด้วย '),
                       TextSpan(
                         text: selectedStrategyObj.strategyName,
                         style: const TextStyle(fontWeight: FontWeight.bold),
@@ -618,13 +620,14 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                     builder: (_) => RepaymentSimulatorPage(
                       monthlyBudget: budget,
                       strategy: _selectedStrategy,
+                      showConfirmButton: true,
                     ),
                   ),
                 );
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error creating plan: $e')),
+                    SnackBar(content: Text('เกิดข้อผิดพลาดในการสร้างแผน: $e')),
                   );
                 }
               }
@@ -641,7 +644,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
             child: Row(
               children: [
                 Text(
-                  'Continue',
+                  'ถัดไป',
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -676,8 +679,8 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
   }
 
   String? _getStrategyBadge(String name) {
-    if (name.toLowerCase().contains('snowball')) return "Popular";
-    if (name.toLowerCase().contains('avalanche')) return "Recommended";
+    if (name.toLowerCase().contains('snowball')) return "ยอดนิยม";
+    if (name.toLowerCase().contains('avalanche')) return "แนะนำ";
     return null;
   }
 }

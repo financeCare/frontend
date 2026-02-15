@@ -109,7 +109,7 @@ class _WelcomePageState extends State<WelcomePage> {
     if (!_formKey.currentState!.validate()) return;
     if (!_isLoginMode &&
         _passwordController.text != _confirmPasswordController.text) {
-      _showErrorDialog('Passwords do not match.');
+      _showErrorDialog('รหัสผ่านไม่ตรงกัน');
       return;
     }
 
@@ -146,7 +146,7 @@ class _WelcomePageState extends State<WelcomePage> {
       if (success && _isLoginMode)
         _navigateToHome();
       else if (!success && _isLoginMode)
-        _showErrorDialog("Email or password is incorrect");
+        _showErrorDialog("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
     }
   }
 
@@ -154,12 +154,12 @@ class _WelcomePageState extends State<WelcomePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Authentication Error'),
-        content: Text(message),
+        title: Text('ข้อผิดพลาด', style: GoogleFonts.kanit()),
+        content: Text(message, style: GoogleFonts.kanit()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text('ตกลง', style: GoogleFonts.kanit()),
           ),
         ],
       ),
@@ -178,7 +178,7 @@ class _WelcomePageState extends State<WelcomePage> {
               children: [
                 const SizedBox(height: 32),
                 Text(
-                  'Welcome Back',
+                  'ยินดีต้อนรับ',
                   style: GoogleFonts.kanit(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -188,8 +188,8 @@ class _WelcomePageState extends State<WelcomePage> {
                 const SizedBox(height: 8),
                 Text(
                   _isLoginMode
-                      ? 'Sign in to your account to continue'
-                      : 'Create a new account to get started',
+                      ? 'เข้าสู่ระบบเพื่อใช้งานต่อ'
+                      : 'สร้างบัญชีใหม่เพื่อเริ่มต้นใช้งาน',
                   style: GoogleFonts.kanit(fontSize: 14, color: Colors.black54),
                 ),
                 const SizedBox(height: 32),
@@ -230,7 +230,7 @@ class _WelcomePageState extends State<WelcomePage> {
             _buildSeparator(),
             const SizedBox(height: 24),
             _buildTextField(
-              label: 'Email',
+              label: 'อีเมล',
               controller: _emailController,
               icon: Icons.email_outlined,
               hint: 'you@example.com',
@@ -238,23 +238,22 @@ class _WelcomePageState extends State<WelcomePage> {
             ),
             const SizedBox(height: 16),
             _buildTextField(
-              label: 'Password',
+              label: 'รหัสผ่าน',
               controller: _passwordController,
               icon: Icons.lock_outline,
-              hint: _isLoginMode ? 'Enter your password' : 'Create a password',
+              hint: _isLoginMode ? 'กรอกรหัสผ่านของคุณ' : 'สร้างรหัสผ่าน',
               isPassword: true,
               showPassword: _isPasswordVisible,
               onTogglePassword: () =>
                   setState(() => _isPasswordVisible = !_isPasswordVisible),
-              suffix: _isLoginMode ? _buildForgotPassword() : null,
             ),
             if (!_isLoginMode) ...[
               const SizedBox(height: 16),
               _buildTextField(
-                label: 'Confirm Password',
+                label: 'ยืนยันรหัสผ่าน',
                 controller: _confirmPasswordController,
                 icon: Icons.lock_outline,
-                hint: 'Confirm your password',
+                hint: 'ยืนยันรหัสผ่านของคุณ',
                 isPassword: true,
                 showPassword: _isConfirmPasswordVisible,
                 onTogglePassword: () => setState(
@@ -281,14 +280,14 @@ class _WelcomePageState extends State<WelcomePage> {
         children: [
           Expanded(
             child: _buildTabButton(
-              'Sign In',
+              'เข้าสู่ระบบ',
               _isLoginMode,
               () => setState(() => _isLoginMode = true),
             ),
           ),
           Expanded(
             child: _buildTabButton(
-              'Register',
+              'สมัครสมาชิก',
               !_isLoginMode,
               () => setState(() => _isLoginMode = false),
             ),
@@ -334,14 +333,14 @@ class _WelcomePageState extends State<WelcomePage> {
     return Column(
       children: [
         _buildSocialBtn(
-          label: 'Continue with LINE',
+          label: 'ดำเนินการต่อด้วย LINE',
           icon: 'assets/line_icon.png',
           onTap: _loginWithLine,
           color: const Color(0xFF06C755),
         ),
         const SizedBox(height: 12),
         _buildSocialBtn(
-          label: 'Continue with Google',
+          label: 'ดำเนินการต่อด้วย Google',
           icon: 'assets/google_icon.png',
           onTap: _loginWithGoogle,
           isGoogle: true,
@@ -404,7 +403,9 @@ class _WelcomePageState extends State<WelcomePage> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            _isLoginMode ? 'OR CONTINUE WITH EMAIL' : 'OR REGISTER WITH EMAIL',
+            _isLoginMode
+                ? 'หรือเข้าสู่ระบบด้วยอีเมล'
+                : 'หรือสมัครสมาชิกด้วยอีเมล',
             style: GoogleFonts.kanit(
               fontSize: 11,
               fontWeight: FontWeight.bold,
@@ -488,28 +489,14 @@ class _WelcomePageState extends State<WelcomePage> {
             ),
           ),
           validator: (v) {
-            if (v == null || v.isEmpty) return 'Required field';
-            if (label == 'Email' &&
+            if (v == null || v.isEmpty) return 'กรุณากรอกข้อมูล';
+            if (label == 'อีเมล' &&
                 !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v))
-              return 'Invalid email';
+              return 'อีเมลไม่ถูกต้อง';
             return null;
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildForgotPassword() {
-    return GestureDetector(
-      onTap: () {},
-      child: Text(
-        'Forgot password?',
-        style: GoogleFonts.kanit(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF2D955F),
-        ),
-      ),
     );
   }
 
@@ -537,7 +524,7 @@ class _WelcomePageState extends State<WelcomePage> {
                 ),
               )
             : Text(
-                _isLoginMode ? 'Sign In' : 'Create Account',
+                _isLoginMode ? 'เข้าสู่ระบบ' : 'สร้างบัญชี',
                 style: GoogleFonts.kanit(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -551,7 +538,7 @@ class _WelcomePageState extends State<WelcomePage> {
     return Column(
       children: [
         Text(
-          'By continuing, you agree to our Terms of Service and Privacy Policy',
+          'การดำเนินการต่อแสดงว่าคุณยอมรับข้อกำหนดการให้บริการและนโยบายความเป็นส่วนตัวของเรา',
           textAlign: TextAlign.center,
           style: GoogleFonts.kanit(fontSize: 11, color: Colors.black38),
         ),
@@ -561,7 +548,7 @@ class _WelcomePageState extends State<WelcomePage> {
           children: [
             GestureDetector(
               child: Text(
-                'Terms of Service',
+                'ข้อกำหนดการให้บริการ',
                 style: GoogleFonts.kanit(
                   fontSize: 11,
                   color: const Color(0xFF2D955F),
@@ -570,12 +557,12 @@ class _WelcomePageState extends State<WelcomePage> {
               ),
             ),
             Text(
-              ' and ',
+              ' และ ',
               style: GoogleFonts.kanit(fontSize: 11, color: Colors.black38),
             ),
             GestureDetector(
               child: Text(
-                'Privacy Policy',
+                'นโยบายความเป็นส่วนตัว',
                 style: GoogleFonts.kanit(
                   fontSize: 11,
                   color: const Color(0xFF2D955F),

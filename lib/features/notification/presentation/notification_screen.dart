@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../data/models/notification_log_item.dart';
 import '../data/services/notification_log_api.dart';
@@ -8,7 +7,8 @@ import '../../auth/data/services/access_token_service.dart';
 import '../../../core/config/config.dart' as Config;
 
 class NotificationScreen extends StatefulWidget {
-  const NotificationScreen({super.key});
+  final bool showBackButton;
+  const NotificationScreen({super.key, this.showBackButton = true});
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -20,7 +20,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
   final NotificationLogApi _api = NotificationLogApi(baseUrl: Config.baseUrl);
   NotificationFilter _selectedFilter = NotificationFilter.all;
   List<NotificationLogItem> _notifications = [];
-  int _unreadCount = 0;
   bool _isLoading = true;
 
   @override
@@ -57,20 +56,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
         refType: refTypeFilter,
       );
 
-      // Fetch unread count
-      final countUrl = "${Config.baseUrl}/api/notifications/logs/unread-count";
-      final countRes = await http.get(
-        Uri.parse(countUrl),
-        headers: {'Authorization': 'Bearer $accessToken'},
-      );
-      int unread = 0;
-      if (countRes.statusCode == 200) {
-        unread = int.tryParse(countRes.body.trim()) ?? 0;
-      }
-
       setState(() {
         _notifications = logs;
-        _unreadCount = unread;
         _isLoading = false;
       });
     } catch (e) {
@@ -112,106 +99,57 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      body: Column(
-        children: [
-          _buildHeader(),
-          _buildFilters(),
-          Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF2D955F)),
-                  )
-                : _notifications.isEmpty
-                ? _buildEmptyState()
-                : _buildNotificationList(),
-          ),
-        ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            _buildFilters(),
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF2D955F),
+                      ),
+                    )
+                  : _notifications.isEmpty
+                  ? _buildEmptyState()
+                  : _buildNotificationList(),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHeader() {
-    final double statusBarHeight = MediaQuery.of(context).padding.top;
     return Container(
-      padding: EdgeInsets.only(
-        top: statusBarHeight + 70,
-        left: 24,
-        right: 24,
-        bottom: 30,
-      ),
-      decoration: const BoxDecoration(color: Color.fromARGB(255, 45, 149, 95)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'การแจ้งเตือน',
                 style: GoogleFonts.kanit(
-                  fontSize: 28,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: const Color(0xFF1A1A1A),
                 ),
               ),
-              Text(
-                '$_unreadCount รายการที่ยังไม่ได้อ่าน',
-                style: GoogleFonts.kanit(
-                  fontSize: 14,
-                  color: Colors.white.withOpacity(0.9),
+              if (widget.showBackButton)
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                  onPressed: () => Navigator.pop(context),
                 ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              _buildHeaderIcon(
-                icon: Icons.notifications_none_outlined,
-                badgeCount: _unreadCount,
-              ),
-              const SizedBox(width: 12),
-              _buildHeaderIcon(icon: Icons.settings_outlined),
             ],
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildHeaderIcon({required IconData icon, int badgeCount = 0}) {
-    return Stack(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: Colors.white, size: 28),
-        ),
-        if (badgeCount > 0)
-          Positioned(
-            right: 0,
-            top: 0,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(
-                color: Color(0xFFEB5757),
-                shape: BoxShape.circle,
-              ),
-              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-              child: Text(
-                badgeCount > 9 ? '9+' : '$badgeCount',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-      ],
     );
   }
 
@@ -232,6 +170,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildFilterChip(String label, NotificationFilter filter) {
     bool isSelected = _selectedFilter == filter;
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -239,24 +178,31 @@ class _NotificationScreenState extends State<NotificationScreen> {
         });
         _loadData();
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF2D955F) : Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF2D955F).withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+          border: isSelected
+              ? null
+              : Border.all(color: Colors.grey.withOpacity(0.15)),
         ),
         child: Text(
           label,
           style: GoogleFonts.kanit(
-            color: isSelected ? Colors.white : Colors.black54,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected ? Colors.white : Colors.grey.shade600,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w400,
+            fontSize: 14,
           ),
         ),
       ),
@@ -297,8 +243,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       fontSize: 13,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  const Expanded(child: Divider(indent: 8)),
+                  const SizedBox(width: 8),
+                  const Expanded(child: SizedBox.shrink()),
                 ],
               ),
             ),
@@ -311,114 +257,201 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildNotificationCard(NotificationLogItem item, String dateKey) {
     bool isBudget = item.refType == 'BUDGET';
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border(
-          left: BorderSide(
-            color: isBudget ? const Color(0xFFF2994A) : const Color(0xFFEB5757),
-            width: 8,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color:
-                    (isBudget
-                            ? const Color(0xFFF2994A)
+    bool isUnread = item.status == 'SENT';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: InkWell(
+        onTap: () async {
+          final accessToken = await AccesstokenService().getAccessToken();
+          if (accessToken != null) {
+            await _api.markAsClicked(
+              accessToken: accessToken,
+              logId: item.logId,
+            );
+            _loadData(); // Refresh list to update UI
+          }
+          // Navigate if needed
+          if (item.refType == 'BUDGET') {
+            // Navigator.push...
+          }
+        },
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isUnread
+                  ? (isBudget
+                            ? const Color(0xFF2D955F)
                             : const Color(0xFFEB5757))
-                        .withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                isBudget
-                    ? Icons.warning_amber_rounded
-                    : Icons.calendar_today_rounded,
-                color: isBudget
-                    ? const Color(0xFFF2994A)
-                    : const Color(0xFFEB5757),
-                size: 24,
-              ),
+                        .withOpacity(0.08)
+                  : Colors.grey.withOpacity(0.05),
+              width: 1.5,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color:
+                        (isBudget
+                                ? const Color(0xFF2D955F)
+                                : const Color(0xFFEB5757))
+                            .withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(
+                    isBudget
+                        ? Icons.account_balance_wallet_outlined
+                        : Icons.shield_moon_outlined,
+                    color: isBudget
+                        ? const Color(0xFF2D955F)
+                        : const Color(0xFFEB5757),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(
-                          item.title,
-                          style: GoogleFonts.kanit(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.black87,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.title,
+                                  style: GoogleFonts.kanit(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: const Color(0xFF1A1A1A),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        (isBudget
+                                                ? const Color(0xFF2D955F)
+                                                : const Color(0xFFEB5757))
+                                            .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        isBudget
+                                            ? Icons.info_outline_rounded
+                                            : Icons.credit_card_rounded,
+                                        size: 10,
+                                        color: isBudget
+                                            ? const Color(0xFF2D955F)
+                                            : const Color(0xFFEB5757),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        isBudget ? 'งบประมาณ' : 'หนี้สิน',
+                                        style: GoogleFonts.kanit(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: isBudget
+                                              ? const Color(0xFF2D955F)
+                                              : const Color(0xFFEB5757),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                          if (isUnread)
+                            Container(
+                              width: 8,
+                              height: 8,
+                              margin: const EdgeInsets.only(top: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2D955F),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF2D955F,
+                                    ).withOpacity(0.4),
+                                    blurRadius: 6,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
+                      const SizedBox(height: 8),
                       Text(
-                        DateFormat('HH:mm').format(item.sentAt.toLocal()),
+                        item.body,
                         style: GoogleFonts.kanit(
-                          color: Colors.black38,
+                          color: Colors.grey.shade600,
                           fontSize: 13,
+                          height: 1.6,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.body,
-                    style: GoogleFonts.kanit(
-                      color: Colors.black54,
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE0E0E0).withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          dateKey,
-                          style: GoogleFonts.kanit(
-                            fontSize: 11,
-                            color: Colors.black54,
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Text(
+                            DateFormat('d MMM yyyy').format(item.sentAt),
+                            style: GoogleFonts.kanit(
+                              color: Colors.grey.shade400,
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '•',
+                            style: TextStyle(color: Colors.grey.shade300),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isUnread ? 'ยังไม่ได้อ่าน' : 'อ่านแล้ว',
+                            style: GoogleFonts.kanit(
+                              color: isUnread
+                                  ? const Color(0xFF2D955F)
+                                  : Colors.grey.shade400,
+                              fontSize: 12,
+                              fontWeight: isUnread
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ],
                       ),
-                      const Spacer(),
-                      const Icon(Icons.chevron_right, color: Colors.black26),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

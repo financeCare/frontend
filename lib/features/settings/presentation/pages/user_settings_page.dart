@@ -28,6 +28,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   String _defaultNotifyTime = "00:00:00";
   int _defaultRemindDaysBefore = 1;
 
+  final TextEditingController _salaryController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -49,8 +51,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   Future<void> _loadSettings() async {
     try {
       final deviceKey = await DeviceService.getOrCreateDeviceId();
-
       final data = await _service.fetchUserSettings();
+
       if (!mounted) return;
       setState(() {
         _data = data;
@@ -58,26 +60,42 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         _notificationsEnabled = data.userSetting.notificationsEnabled;
         _defaultNotifyTime = data.userSetting.defaultNotifyTime;
         _defaultRemindDaysBefore = data.userSetting.defaultRemindDaysBefore;
-        _isLoading = false;
+        if (!_isLoading)
+          _isLoading =
+              false; // Only set loading false if both done (or handle independently)
       });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('มีข้อผิดพลาดในการโหลดการตั้งค่า: $e')),
-        );
-        setState(() => _isLoading = false);
-      }
+      debugPrint("Error loading user settings: $e");
+    }
+
+    try {
+      final salary = await _service.getSalary();
+      if (!mounted) return;
+      setState(() {
+        _salaryController.text = salary.toStringAsFixed(0);
+      });
+    } catch (e) {
+      debugPrint("Error loading salary: $e");
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _saveSettings() async {
     setState(() => _isLoading = true);
     try {
-      await _service.updateNotificationSettings(
-        enabled: _notificationsEnabled,
-        time: _defaultNotifyTime,
-        daysBefore: _defaultRemindDaysBefore,
-      );
+      final salaryAmount = double.tryParse(_salaryController.text) ?? 0.0;
+
+      await Future.wait([
+        _service.updateNotificationSettings(
+          enabled: _notificationsEnabled,
+          time: _defaultNotifyTime,
+          daysBefore: _defaultRemindDaysBefore,
+        ),
+        _service.setSalary(salaryAmount),
+      ]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('บันทึกการตั้งค่าเสร็จสมบูรณ์')),
@@ -154,77 +172,86 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   }
 
   @override
+  void dispose() {
+    _salaryController.dispose();
+    _googleSignIn.disconnect();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
-          onPressed: widget.onBack,
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2ECC71).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.settings,
-                color: Color(0xFF27AE60),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ตั้งค่า',
-                  style: GoogleFonts.kanit(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        child: _isLoading && _data == null
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFF2D955F)),
+              )
+            : Column(
+                children: [
+                  _buildHeader(),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              _buildSalarySection(),
+                              const SizedBox(height: 16),
+                              _buildNotificationSection(),
+                              const SizedBox(height: 16),
+                              if (_data != null)
+                                _buildDeviceSection(_data!.devices),
+                              const SizedBox(height: 24),
+                              _buildActionButtons(),
+                              const SizedBox(height: 24),
+                              _buildLogoutButton(),
+                              const SizedBox(height: 40),
+                            ],
+                          ),
+                        ),
+                        if (_isLoading)
+                          Container(
+                            color: Colors.black.withOpacity(0.05),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF2D955F),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                Text(
-                  'จัดการการตั้งค่าและกำหนดค่าของคุณ',
-                  style: GoogleFonts.kanit(fontSize: 12, color: Colors.black45),
-                ),
-              ],
-            ),
-          ],
-        ),
+                ],
+              ),
       ),
-      body: _isLoading && _data == null
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(
-              children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _buildNotificationSection(),
-                      const SizedBox(height: 16),
-                      if (_data != null) _buildDeviceSection(_data!.devices),
-                      const SizedBox(height: 24),
-                      _buildActionButtons(),
-                      const SizedBox(height: 24),
-                      _buildLogoutButton(),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                ),
-                if (_isLoading)
-                  Container(
-                    color: Colors.black.withOpacity(0.1),
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
-              ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      color: Colors.white,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'ตั้งค่า',
+            style: GoogleFonts.kanit(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1A1A1A),
             ),
+          ),
+          IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            onPressed: widget.onBack,
+          ),
+        ],
+      ),
     );
   }
 
@@ -276,6 +303,46 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: children,
       ),
+    );
+  }
+
+  Widget _buildSalarySection() {
+    return _buildCard(
+      children: [
+        _buildSectionHeader(
+          Icons.account_balance_wallet_outlined,
+          'ข้อมูลรายได้',
+          'ตั้งค่ารายได้รายเดือนของคุณเพื่อใช้ในการวางแผนการชำระหนี้',
+        ),
+        Text(
+          'เงินเดือนปัจจุบัน',
+          style: GoogleFonts.kanit(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF9FAFB),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black.withOpacity(0.05)),
+          ),
+          child: TextField(
+            controller: _salaryController,
+            keyboardType: TextInputType.number,
+            style: GoogleFonts.kanit(fontSize: 16),
+            decoration: InputDecoration(
+              hintText: 'กรอกเงินเดือนของคุณ',
+              hintStyle: GoogleFonts.kanit(color: Colors.black38),
+              border: InputBorder.none,
+              prefixText: '฿ ',
+              prefixStyle: GoogleFonts.kanit(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF27AE60),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

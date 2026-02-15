@@ -478,7 +478,7 @@ class _ExpenseEntryScreenState extends State<ExpenseEntryScreen> {
         child: ElevatedButton(
           onPressed: _isSaving ? null : _onSave,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFEB5757),
+            backgroundColor: const Color(0xFF2D955F),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(

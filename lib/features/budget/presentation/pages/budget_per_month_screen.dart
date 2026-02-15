@@ -58,11 +58,14 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       }
     }
 
+    final double income = await _budgetService.getIncomeAmount();
+
     if (!mounted) return;
     setState(() {
       _budgetItems = data;
       _totalExpense = expense;
       _totalSavings = savings;
+      _totalIncome = income;
     });
   }
 
@@ -971,10 +974,11 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
           _buildStatCard(
             'รายรับ',
             '฿${NumberFormat('#,###').format(_totalIncome)}',
-            '+12% จากเดือนก่อน',
+            '',
             const Color(0xFFE8F5E9),
             const Color(0xFF2D955F),
             Icons.trending_up,
+            showTrend: false,
           ),
           const SizedBox(width: 16),
           _buildStatCard(
@@ -1005,8 +1009,9 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
     String trend,
     Color bgColor,
     Color textColor,
-    IconData icon,
-  ) {
+    IconData icon, {
+    bool showTrend = true,
+  }) {
     return Container(
       width: 160,
       padding: const EdgeInsets.all(16),
@@ -1041,14 +1046,15 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
             style: GoogleFonts.kanit(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          Text(
-            trend,
-            style: GoogleFonts.kanit(
-              fontSize: 10,
-              color: textColor,
-              fontWeight: FontWeight.w500,
+          if (showTrend)
+            Text(
+              trend,
+              style: GoogleFonts.kanit(
+                fontSize: 10,
+                color: textColor,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
         ],
       ),
     );
