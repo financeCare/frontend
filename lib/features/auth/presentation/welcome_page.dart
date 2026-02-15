@@ -176,7 +176,7 @@ class _WelcomePageState extends State<WelcomePage> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
-                const SizedBox(height: 32),
+                const SizedBox(height: 60),
                 Text(
                   'ยินดีต้อนรับ',
                   style: GoogleFonts.kanit(
@@ -194,8 +194,7 @@ class _WelcomePageState extends State<WelcomePage> {
                 ),
                 const SizedBox(height: 32),
                 _buildAuthCard(),
-                const SizedBox(height: 24),
-                _buildFooter(),
+                const SizedBox(height: 40),
               ],
             ),
           ),
@@ -531,48 +530,6 @@ class _WelcomePageState extends State<WelcomePage> {
                 ),
               ),
       ),
-    );
-  }
-
-  Widget _buildFooter() {
-    return Column(
-      children: [
-        Text(
-          'การดำเนินการต่อแสดงว่าคุณยอมรับข้อกำหนดการให้บริการและนโยบายความเป็นส่วนตัวของเรา',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.kanit(fontSize: 11, color: Colors.black38),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            GestureDetector(
-              child: Text(
-                'ข้อกำหนดการให้บริการ',
-                style: GoogleFonts.kanit(
-                  fontSize: 11,
-                  color: const Color(0xFF2D955F),
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-            Text(
-              ' และ ',
-              style: GoogleFonts.kanit(fontSize: 11, color: Colors.black38),
-            ),
-            GestureDetector(
-              child: Text(
-                'นโยบายความเป็นส่วนตัว',
-                style: GoogleFonts.kanit(
-                  fontSize: 11,
-                  color: const Color(0xFF2D955F),
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }
