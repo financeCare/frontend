@@ -72,7 +72,8 @@ class _WelcomePageState extends State<WelcomePage> {
         }
       }
     } catch (error) {
-      _showErrorDialog("Google Login Failed: $error");
+      debugPrint("Google Login Failed: $error");
+      // _showErrorDialog("Google Login Failed: $error");
     } finally {
       setState(() => _isLoading = false);
       if (success) _navigateToHome();
@@ -98,7 +99,8 @@ class _WelcomePageState extends State<WelcomePage> {
         success = true;
       }
     } catch (e) {
-      _showErrorDialog("LINE Login Failed: $e");
+      debugPrint("LINE Login Failed: $e");
+      // _showErrorDialog("LINE Login Failed: $e");
     } finally {
       setState(() => _isLoading = false);
       if (success) _navigateToHome();
