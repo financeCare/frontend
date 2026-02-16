@@ -1044,25 +1044,28 @@ class _AddDebtPageState extends State<AddDebtPage> {
             child: Icon(Icons.help_outline, color: primaryColor, size: 20),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "ดอกเบี้ยโดยประมาณ / เดือน",
-                style: GoogleFonts.kanit(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "ดอกเบี้ยโดยประมาณ / เดือน",
+                  style: GoogleFonts.kanit(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
                 ),
-              ),
-              Text(
-                "฿${interest.toStringAsFixed(2)}",
-                style: GoogleFonts.kanit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: primaryColor,
+                Text(
+                  "฿${interest.toStringAsFixed(2)}",
+                  style: GoogleFonts.kanit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -1177,25 +1180,28 @@ class _AddDebtPageState extends State<AddDebtPage> {
             child: Icon(Icons.calendar_month, color: primaryColor, size: 20),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "ระยะเวลา",
-                style: GoogleFonts.kanit(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "ระยะเวลา",
+                  style: GoogleFonts.kanit(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
                 ),
-              ),
-              Text(
-                "$months เดือน ($months งวด)",
-                style: GoogleFonts.kanit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: primaryColor,
+                Text(
+                  "$months เดือน ($months งวด)",
+                  style: GoogleFonts.kanit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

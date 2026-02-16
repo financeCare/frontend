@@ -284,10 +284,14 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.kanit(fontSize: 16, color: Colors.grey.shade600),
+        Flexible(
+          child: Text(
+            label,
+            style: GoogleFonts.kanit(fontSize: 16, color: Colors.grey.shade600),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
+        const SizedBox(width: 8),
         Text(
           value,
           style: GoogleFonts.kanit(

@@ -236,12 +236,15 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'ตั้งค่า',
-            style: GoogleFonts.kanit(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1A1A1A),
+          Flexible(
+            child: Text(
+              'ตั้งค่า',
+              style: GoogleFonts.kanit(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1A1A1A),
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           IconButton(

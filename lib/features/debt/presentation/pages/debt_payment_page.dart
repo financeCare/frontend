@@ -407,8 +407,9 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
 
   Widget _buildShortcuts() {
     final amounts = [1000.0, 5000.0, 10000.0, 50000.0];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
       children: amounts.map((amount) {
         return GestureDetector(
           onTap: () => _onShortcutPressed(amount),

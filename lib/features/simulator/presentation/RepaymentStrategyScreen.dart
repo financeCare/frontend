@@ -96,12 +96,15 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              'FinanceCare',
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: Colors.black,
+            Flexible(
+              child: Text(
+                'FinanceCare',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Colors.black,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -110,7 +113,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFFE8F5E9),
                 borderRadius: BorderRadius.circular(20),
@@ -119,20 +122,23 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: 6,
+                    height: 6,
                     decoration: const BoxDecoration(
                       color: Color(0xFF2D955F),
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'ขั้นตอนที่ 1 จาก 2',
-                    style: GoogleFonts.kanit(
-                      fontSize: 12,
-                      color: const Color(0xFF2D955F),
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'ขั้นตอนที่ 1 จาก 2',
+                      style: GoogleFonts.kanit(
+                        fontSize: 11,
+                        color: const Color(0xFF2D955F),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

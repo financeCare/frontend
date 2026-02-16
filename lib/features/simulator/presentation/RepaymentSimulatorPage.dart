@@ -702,24 +702,30 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              _buildMonthStat(
-                                'ชำระแล้ว',
-                                _currencyFormat.format(month.paidThisMonth),
-                                Colors.black,
-                              ),
-                              const SizedBox(width: 16),
-                              _buildMonthStat(
-                                'ดอกเบี้ย',
-                                _currencyFormat.format(month.monthInterest),
-                                Colors.red.shade400,
-                              ),
-                              const SizedBox(width: 16),
-                              _buildMonthStat(
-                                'คงเหลือ',
-                                _currencyFormat.format(
-                                  month.remainingDebtTotal,
+                              Expanded(
+                                child: _buildMonthStat(
+                                  'ชำระแล้ว',
+                                  _currencyFormat.format(month.paidThisMonth),
+                                  Colors.black,
                                 ),
-                                Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildMonthStat(
+                                  'ดอกเบี้ย',
+                                  _currencyFormat.format(month.monthInterest),
+                                  Colors.red.shade400,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildMonthStat(
+                                  'คงเหลือ',
+                                  _currencyFormat.format(
+                                    month.remainingDebtTotal,
+                                  ),
+                                  Colors.grey.shade600,
+                                ),
                               ),
                             ],
                           ),
@@ -818,6 +824,8 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
         Text(
           label,
           style: GoogleFonts.kanit(fontSize: 11, color: Colors.grey.shade500),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         Text(
           value,
@@ -826,6 +834,8 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             fontWeight: FontWeight.w600,
             color: valueColor,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

@@ -449,14 +449,18 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: GoogleFonts.kanit(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+        Flexible(
+          child: Text(
+            title,
+            style: GoogleFonts.kanit(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
+        const SizedBox(width: 8),
         Text(
           '$count รายการ',
           style: GoogleFonts.kanit(fontSize: 13, color: Colors.black26),
@@ -533,12 +537,15 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '฿${NumberFormat('#,###.00').format(debt.principalAmount)}',
-                style: GoogleFonts.kanit(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+              Expanded(
+                child: Text(
+                  '฿${NumberFormat('#,###.00').format(debt.principalAmount)}',
+                  style: GoogleFonts.kanit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               Row(
