@@ -52,9 +52,9 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
       debugPrint("-------------------------------");
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("เกิดข้อผิดพลาดในการดึงข้อมูลกลยุทธ์")),
+        );
       }
     }
   }

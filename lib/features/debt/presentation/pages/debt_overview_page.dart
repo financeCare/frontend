@@ -316,9 +316,11 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
               children: [
                 const Icon(Icons.trending_down, color: Colors.white, size: 18),
                 const SizedBox(width: 8),
-                Text(
-                  'ยอดจ่ายขั้นต่ำรวม: ฿${NumberFormat('#,###.00').format(minPayment)}/เดือน',
-                  style: GoogleFonts.kanit(color: Colors.white, fontSize: 14),
+                Expanded(
+                  child: Text(
+                    'ยอดจ่ายขั้นต่ำรวม: ฿${NumberFormat('#,###.00').format(minPayment)}/เดือน',
+                    style: GoogleFonts.kanit(color: Colors.white, fontSize: 14),
+                  ),
                 ),
               ],
             ),

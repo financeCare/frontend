@@ -140,7 +140,11 @@ class _WelcomePageState extends State<WelcomePage> {
         }
       }
     } catch (e) {
-      _showErrorDialog(e.toString());
+      String errorMessage = e.toString().replaceAll('Exception: ', '');
+      if (errorMessage.contains('Email already exists')) {
+        errorMessage = 'อีเมลนี้ถูกใช้งานไปแล้ว กรุณาใช้อีเมลอื่น';
+      }
+      _showErrorDialog(errorMessage);
     } finally {
       setState(() => _isLoading = false);
       if (success && _isLoginMode)

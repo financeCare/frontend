@@ -695,7 +695,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          childAspectRatio: 1.1,
+          childAspectRatio: 1.0,
           crossAxisSpacing: 0,
           mainAxisSpacing: 0,
         ),
@@ -791,7 +791,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 1.15,
+        childAspectRatio: 1.0,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),

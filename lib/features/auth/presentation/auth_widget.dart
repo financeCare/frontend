@@ -78,7 +78,14 @@ class AuthService {
     if (response.statusCode == 201) {
       await sendOTP(email);
     } else {
-      return false;
+      String errorMessage = "Registration failed";
+      try {
+        final data = jsonDecode(response.body);
+        errorMessage = data['message'] ?? data['error'] ?? errorMessage;
+      } catch (_) {
+        errorMessage = response.body.isNotEmpty ? response.body : errorMessage;
+      }
+      throw Exception(errorMessage);
     }
     return true;
   }

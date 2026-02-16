@@ -860,8 +860,8 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             const SizedBox(height: 32),
             Text(
               isBudgetError
-                  ? 'Monthly budget is not enough'
-                  : 'Oops! Something went wrong',
+                  ? 'งบประมาณรายเดือนไม่เพียงพอ'
+                  : 'ขออภัย! เกิดข้อผิดพลาดบางอย่าง',
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(
                 fontSize: 24,
@@ -872,8 +872,8 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             const SizedBox(height: 16),
             Text(
               isBudgetError
-                  ? 'Your current monthly budget is lower than the minimum required to pay off your debts. Please increase your budget and try again.'
-                  : 'We encountered an error while calculating your repayment plan. Please try again later or contact support if the issue persists.',
+                  ? 'งบประมาณรายเดือนของคุณต่ำกว่ายอดชำระขั้นต่ำที่จำเป็นในการเคลียร์หนี้ กรุณาเพิ่มงบประมาณและลองใหม่อีกครั้ง'
+                  : 'เราพบข้อผิดพลาดขณะคำนวณแผนการชำระหนี้ของคุณ กรุณาลองใหม่อีกครั้งในภายหลัง หรือติดต่อฝ่ายสนับสนุนหากปัญหายังคงอยู่',
               textAlign: TextAlign.center,
               style: GoogleFonts.kanit(
                 fontSize: 16,
@@ -896,7 +896,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                   elevation: 0,
                 ),
                 child: Text(
-                  isBudgetError ? 'Adjust Budget' : 'Go Back',
+                  isBudgetError ? 'ปรับงบประมาณ' : 'ย้อนกลับ',
                   style: GoogleFonts.kanit(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

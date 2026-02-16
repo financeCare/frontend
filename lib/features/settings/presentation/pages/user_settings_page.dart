@@ -624,9 +624,11 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       children: [
         Icon(icon, size: size + 2, color: Colors.black38),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: GoogleFonts.kanit(fontSize: size, color: Colors.black45),
+        Flexible(
+          child: Text(
+            label,
+            style: GoogleFonts.kanit(fontSize: size, color: Colors.black45),
+          ),
         ),
       ],
     );
