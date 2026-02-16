@@ -51,6 +51,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(6),
@@ -157,7 +158,8 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: 1.2, // Adjust for card proportions
+      childAspectRatio:
+          1.0, // Adjust for card proportions to avoid bottom overflow
       children: [
         _buildSummaryCard(
           'ระยะเวลาที่คาดการณ์',

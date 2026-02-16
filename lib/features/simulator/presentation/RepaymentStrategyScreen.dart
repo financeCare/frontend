@@ -81,6 +81,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(6),
@@ -351,21 +352,23 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
               children: [
                 const Icon(Icons.circle, size: 8, color: Color(0xFF2D955F)),
                 const SizedBox(width: 12),
-                RichText(
-                  text: TextSpan(
-                    style: GoogleFonts.kanit(
-                      fontSize: 14,
-                      color: const Color(0xFF1B5E20),
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.kanit(
+                        fontSize: 14,
+                        color: const Color(0xFF1B5E20),
+                      ),
+                      children: [
+                        const TextSpan(
+                          text: 'งบประมาณรายเดือนขั้นต่ำที่ต้องใช้: ',
+                        ),
+                        TextSpan(
+                          text: '฿${_monthlyBudget.toStringAsFixed(0)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
-                    children: [
-                      const TextSpan(
-                        text: 'งบประมาณรายเดือนขั้นต่ำที่ต้องใช้: ',
-                      ),
-                      TextSpan(
-                        text: '฿${_monthlyBudget.toStringAsFixed(0)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
                   ),
                 ),
               ],
