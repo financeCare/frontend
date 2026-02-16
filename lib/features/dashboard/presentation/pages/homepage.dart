@@ -248,10 +248,11 @@ class _HomePageState extends State<HomePage> {
               label: 'งบประมาณ',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle_outlined),
-              activeIcon: Icon(Icons.account_circle),
+              icon: Icon(Icons.settings_outlined),
+              activeIcon: Icon(Icons.settings),
               label: 'ตั้งค่า',
             ),
+
           ],
         ),
       ),
