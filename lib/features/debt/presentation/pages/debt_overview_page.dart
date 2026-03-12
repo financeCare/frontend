@@ -7,7 +7,8 @@ import '../../data/services/debt_service.dart';
 import '../../domain/models/debt_response.dart';
 
 class DebtOverviewPage extends StatefulWidget {
-  const DebtOverviewPage({super.key});
+  final int unreadCount;
+  const DebtOverviewPage({super.key, this.unreadCount = 0});
 
   @override
   State<DebtOverviewPage> createState() => _DebtOverviewPageState();
@@ -133,20 +134,31 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'สวัสดี, ยินดีต้อนรับ',
-                        style: GoogleFonts.kanit(
-                          fontSize: 14,
-                          color: Colors.black45,
-                        ),
-                      ),
-                      Text(
-                        'ภาพรวมหนี้สิน',
-                        style: GoogleFonts.kanit(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'สวัสดี, ยินดีต้อนรับ',
+                                style: GoogleFonts.kanit(
+                                  fontSize: 14,
+                                  color: Colors.black45,
+                                ),
+                              ),
+                              Text(
+                                'ภาพรวมหนี้สิน',
+                                style: GoogleFonts.kanit(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          _buildNotificationBell(),
+                        ],
                       ),
                       const SizedBox(height: 24),
                       _buildSummaryCard(
@@ -701,6 +713,63 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
             message,
             style: GoogleFonts.kanit(color: Colors.black26, fontSize: 14),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationBell() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/notify');
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.notifications_none_outlined,
+              color: Color(0xFF2D955F),
+              size: 24,
+            ),
+          ),
+          if (widget.unreadCount > 0)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEB5757),
+                  shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 18,
+                  minHeight: 18,
+                ),
+                child: Text(
+                  widget.unreadCount > 9 ? '9+' : '${widget.unreadCount}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
         ],
       ),
     );

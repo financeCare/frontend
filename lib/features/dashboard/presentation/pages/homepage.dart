@@ -8,6 +8,7 @@ import 'package:flutter_application_1/features/notification/presentation/notific
 import 'package:flutter_application_1/features/notification/presentation/notification_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../settings/presentation/pages/user_settings_page.dart';
+import '../../../ocr/presentation/pages/ocr_screen.dart';
 
 // Import เดิมของคุณ
 import '../../../debt/presentation/pages/debt_overview_page.dart';
@@ -101,8 +102,8 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _getWidgetOptions() {
     return [
-      const DebtOverviewPage(),
-      const NotificationScreen(showBackButton: false),
+      DebtOverviewPage(unreadCount: unreadNotificationCount),
+      OCRScreen(),
       const BudgetPerMonthScreen(),
       UserSettingsPage(onBack: () => setState(() => _selectedIndex = 0)),
     ];
@@ -155,7 +156,7 @@ class _HomePageState extends State<HomePage> {
               _selectedIndex = index;
             });
             if (index == 1) {
-              _markNotificationsAsRead();
+              // OCR selected
             }
           },
           type: BottomNavigationBarType.fixed,
@@ -173,74 +174,10 @@ class _HomePageState extends State<HomePage> {
               activeIcon: Icon(Icons.home),
               label: 'หน้าหลัก',
             ),
-            BottomNavigationBarItem(
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.notifications_none_outlined),
-                  if (unreadNotificationCount > 0)
-                    Positioned(
-                      right: -2,
-                      top: -2,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFEB5757),
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 14,
-                          minHeight: 14,
-                        ),
-                        child: Text(
-                          unreadNotificationCount > 9
-                              ? '9+'
-                              : '$unreadNotificationCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              activeIcon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.notifications),
-                  if (unreadNotificationCount > 0)
-                    Positioned(
-                      right: -2,
-                      top: -2,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFEB5757),
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 14,
-                          minHeight: 14,
-                        ),
-                        child: Text(
-                          unreadNotificationCount > 9
-                              ? '9+'
-                              : '$unreadNotificationCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              label: 'แจ้งเตือน',
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.camera_alt_outlined),
+              activeIcon: Icon(Icons.camera_alt),
+              label: 'สแกน OCR',
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.account_balance_wallet_outlined),

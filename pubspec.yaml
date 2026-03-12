@@ -36,6 +36,7 @@ dependencies:
   device_info_plus: ^10.1.2
   uuid: ^4.5.1
   google_fonts: ^8.0.1
+  image_picker: ^1.1.2
 
 
 dev_dependencies:
