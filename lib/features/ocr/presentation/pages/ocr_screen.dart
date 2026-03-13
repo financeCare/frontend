@@ -175,110 +175,221 @@ class _OCRScreenState extends State<OCRScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF9FAFB),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2D955F),
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          'สแกนใบเสร็จ (OCR)',
+          style: GoogleFonts.kanit(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'OCR สแกนข้อความ',
-                style: GoogleFonts.kanit(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'สแกนใบเสร็จหรือเอกสารเพื่ออ่านข้อความโดยอัตโนมัติ',
-                style: GoogleFonts.kanit(
-                  fontSize: 14,
-                  color: Colors.black45,
-                ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Image Preview Area (Show Full Image)
-              GestureDetector(
-                onTap: () => _showPickImageOptions(),
-                child: Container(
-                  width: double.infinity,
-                  constraints: const BoxConstraints(minHeight: 200, maxHeight: 400),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.black.withOpacity(0.05)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: _image == null
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.add_a_photo_outlined,
-                              size: 64,
-                              color: Color(0xFF2D955F),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'แตะเพื่อเลือกรูปภาพ',
-                              style: GoogleFonts.kanit(
-                                fontSize: 16,
-                                color: Colors.black45,
-                              ),
-                            ),
-                          ],
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: Image.file(_image!, fit: BoxFit.contain),
-                        ),
-                ),
-              ),
-              
-              const SizedBox(height: 32),
-              
-              // Result Area
-              Text(
-                'ผลการสแกน (สรุปข้อมูล)',
-                style: GoogleFonts.kanit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 16),
+              // Header Banner
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.black.withOpacity(0.05)),
+                padding: const EdgeInsets.only(left: 24, right: 24, bottom: 32, top: 16),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2D955F), Color(0xFF4CB07D)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x332D955F),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(color: Color(0xFF2D955F)),
-                      )
-                    : _structuredData.isEmpty
-                        ? Center(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ดึงข้อมูลอัตโนมัติ',
+                      style: GoogleFonts.kanit(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'เปลี่ยนสลิปเป็นข้อมูล',
+                      style: GoogleFonts.kanit(
+                        color: Colors.white,
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
                             child: Text(
-                              'เลือกรูปภาพเพื่อเริ่มการสแกน',
-                              style: GoogleFonts.kanit(color: Colors.black26),
+                              'สแกนสลิปโอนเงินของคุณเพื่อแยกชื่อและจำนวนเงินโดยอัตโนมัติ',
+                              style: GoogleFonts.kanit(
+                                color: Colors.white,
+                                fontSize: 13,
+                                height: 1.4,
+                              ),
                             ),
-                          )
-                        : _buildResultTable(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              
-              const SizedBox(height: 16),
+
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'เลือกรูปภาพสลิป',
+                      style: GoogleFonts.kanit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Image Preview Area (Show Full Image)
+                    GestureDetector(
+                      onTap: () => _showPickImageOptions(),
+                      child: Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(minHeight: 220, maxHeight: 400),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: _image == null
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE8F5E9),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.cloud_upload_outlined,
+                                      size: 48,
+                                      color: Color(0xFF2D955F),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'แตะเพื่ออัปโหลดรูปภาพ',
+                                    style: GoogleFonts.kanit(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF2D955F),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'รองรับ JPG, PNG',
+                                    style: GoogleFonts.kanit(
+                                      fontSize: 13,
+                                      color: const Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ClipRRect(
+                                borderRadius: BorderRadius.circular(22),
+                                child: Image.file(_image!, fit: BoxFit.contain),
+                              ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 32),
+                    
+                    // Result Area
+                    if (_isLoading || _structuredData.isNotEmpty) ...[
+                      Text(
+                        'ผลการสแกน (สรุปข้อมูล)',
+                        style: GoogleFonts.kanit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.02),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: _isLoading
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const CircularProgressIndicator(color: Color(0xFF2D955F)),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'กำลังใช้ AI วิเคราะห์สลิป...',
+                                  style: GoogleFonts.kanit(color: const Color(0xFF64748B)),
+                                )
+                              ],
+                            )
+                          : _structuredData.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    'เลือกรูปภาพเพื่อเริ่มการสแกน',
+                                    style: GoogleFonts.kanit(color: const Color(0xFF94A3B8)),
+                                  ),
+                                )
+                              : _buildResultTable(),
+                    ),
+                    
+                    const SizedBox(height: 16),
               
               // Raw Data (Optional/Expandable)
               if (_ocrResult.isNotEmpty && !_isLoading)
@@ -297,60 +408,64 @@ class _OCRScreenState extends State<OCRScreen> {
 
               const SizedBox(height: 16),
               
-              // Actions
-              if (_ocrResult.isNotEmpty && !_isLoading)
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              // Copy to clipboard or handle data
-                              _copyToClipboard(context);
-                            },
-                            icon: const Icon(Icons.copy),
-                            label: Text('คัดลอกข้อความ', style: GoogleFonts.kanit()),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2D955F),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                    // Actions
+                    if (_ocrResult.isNotEmpty && !_isLoading)
+                      Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    // Copy to clipboard or handle data
+                                    _copyToClipboard(context);
+                                  },
+                                  icon: const Icon(Icons.copy_rounded, size: 20),
+                                  label: Text('คัดลอกข้อมูล', style: GoogleFonts.kanit(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF2D955F),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    elevation: 2,
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _image = null;
-                                _ocrResult = "";
-                                _structuredData = {};
-                              });
-                            },
-                            icon: const Icon(Icons.refresh),
-                            label: Text('สแกนสลิปใหม่', style: GoogleFonts.kanit()),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF2D955F),
-                              side: const BorderSide(color: Color(0xFF2D955F)),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      _image = null;
+                                      _ocrResult = "";
+                                      _structuredData = {};
+                                    });
+                                  },
+                                  icon: const Icon(Icons.refresh_rounded, size: 20),
+                                  label: Text('สแกนสลิปใหม่', style: GoogleFonts.kanit(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFF2D955F),
+                                    side: const BorderSide(color: Color(0xFF2D955F), width: 1.5),
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                   ],
                 ),
+              ),
             ],
           ),
         ),

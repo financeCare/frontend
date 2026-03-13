@@ -179,6 +179,8 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                       ),
                       const SizedBox(height: 16),
                       _buildQuickMenu(),
+                      const SizedBox(height: 24),
+                      _buildJobSuggestionBanner(),
                       const SizedBox(height: 32),
                       _buildSectionHeader(
                         'หนี้ที่ใช้งานอยู่',
@@ -386,7 +388,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
       child: Row(
         children: menus.map((menu) {
           return Padding(
-            padding: const EdgeInsets.only(right: 20),
+            padding: const EdgeInsets.only(right: 24), // Increased padding
             child: GestureDetector(
               onTap: () async {
                 if (menu['route'] == '/simulator_results') {
@@ -453,6 +455,135 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildJobSuggestionBanner() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F4F9), // Subtle, soft background
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)), // Light border
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            Navigator.pushNamed(context, '/job_suggestion');
+          },
+          child: Stack(
+            children: [
+              // Subtle background icon
+              Positioned(
+                right: -10,
+                bottom: -15,
+                child: Icon(
+                  Icons.business_center_outlined,
+                  size: 90,
+                  color: const Color(0xFF2D955F).withOpacity(0.05), // App's primary green, very faded
+                ),
+              ),
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F5E9), // Light green background
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.tips_and_updates_outlined, size: 14, color: Color(0xFF2D955F)),
+                              const SizedBox(width: 4),
+                              Text(
+                                'ไอเดียแนะนำ',
+                                style: GoogleFonts.kanit(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF2D955F),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'เร่งสปีดปลดหนี้!\nด้วยอาชีพเสริมที่ใช่',
+                      style: GoogleFonts.kanit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1E293B), // Dark gray
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'ค้นหางานพาร์ทไทม์ตามความถนัดของคุณ',
+                      style: GoogleFonts.kanit(
+                        fontSize: 13,
+                        color: const Color(0xFF64748B), // Medium gray
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '*อ้างอิงข้อมูลล่วงหน้าจาก:\nตลาดแรงงาน ธปท. และกระทรวงแรงงาน ปี 2567',
+                            style: GoogleFonts.kanit(
+                              fontSize: 10,
+                              color: const Color(0xFF94A3B8), // Light gray
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2D955F), // App primary color
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'ค้นหางานเลย',
+                                style: GoogleFonts.kanit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

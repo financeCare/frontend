@@ -24,6 +24,7 @@ import 'features/notification/presentation/notification_screen.dart';
 import 'features/debt/presentation/pages/debt_management_page.dart';
 import 'features/debt/presentation/pages/debt_payment_page.dart';
 import 'features/debt/domain/models/debt_response.dart';
+import 'features/job/presentation/pages/job_suggestion_page.dart';
 import 'core/config/config.dart' as Config;
 import 'features/auth/data/services/access_token_service.dart';
 
@@ -137,6 +138,7 @@ class _MyAppState extends State<MyApp> {
           return AddDebtPage(debtToEdit: debt);
         },
         '/pay_debt': (context) => const DebtPaymentPage(),
+        '/job_suggestion': (context) => const JobSuggestionPage(),
       },
     );
   }
