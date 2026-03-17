@@ -17,5 +17,7 @@ class JobModel {
     required this.requirement,
     required this.applyUrl,
     this.isRecommended = false,
-  });
+  }) : assert(title.isNotEmpty, 'Job title cannot be empty'),
+       assert(estimatedIncome.isNotEmpty, 'Estimated income must be provided'),
+       assert(type.isNotEmpty, 'Job type must be specified');
 }

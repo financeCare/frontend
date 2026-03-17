@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 
 class AzureVisionService {
@@ -19,18 +20,24 @@ class AzureVisionService {
           'Content-Type': 'application/octet-stream',
         },
         body: bytes,
-      );
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return _extractText(data);
       } else {
-        print("Error analyzing image: ${response.statusCode} - ${response.body}");
-        return null;
+        print("Error analyzing image: HTTP ${response.statusCode} - ${response.body}");
+        return "ERROR_API: ไม่สามารถวิเคราะห์ภาพได้ (HTTP ${response.statusCode})";
       }
+    } on SocketException catch (_) {
+      print("Network Error: No internet connection");
+      return "ERROR_NETWORK: ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ Azure ได้ กรุณาตรวจสอบอินเทอร์เน็ต";
+    } on TimeoutException catch (_) {
+      print("Timeout Error: Request took too long");
+      return "ERROR_TIMEOUT: หมดเวลาการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง";
     } catch (e) {
       print("Exception analyzing image: $e");
-      return null;
+      return "ERROR_UNKNOWN: เกิดข้อผิดพลาดที่ไม่รู้จัก ($e)";
     }
   }
 

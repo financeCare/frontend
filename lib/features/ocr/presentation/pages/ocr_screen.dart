@@ -22,8 +22,23 @@ class _OCRScreenState extends State<OCRScreen> {
     final XFile? pickedFile = await _picker.pickImage(source: source);
 
     if (pickedFile != null) {
+      final File file = File(pickedFile.path);
+      final int fileSizeInBytes = await file.length();
+      final double fileSizeInMB = fileSizeInBytes / (1024 * 1024);
+
+      if (fileSizeInMB > 4.0) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ขนาดไฟล์ใหญ่เกินไป กรุณาเลือกไฟล์ขนาดไม่เกิน 4MB'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+
       setState(() {
-        _image = File(pickedFile.path);
+        _image = file;
         _ocrResult = "";
       });
       _performOCR();
@@ -43,7 +58,7 @@ class _OCRScreenState extends State<OCRScreen> {
 
     final result = await _visionService.analyzeImage(_image!);
 
-    if (result != null) {
+    if (result != null && !result.startsWith("ERROR_")) {
       setState(() {
         _ocrResult = result;
         _structuredData = _parseOCRText(result);
@@ -51,9 +66,21 @@ class _OCRScreenState extends State<OCRScreen> {
       });
     } else {
       setState(() {
-        _ocrResult = "ไม่สามารถอ่านข้อความจากรูปภาพได้ หรือเกิดข้อผิดพลาด";
+        _ocrResult = result ?? "เกิดข้อผิดพลาดในการอ่านข้อความ";
+        if (result != null && result.startsWith("ERROR_")) {
+          _ocrResult = result.split(": ").last; // Extract human-readable error part
+        }
+        _structuredData = {};
         _isLoading = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_ocrResult),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -149,6 +176,20 @@ class _OCRScreenState extends State<OCRScreen> {
     if (data["amount"] == "-" && firstMoneyPattern != null) {
       data["amount"] = firstMoneyPattern;
     }
+
+    // Amount Validation: Ensure it's not basically empty or invalid format
+    if (data["amount"] != "-") {
+      String cleanAmount = data["amount"]!.replaceAll(',', '').trim();
+      double? parsedAmount = double.tryParse(cleanAmount);
+      if (parsedAmount == null || parsedAmount <= 0) {
+        data["amount"] = "-"; // Fallback to invalid
+      }
+    }
+
+    // Default to 'ไม่พบข้อมูล' instead of '-' for better UI
+    data.forEach((key, value) {
+      if (value == "-") data[key] = "ไม่พบข้อมูล";
+    });
 
     return data;
   }
