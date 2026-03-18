@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../../auth/presentation/auth_manager.dart';
 
 class UserSettingsPage extends StatefulWidget {
   final VoidCallback onBack;
@@ -40,6 +41,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     try {
       await LineSDK.instance.logout();
       await _googleSignIn.signOut();
+      await AuthManager.logout();
     } catch (e) {
       debugPrint("Logout failed: $e");
     }

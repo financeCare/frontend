@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
@@ -6,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'pages/otp_page.dart';
+import 'auth_manager.dart';
 import 'auth_widget.dart';
 import '../../../core/config/config.dart' as Config;
 import '../data/services/access_token_service.dart';
@@ -53,30 +55,48 @@ class _WelcomePageState extends State<WelcomePage> {
     try {
       GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
-        serverClientId:
-            "756271821434-vpmof8n9b53p89osfrfeibtk83tvqo1h.apps.googleusercontent.com",
+        serverClientId: "756271821434-vpmof8n9b53p89osfrfeibtk83tvqo1h.apps.googleusercontent.com",
       );
+      print('!!! Starting googleSignIn.signIn()...');
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser != null) {
         final GoogleSignInAuthentication auth = await googleUser.authentication;
+        print('!!! Received Google Auth tokens. idToken length: ${auth.idToken?.length}');
+        print('!!! Received Google Auth tokens');
+        
         final response = await http.post(
           Uri.parse('$_baseUrl/login/google'),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({"idToken": auth.idToken}),
         );
+        
+        print('Google login response status: ${response.statusCode}');
+        print('Google login response body: ${response.body}');
+        
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
-          await storage.write(key: "accessToken", value: data['accessToken']);
+          await AuthManager.saveToken(data['accessToken']);
           await storage.write(key: "refreshToken", value: data['refreshToken']);
+          print('!!! Tokens saved successfully');
           success = true;
+        } else {
+          _showErrorDialog('Server error (${response.statusCode}): ${response.body}');
         }
       }
     } catch (error) {
-      debugPrint("Google Login Failed: $error");
-      // _showErrorDialog("Google Login Failed: $error");
+      print('!!! Google login error: $error');
+      _showErrorDialog("Google Login Failed: $error");
     } finally {
+      if (!mounted) {
+        print('!!! WelcomePage unmounted during login');
+        return;
+      }
       setState(() => _isLoading = false);
-      if (success) _navigateToHome();
+      print('!!! Login flow finished. success=$success');
+      if (success) {
+        print('!!! Navigating to home...');
+        _navigateToHome();
+      }
     }
   }
 
@@ -94,7 +114,7 @@ class _WelcomePageState extends State<WelcomePage> {
       );
       if (res.statusCode == 200 || res.statusCode == 201) {
         final data = jsonDecode(res.body);
-        await storage.write(key: "accessToken", value: data['accessToken']);
+        await AuthManager.saveToken(data['accessToken']);
         await storage.write(key: "refreshToken", value: data['refreshToken']);
         success = true;
       }
@@ -175,100 +195,182 @@ class _WelcomePageState extends State<WelcomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                const SizedBox(height: 60),
-                Text(
-                  'ยินดีต้อนรับ',
-                  style: GoogleFonts.kanit(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _isLoginMode
-                      ? 'เข้าสู่ระบบเพื่อใช้งานต่อ'
-                      : 'สร้างบัญชีใหม่เพื่อเริ่มต้นใช้งาน',
-                  style: GoogleFonts.kanit(fontSize: 14, color: Colors.black54),
-                ),
-                const SizedBox(height: 32),
-                _buildAuthCard(),
-                const SizedBox(height: 40),
-              ],
+      body: Stack(
+        children: [
+          // Background Gradient
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF2D955F), // Emerald
+                  Color(0xFF1B4D3E), // Deep Emerald/Slate
+                  Color(0xFF0F2027), // Midnight
+                ],
+              ),
             ),
           ),
-        ),
+          // Decorative Circles
+          Positioned(
+            top: -100,
+            right: -50,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    // App Logo
+                    Hero(
+                      tag: 'app_logo',
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Image.asset(
+                          'assets/logo_finance_care.png',
+                          height: 120,
+                          width: 120,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.account_balance,
+                                  size: 80, color: Color(0xFF2D955F)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'FINANCE CARE',
+                      style: GoogleFonts.outfit(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _isLoginMode
+                          ? 'ดูแลเรื่องเงินของคุณอย่างมืออาชีพ'
+                          : 'เริ่มต้นจัดการการเงินของคุณวันนี้',
+                      style: GoogleFonts.kanit(
+                        fontSize: 16,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    _buildAuthCard(),
+                    const SizedBox(height: 20),
+                    // Debug Logout (Temporary)
+                    if (AuthManager.token != null)
+                      TextButton(
+                        onPressed: () async {
+                          await AuthManager.logout();
+                          if (mounted) setState(() {});
+                        },
+                        child: Text(
+                          'Logout (Debug)',
+                          style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                        ),
+                      ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAuthCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            _buildTabToggle(),
-            const SizedBox(height: 24),
-            _buildSocialButtons(),
-            const SizedBox(height: 24),
-            _buildSeparator(),
-            const SizedBox(height: 24),
-            _buildTextField(
-              label: 'อีเมล',
-              controller: _emailController,
-              icon: Icons.email_outlined,
-              hint: 'you@example.com',
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-            _buildTextField(
-              label: 'รหัสผ่าน',
-              controller: _passwordController,
-              icon: Icons.lock_outline,
-              hint: _isLoginMode ? 'กรอกรหัสผ่านของคุณ' : 'สร้างรหัสผ่าน',
-              isPassword: true,
-              showPassword: _isPasswordVisible,
-              onTogglePassword: () =>
-                  setState(() => _isPasswordVisible = !_isPasswordVisible),
-            ),
-            if (!_isLoginMode) ...[
-              const SizedBox(height: 16),
-              _buildTextField(
-                label: 'ยืนยันรหัสผ่าน',
-                controller: _confirmPasswordController,
-                icon: Icons.lock_outline,
-                hint: 'ยืนยันรหัสผ่านของคุณ',
-                isPassword: true,
-                showPassword: _isConfirmPasswordVisible,
-                onTogglePassword: () => setState(
-                  () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
-                ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 40,
+                offset: const Offset(0, 20),
               ),
             ],
-            const SizedBox(height: 32),
-            _buildActionButton(),
-          ],
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                _buildTabToggle(),
+                const SizedBox(height: 32),
+                _buildSocialButtons(),
+                const SizedBox(height: 32),
+                _buildSeparator(),
+                const SizedBox(height: 32),
+                _buildTextField(
+                  label: 'อีเมล',
+                  controller: _emailController,
+                  icon: Icons.email_outlined,
+                  hint: 'you@example.com',
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 20),
+                _buildTextField(
+                  label: 'รหัสผ่าน',
+                  controller: _passwordController,
+                  icon: Icons.lock_outline,
+                  hint: _isLoginMode ? 'กรอกรหัสผ่านของคุณ' : 'สร้างรหัสผ่าน',
+                  isPassword: true,
+                  showPassword: _isPasswordVisible,
+                  onTogglePassword: () =>
+                      setState(() => _isPasswordVisible = !_isPasswordVisible),
+                ),
+                if (!_isLoginMode) ...[
+                  const SizedBox(height: 20),
+                  _buildTextField(
+                    label: 'ยืนยันรหัสผ่าน',
+                    controller: _confirmPasswordController,
+                    icon: Icons.lock_outline,
+                    hint: 'ยืนยันรหัสผ่านของคุณ',
+                    isPassword: true,
+                    showPassword: _isConfirmPasswordVisible,
+                    onTogglePassword: () => setState(
+                      () =>
+                          _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 40),
+                _buildActionButton(),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -376,9 +478,10 @@ class _WelcomePageState extends State<WelcomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (isGoogle)
-              Image.network(
-                'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/480px-Google_%22G%22_logo.svg.png',
-                height: 20,
+              const Icon(
+                Icons.g_mobiledata,
+                color: Color(0xFF4285F4),
+                size: 32,
               )
             else
               Image.asset(
@@ -387,12 +490,15 @@ class _WelcomePageState extends State<WelcomePage> {
                 errorBuilder: (_, __, ___) => const Icon(Icons.forum, size: 20),
               ),
             const SizedBox(width: 12),
-            Text(
-              label,
-              style: GoogleFonts.kanit(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+            Flexible(
+              child: Text(
+                label,
+                style: GoogleFonts.kanit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

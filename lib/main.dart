@@ -102,6 +102,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    print('!!! MyApp: Rendering initialScreen. Token exists: ${AuthManager.token != null}');
     final initialScreen = AuthManager.token != null
         ? const HomePage()
         : const WelcomePage();

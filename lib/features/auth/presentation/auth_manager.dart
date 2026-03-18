@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import '../data/services/access_token_service.dart';
 
 class AuthManager {
   static String? _token;
@@ -11,27 +11,34 @@ class AuthManager {
     await loadToken();
   }
 
-  /// บันทึก Token ลงในหน่วยความจำและ SharedPreferences
+  /// บันทึก Token ลงในหน่วยความจำและ FlutterSecureStorage
   static Future<void> saveToken(String token) async {
     _token = token;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('authToken', token);
-    print('Token saved successfully.');
+    final storage = AccesstokenService.sharedStorage;
+    await storage.write(key: 'accessToken', value: token);
+    print('Token saved successfully to SecureStorage.');
   }
 
-  /// โหลด Token จาก SharedPreferences เข้าสู่หน่วยความจำ
+  /// โหลด Token จาก FlutterSecureStorage เข้าสู่หน่วยความจำ
   static Future<void> loadToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('authToken');
-    print('Token loaded: ${_token != null ? "Yes" : "No"}');
+    final storage = AccesstokenService.sharedStorage;
+    _token = await storage.read(key: 'accessToken');
+    print('Token loaded from SecureStorage: ${_token != null ? "Yes" : "No"}');
   }
 
-  /// ลบ Token ออกจากหน่วยความจำและ SharedPreferences
+  /// ลบ Token ออกจากหน่วยความจำและ FlutterSecureStorage
   static Future<void> clearToken() async {
     _token = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('authToken');
-    print('Token cleared successfully.');
+    final storage = AccesstokenService.sharedStorage;
+    await storage.delete(key: 'accessToken');
+    print('Token cleared successfully from SecureStorage.');
+  }
+
+  /// Logout: alias for clearToken (can be extended later)
+  static Future<void> logout() async {
+    await clearToken();
+    final storage = AccesstokenService.sharedStorage;
+    await storage.delete(key: 'refreshToken');
   }
 
   /// ตรวจสอบว่ามีการล็อกอินหรือไม่

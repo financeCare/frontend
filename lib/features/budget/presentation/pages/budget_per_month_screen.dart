@@ -766,12 +766,32 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
 
   Widget _buildTopHeader() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        Container(
+          width: 52,
+          height: 52,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Image.asset(
+            'assets/logo_finance_care.png',
+            fit: BoxFit.contain,
+          ),
+        ),
+        const SizedBox(width: 12),
         Text(
           'งบประมาณต่อเดือน',
           style: GoogleFonts.kanit(
-            fontSize: 24,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1A1A1A),
           ),

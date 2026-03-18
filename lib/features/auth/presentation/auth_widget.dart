@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../core/config/config.dart' as Config;
 import '../data/services/access_token_service.dart';
+import 'auth_manager.dart';
 
 final storage = AccesstokenService.sharedStorage;
 // 🌟 URL ฐานสำหรับการเรียก API
@@ -22,7 +23,7 @@ class AuthService {
       final data = jsonDecode(response.body);
       String accessToken = data['accessToken'];
       String refreshToken = data['refreshToken'];
-      await storage.write(key: "accessToken", value: accessToken);
+      await AuthManager.saveToken(accessToken);
       await storage.write(key: "refreshToken", value: refreshToken);
     } else {
       return false;

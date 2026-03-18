@@ -35,10 +35,12 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
+    print('!!! HomePage: initState');
     super.initState();
     _initNotifications();
 
     _fetchUnreadCount();
+    print('!!! HomePage: Setting up notification timer');
     _notifTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _fetchUnreadCount();
     });
@@ -46,6 +48,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    print('!!! HomePage: dispose');
     _notifTimer?.cancel();
     super.dispose();
   }
@@ -86,6 +89,7 @@ class _HomePageState extends State<HomePage> {
       _notificationManager = NotificationManager(
         storage: _storage,
         onOpenNotification: ({refType, refId}) {
+          print('!!! HomePage: onOpenNotification ($refType, $refId)');
           Navigator.pushNamed(
             context,
             '/notify',
@@ -94,7 +98,9 @@ class _HomePageState extends State<HomePage> {
         },
       );
 
+      print('!!! HomePage: Initializing NotificationManager');
       await _notificationManager!.initialize();
+      print('!!! HomePage: NotificationManager initialized');
     } catch (e) {
       debugPrint("Notification init failed: $e");
     }
