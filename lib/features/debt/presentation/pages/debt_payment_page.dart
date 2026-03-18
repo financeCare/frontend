@@ -61,6 +61,17 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
       return;
     }
 
+    if (amount > _selectedDebt!.principalAmount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'ยอดชำระเกินยอดคงเหลือ (คงเหลือ ฿${NumberFormat('#,###.00').format(_selectedDebt!.principalAmount)})',
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     try {
       final paidAt = DateFormat('yyyy-MM-dd').format(_selectedDate);
@@ -437,7 +448,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
           context: context,
           initialDate: _selectedDate,
           firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
+          lastDate: DateTime.now(),
           builder: (context, child) {
             return Theme(
               data: Theme.of(context).copyWith(

@@ -3,6 +3,7 @@ import 'package:flutter_application_1/features/auth/data/services/device_service
 import 'package:flutter_application_1/features/settings/data/models/user_setting_response.dart';
 import 'package:flutter_application_1/features/settings/data/services/user_setting_service.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -30,6 +31,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   int _defaultRemindDaysBefore = 1;
 
   final TextEditingController _salaryController = TextEditingController();
+  final FocusNode _salaryFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+  bool _isSalaryInvalid = false;
 
   @override
   void initState() {
@@ -74,7 +78,9 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       final salary = await _service.getSalary();
       if (!mounted) return;
       setState(() {
-        _salaryController.text = salary.toStringAsFixed(0);
+        if (salary > 0 || _salaryController.text.isEmpty) {
+          _salaryController.text = salary.toStringAsFixed(0);
+        }
       });
     } catch (e) {
       debugPrint("Error loading salary: $e");
@@ -86,9 +92,29 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   }
 
   Future<void> _saveSettings() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _isSalaryInvalid = false;
+    });
     try {
       final salaryAmount = double.tryParse(_salaryController.text) ?? 0.0;
+
+      if (salaryAmount <= 0) {
+        setState(() {
+          _isLoading = false;
+          _isSalaryInvalid = true;
+        });
+        
+        // Auto-scroll to top and focus the field
+        _scrollController.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+        _salaryFocusNode.requestFocus();
+        
+        return;
+      }
 
       await Future.wait([
         _service.updateNotificationSettings(
@@ -100,7 +126,31 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       ]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('บันทึกการตั้งค่าเสร็จสมบูรณ์')),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'บันทึกการตั้งค่าเสร็จสมบูรณ์',
+                    style: GoogleFonts.kanit(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF27AE60),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            elevation: 4,
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
       await _loadSettings();
@@ -176,6 +226,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   @override
   void dispose() {
     _salaryController.dispose();
+    _salaryFocusNode.dispose();
+    _scrollController.dispose();
     _googleSignIn.disconnect();
     super.dispose();
   }
@@ -196,6 +248,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                     child: Stack(
                       children: [
                         SingleChildScrollView(
+                          controller: _scrollController,
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             children: [
@@ -329,11 +382,20 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
           decoration: BoxDecoration(
             color: const Color(0xFFF9FAFB),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.black.withOpacity(0.05)),
+            border: Border.all(
+              color: _isSalaryInvalid
+                  ? Colors.red
+                  : Colors.black.withOpacity(0.05),
+            ),
           ),
           child: TextField(
             controller: _salaryController,
+            focusNode: _salaryFocusNode,
             keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onChanged: (val) {
+              if (_isSalaryInvalid) setState(() => _isSalaryInvalid = false);
+            },
             style: GoogleFonts.kanit(fontSize: 16),
             decoration: InputDecoration(
               hintText: 'กรอกเงินเดือนของคุณ',
@@ -347,6 +409,14 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             ),
           ),
         ),
+        if (_isSalaryInvalid)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, left: 4),
+            child: Text(
+              'กรุณากรอกเงินเดือนให้ถูกต้อง (มากกว่า 0)',
+              style: GoogleFonts.kanit(fontSize: 12, color: Colors.red),
+            ),
+          ),
       ],
     );
   }

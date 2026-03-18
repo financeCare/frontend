@@ -109,7 +109,7 @@ class _MyAppState extends State<MyApp> {
     const initialScreen = WelcomePage();
 
     return MaterialApp(
-      navigatorKey: _navKey, // ✅ สำคัญ
+      navigatorKey: _navKey,
       debugShowCheckedModeBanner: false,
       title: 'FINANCE CARE FC App',
       localizationsDelegates: const [
@@ -128,7 +128,7 @@ class _MyAppState extends State<MyApp> {
         ),
         useMaterial3: true,
       ),
-      home: initialScreen, // ✅ ใช้ home แทน initialRoute จะตรงกว่า
+      home: initialScreen, 
       routes: {
         '/home': (context) => const HomePage(),
         '/expense_entry': (context) => const ExpenseEntryScreen(),

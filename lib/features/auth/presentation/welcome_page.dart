@@ -478,10 +478,9 @@ class _WelcomePageState extends State<WelcomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (isGoogle)
-              const Icon(
-                Icons.g_mobiledata,
-                color: Color(0xFF4285F4),
-                size: 32,
+              Image.network(
+                'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/480px-Google_%22G%22_logo.svg.png',
+                height: 20,
               )
             else
               Image.asset(
