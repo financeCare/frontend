@@ -562,23 +562,23 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2D955F).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        color: const Color(0xFF2D955F).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.auto_awesome, size: 14, color: Color(0xFF2D955F)),
-                          const SizedBox(width: 6),
+                          const Icon(Icons.auto_awesome, size: 16, color: Color(0xFF2D955F)),
+                          const SizedBox(width: 8),
                           Text(
                             'Smart Suggestion',
                             style: GoogleFonts.kanit(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
                               color: const Color(0xFF2D955F),
-                              letterSpacing: 0.5,
+                              letterSpacing: 0.8,
                             ),
                           ),
                         ],
@@ -588,18 +588,19 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                     Text(
                       'เร่งสปีดปลดหนี้ให้ไวขึ้น\nด้วยอาชีพเสริมที่เหมาะกับคุณ',
                       style: GoogleFonts.kanit(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1E293B),
-                        height: 1.3,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A),
+                        height: 1.25,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Text(
                       'วิเคราะห์จากทักษะและเวลาว่างของคุณ',
                       style: GoogleFonts.kanit(
-                        fontSize: 16,
+                        fontSize: 18,
                         color: const Color(0xFF475569),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -635,15 +636,15 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                               Text(
                                 'ดูคำแนะนำ',
                                 style: GoogleFonts.kanit(
-                                  fontSize: 13,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 8),
                               const Icon(
                                 Icons.arrow_forward_ios_rounded,
-                                size: 12,
+                                size: 14,
                                 color: Colors.white,
                               ),
                             ],

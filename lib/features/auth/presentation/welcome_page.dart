@@ -232,53 +232,53 @@ class _WelcomePageState extends State<WelcomePage> {
                   children: [
                     const SizedBox(height: 20),
                     // App Logo
-                    Hero(
-                      tag: 'app_logo',
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Image.asset(
-                          'assets/logo_finance_care.png',
-                          height: 120,
-                          width: 120,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.account_balance,
-                                  size: 80, color: Color(0xFF2D955F)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'FINANCE CARE',
-                      style: GoogleFonts.outfit(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _isLoginMode
-                          ? 'ดูแลเรื่องเงินของคุณอย่างมืออาชีพ'
-                          : 'เริ่มต้นจัดการการเงินของคุณวันนี้',
-                      style: GoogleFonts.kanit(
-                        fontSize: 16,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                    const SizedBox(height: 40),
+                     Hero(
+                       tag: 'app_logo',
+                       child: Container(
+                         padding: const EdgeInsets.all(6),
+                         decoration: BoxDecoration(
+                           color: Colors.white,
+                           shape: BoxShape.circle,
+                           boxShadow: [
+                             BoxShadow(
+                               color: Colors.black.withOpacity(0.2),
+                               blurRadius: 15,
+                               offset: const Offset(0, 8),
+                             ),
+                           ],
+                         ),
+                         child: Image.asset(
+                           'assets/logo_finance_care.png',
+                           height: 80,
+                           width: 80,
+                           errorBuilder: (context, error, stackTrace) =>
+                               const Icon(Icons.account_balance,
+                                   size: 60, color: Color(0xFF2D955F)),
+                         ),
+                       ),
+                     ),
+                     const SizedBox(height: 16),
+                     Text(
+                       'FINANCE CARE',
+                       style: GoogleFonts.outfit(
+                         fontSize: 24,
+                         fontWeight: FontWeight.w800,
+                         color: Colors.white,
+                         letterSpacing: 2,
+                       ),
+                     ),
+                     const SizedBox(height: 6),
+                     Text(
+                       _isLoginMode
+                           ? 'ดูแลเรื่องเงินของคุณอย่างมืออาชีพ'
+                           : 'เริ่มต้นจัดการการเงินของคุณวันนี้',
+                       style: GoogleFonts.kanit(
+                         fontSize: 14,
+                         color: Colors.white70,
+                         fontWeight: FontWeight.w300,
+                       ),
+                     ),
+                     const SizedBox(height: 24),
                     _buildAuthCard(),
                     const SizedBox(height: 20),
                     // Debug Logout (Temporary)
@@ -309,12 +309,12 @@ class _WelcomePageState extends State<WelcomePage> {
       borderRadius: BorderRadius.circular(32),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.85),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
+         child: Container(
+           padding: const EdgeInsets.all(24),
+           decoration: BoxDecoration(
+             color: Colors.white.withOpacity(0.85),
+             borderRadius: BorderRadius.circular(32),
+             border: Border.all(color: Colors.white.withOpacity(0.2)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
@@ -328,11 +328,11 @@ class _WelcomePageState extends State<WelcomePage> {
             child: Column(
               children: [
                 _buildTabToggle(),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 _buildSocialButtons(),
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
                 _buildSeparator(),
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
                 _buildTextField(
                   label: 'อีเมล',
                   controller: _emailController,

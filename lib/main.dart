@@ -102,10 +102,11 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    print('!!! MyApp: Rendering initialScreen. Token exists: ${AuthManager.token != null}');
-    final initialScreen = AuthManager.token != null
-        ? const HomePage()
-        : const WelcomePage();
+    // !!! DEBUG: Temporarily forcing WelcomePage so you can see the redesign
+    // final initialScreen = AuthManager.token != null
+    //    ? const HomePage()
+    //    : const WelcomePage();
+    const initialScreen = WelcomePage();
 
     return MaterialApp(
       navigatorKey: _navKey, // ✅ สำคัญ
