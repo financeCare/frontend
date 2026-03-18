@@ -377,8 +377,13 @@ class _WelcomePageState extends State<WelcomePage> {
           children: [
             if (isGoogle)
               Image.network(
-                'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/480px-Google_%22G%22_logo.svg.png',
+                'https://developers.google.com/identity/images/g-logo.png',
                 height: 20,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.account_circle,
+                  size: 20,
+                  color: Colors.blue,
+                ),
               )
             else
               Image.asset(
