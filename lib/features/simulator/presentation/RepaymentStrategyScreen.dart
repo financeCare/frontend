@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_application_1/features/simulator/data/models/repayment_strategy_response.dart';
 import 'package:flutter_application_1/features/simulator/data/services/repaymentTypeService.dart';
@@ -39,7 +40,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
         _monthlyBudget = overview.monthlyBudget;
         if (_strategies.isNotEmpty) {
           _selectedStrategy = _strategies.first.strategyId;
-          _budgetController.text = _monthlyBudget.toString();
+          _budgetController.text = _monthlyBudget.toInt().toString();
         }
         _isLoading = false;
       });
@@ -325,6 +326,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                   child: TextField(
                     controller: _budgetController,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (val) => setState(() {}),
                     style: GoogleFonts.outfit(
                       fontSize: 24,
@@ -614,6 +616,17 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
             onPressed: () async {
               if (_selectedStrategy.isEmpty) return;
               final budget = double.tryParse(_budgetController.text) ?? 0.0;
+
+              if (budget < _monthlyBudget) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'งบประมาณต้องไม่น้อยกว่าค่าขั้นต่ำ (฿${_monthlyBudget.toInt()})',
+                    ),
+                  ),
+                );
+                return;
+              }
 
               try {
                 // Call createPlan as requested by user on Continue
