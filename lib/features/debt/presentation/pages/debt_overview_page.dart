@@ -588,7 +588,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                     Text(
                       'เร่งสปีดปลดหนี้ให้ไวขึ้น\nด้วยอาชีพเสริมที่เหมาะกับคุณ',
                       style: GoogleFonts.kanit(
-                        fontSize: 26,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF0F172A),
                         height: 1.25,

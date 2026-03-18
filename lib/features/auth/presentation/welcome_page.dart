@@ -195,92 +195,108 @@ class _WelcomePageState extends State<WelcomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Background Gradient
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF2D955F), // Emerald
-                  Color(0xFF1B4D3E), // Deep Emerald/Slate
-                  Color(0xFF0F2027), // Midnight
-                ],
+          // Top green header section
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 280,
+              decoration: const BoxDecoration(
+                color: Color(0xFF2D955F),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
+                ),
               ),
             ),
           ),
-          // Decorative Circles
+          // Decorative subtle circle on top-right
           Positioned(
-            top: -100,
-            right: -50,
+            top: -60,
+            right: -60,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.08),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 20,
+            left: -40,
+            child: Container(
+              width: 140,
+              height: 140,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withOpacity(0.05),
               ),
             ),
           ),
+          // Content
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
-                    const SizedBox(height: 20),
-                    // App Logo
-                     Hero(
-                       tag: 'app_logo',
-                       child: Container(
-                         padding: const EdgeInsets.all(6),
-                         decoration: BoxDecoration(
-                           color: Colors.white,
-                           shape: BoxShape.circle,
-                           boxShadow: [
-                             BoxShadow(
-                               color: Colors.black.withOpacity(0.2),
-                               blurRadius: 15,
-                               offset: const Offset(0, 8),
-                             ),
-                           ],
-                         ),
-                         child: Image.asset(
-                           'assets/logo_finance_care.png',
-                           height: 80,
-                           width: 80,
-                           errorBuilder: (context, error, stackTrace) =>
-                               const Icon(Icons.account_balance,
-                                   size: 60, color: Color(0xFF2D955F)),
-                         ),
-                       ),
-                     ),
-                     const SizedBox(height: 16),
-                     Text(
-                       'FINANCE CARE',
-                       style: GoogleFonts.outfit(
-                         fontSize: 24,
-                         fontWeight: FontWeight.w800,
-                         color: Colors.white,
-                         letterSpacing: 2,
-                       ),
-                     ),
-                     const SizedBox(height: 6),
-                     Text(
-                       _isLoginMode
-                           ? 'ดูแลเรื่องเงินของคุณอย่างมืออาชีพ'
-                           : 'เริ่มต้นจัดการการเงินของคุณวันนี้',
-                       style: GoogleFonts.kanit(
-                         fontSize: 14,
-                         color: Colors.white70,
-                         fontWeight: FontWeight.w300,
-                       ),
-                     ),
-                     const SizedBox(height: 24),
+                    const SizedBox(height: 24),
+                    // App Logo on green background
+                    Hero(
+                      tag: 'app_logo',
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF2D955F).withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Image.asset(
+                          'assets/logo_finance_care.png',
+                          height: 72,
+                          width: 72,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.account_balance,
+                                  size: 56, color: Color(0xFF2D955F)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'FINANCE CARE',
+                      style: GoogleFonts.outfit(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _isLoginMode
+                          ? 'ดูแลเรื่องเงินของคุณอย่างมืออาชีพ'
+                          : 'เริ่มต้นจัดการการเงินของคุณวันนี้',
+                      style: GoogleFonts.kanit(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.85),
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
                     _buildAuthCard(),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     // Debug Logout (Temporary)
                     if (AuthManager.token != null)
                       TextButton(
@@ -290,10 +306,10 @@ class _WelcomePageState extends State<WelcomePage> {
                         },
                         child: Text(
                           'Logout (Debug)',
-                          style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                          style: TextStyle(color: Colors.grey.withOpacity(0.6)),
                         ),
                       ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -305,72 +321,71 @@ class _WelcomePageState extends State<WelcomePage> {
   }
 
   Widget _buildAuthCard() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-         child: Container(
-           padding: const EdgeInsets.all(24),
-           decoration: BoxDecoration(
-             color: Colors.white.withOpacity(0.85),
-             borderRadius: BorderRadius.circular(32),
-             border: Border.all(color: Colors.white.withOpacity(0.2)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 40,
-                offset: const Offset(0, 20),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            _buildTabToggle(),
+            const SizedBox(height: 24),
+            _buildSocialButtons(),
+            const SizedBox(height: 20),
+            _buildSeparator(),
+            const SizedBox(height: 20),
+            _buildTextField(
+              label: 'อีเมล',
+              controller: _emailController,
+              icon: Icons.email_outlined,
+              hint: 'you@example.com',
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 20),
+            _buildTextField(
+              label: 'รหัสผ่าน',
+              controller: _passwordController,
+              icon: Icons.lock_outline,
+              hint: _isLoginMode ? 'กรอกรหัสผ่านของคุณ' : 'สร้างรหัสผ่าน',
+              isPassword: true,
+              showPassword: _isPasswordVisible,
+              onTogglePassword: () =>
+                  setState(() => _isPasswordVisible = !_isPasswordVisible),
+            ),
+            if (!_isLoginMode) ...[
+              const SizedBox(height: 20),
+              _buildTextField(
+                label: 'ยืนยันรหัสผ่าน',
+                controller: _confirmPasswordController,
+                icon: Icons.lock_outline,
+                hint: 'ยืนยันรหัสผ่านของคุณ',
+                isPassword: true,
+                showPassword: _isConfirmPasswordVisible,
+                onTogglePassword: () => setState(
+                  () =>
+                      _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
+                ),
               ),
             ],
-          ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                _buildTabToggle(),
-                const SizedBox(height: 24),
-                _buildSocialButtons(),
-                const SizedBox(height: 20),
-                _buildSeparator(),
-                const SizedBox(height: 20),
-                _buildTextField(
-                  label: 'อีเมล',
-                  controller: _emailController,
-                  icon: Icons.email_outlined,
-                  hint: 'you@example.com',
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 20),
-                _buildTextField(
-                  label: 'รหัสผ่าน',
-                  controller: _passwordController,
-                  icon: Icons.lock_outline,
-                  hint: _isLoginMode ? 'กรอกรหัสผ่านของคุณ' : 'สร้างรหัสผ่าน',
-                  isPassword: true,
-                  showPassword: _isPasswordVisible,
-                  onTogglePassword: () =>
-                      setState(() => _isPasswordVisible = !_isPasswordVisible),
-                ),
-                if (!_isLoginMode) ...[
-                  const SizedBox(height: 20),
-                  _buildTextField(
-                    label: 'ยืนยันรหัสผ่าน',
-                    controller: _confirmPasswordController,
-                    icon: Icons.lock_outline,
-                    hint: 'ยืนยันรหัสผ่านของคุณ',
-                    isPassword: true,
-                    showPassword: _isConfirmPasswordVisible,
-                    onTogglePassword: () => setState(
-                      () =>
-                          _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 40),
-                _buildActionButton(),
-              ],
-            ),
-          ),
+            const SizedBox(height: 32),
+            _buildActionButton(),
+          ],
         ),
       ),
     );
@@ -478,9 +493,14 @@ class _WelcomePageState extends State<WelcomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (isGoogle)
-              Image.network(
-                'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/480px-Google_%22G%22_logo.svg.png',
-                height: 20,
+              Image.asset(
+                'assets/google_icon.png',
+                height: 22,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.g_mobiledata,
+                  color: Color(0xFF4285F4),
+                  size: 28,
+                ),
               )
             else
               Image.asset(
