@@ -5,6 +5,7 @@ import '../../data/services/transaction_service.dart';
 import '../../domain/models/budget_overview.dart';
 import '../../data/services/budget_service.dart';
 import 'category_transactions_screen.dart';
+import '../widgets/expandable_fab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -755,11 +756,22 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTransactionDialog,
-        backgroundColor: const Color(0xFF2D955F),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
+      floatingActionButton: ExpandableFab(
+        distance: 70.0,
+        children: [
+          ActionButton(
+            onPressed: () => Navigator.pushNamed(context, '/transactions'),
+            icon: const Icon(Icons.receipt_long, size: 22),
+            tooltip: 'ดูรายการทั้งหมด',
+            color: const Color(0xFF1E293B), // Dark Slate
+          ),
+          ActionButton(
+            onPressed: _showAddTransactionDialog,
+            icon: const Icon(Icons.add, size: 28),
+            tooltip: 'เพิ่มรายการใหม่',
+            color: const Color(0xFF2D955F), // App Green
+          ),
+        ],
       ),
     );
   }

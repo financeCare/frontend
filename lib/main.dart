@@ -27,6 +27,7 @@ import 'features/debt/domain/models/debt_response.dart';
 import 'features/job/presentation/pages/job_suggestion_page.dart';
 import 'core/config/config.dart' as Config;
 import 'features/auth/data/services/access_token_service.dart';
+import 'features/budget/presentation/pages/transaction_list_screen.dart';
 
 // final storage = FlutterSecureStorage(); // Removed in favor of AccesstokenService.sharedStorage
 
@@ -141,6 +142,7 @@ class _MyAppState extends State<MyApp> {
         },
         '/pay_debt': (context) => const DebtPaymentPage(),
         '/job_suggestion': (context) => const JobSuggestionPage(),
+        '/transactions': (context) => const TransactionListScreen(),
       },
     );
   }

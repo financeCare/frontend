@@ -613,6 +613,14 @@ class _WelcomePageState extends State<WelcomePage> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFEB5757), width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFEB5757), width: 1.5),
+            ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFF2D955F), width: 1),
@@ -622,7 +630,12 @@ class _WelcomePageState extends State<WelcomePage> {
             if (v == null || v.isEmpty) return 'กรุณากรอกข้อมูล';
             if (label == 'อีเมล' &&
                 !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v))
-              return 'อีเมลไม่ถูกต้อง';
+              return 'รูปแบบอีเมลไม่ถูกต้อง เช่น email@example.com';
+            if (label == 'รหัสผ่าน' && v.length < 8)
+              return 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร';
+            if (label == 'ยืนยันรหัสผ่าน' &&
+                v != _passwordController.text)
+              return 'รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง';
             return null;
           },
         ),
