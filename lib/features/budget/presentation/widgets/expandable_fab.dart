@@ -64,7 +64,6 @@ class _ExpandableFabState extends State<ExpandableFab>
         alignment: Alignment.bottomRight,
         clipBehavior: Clip.none,
         children: [
-          _buildTapToCloseFab(),
           ..._buildExpandingActionButtons(),
           _buildTapToOpenFab(),
         ],
@@ -72,29 +71,7 @@ class _ExpandableFabState extends State<ExpandableFab>
     );
   }
 
-  Widget _buildTapToCloseFab() {
-    return SizedBox(
-      width: 56,
-      height: 56,
-      child: Center(
-        child: Material(
-          shape: const CircleBorder(),
-          clipBehavior: Clip.antiAlias,
-          elevation: 4,
-          child: InkWell(
-            onTap: _toggle,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                Icons.close,
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // Removed _buildTapToCloseFab mapping
 
   List<Widget> _buildExpandingActionButtons() {
     final children = <Widget>[];
@@ -114,27 +91,18 @@ class _ExpandableFabState extends State<ExpandableFab>
   }
 
   Widget _buildTapToOpenFab() {
-    return IgnorePointer(
-      ignoring: _open,
-      child: AnimatedContainer(
-        transformAlignment: Alignment.center,
-        transform: Matrix4.diagonal3Values(
-          _open ? 0.7 : 1.0,
-          _open ? 0.7 : 1.0,
-          1.0,
-        ),
-        duration: const Duration(milliseconds: 250),
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-        child: AnimatedOpacity(
-          opacity: _open ? 0.0 : 1.0,
-          curve: const Interval(0.25, 1.0, curve: Curves.easeInOut),
+    return AnimatedContainer(
+      transformAlignment: Alignment.center,
+      duration: const Duration(milliseconds: 250),
+      curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+      child: FloatingActionButton(
+        onPressed: _toggle,
+        backgroundColor: const Color(0xFF2D955F),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: AnimatedRotation(
           duration: const Duration(milliseconds: 250),
-          child: FloatingActionButton(
-            onPressed: _toggle,
-            backgroundColor: const Color(0xFF2D955F),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: const Icon(Icons.arrow_drop_up, color: Colors.white, size: 40),
-          ),
+          turns: _open ? 0.5 : 0, // Rotate triangle when open
+          child: const Icon(Icons.arrow_drop_up, color: Colors.white, size: 40),
         ),
       ),
     );

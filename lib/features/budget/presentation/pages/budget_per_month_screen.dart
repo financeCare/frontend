@@ -114,41 +114,26 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Column(
-                        children: [
-                          Text(
-                            'เพิ่มรายการใหม่',
-                            style: GoogleFonts.kanit(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'บันทึกรายจ่ายของคุณ',
-                            style: TextStyle(
-                              color: Colors.black45,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.black45,
-                            size: 22,
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          'เพิ่มรายการใหม่',
+                          style: GoogleFonts.kanit(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        const Text(
+                          'บันทึกรายจ่ายของคุณ',
+                          style: TextStyle(
+                            color: Colors.black45,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 32),
 
@@ -162,47 +147,63 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color(0xFF2D955F),
-                        width: 1.5,
+                  if (_budgetItems.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Text(
+                        'ไม่พบข้อมูลหมวดหมู่ กรุณารอครู่...',
+                        style: TextStyle(color: Colors.black45),
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<BudgetOverview>(
-                        isExpanded: true,
-                        value: selectedCategory,
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down,
-                          color: Colors.black45,
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFF2D955F),
+                          width: 1.5,
                         ),
-                        items: _budgetItems.map((item) {
-                          return DropdownMenuItem(
-                            value: item,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _getCategoryIcon(item.budgetName),
-                                  size: 20,
-                                  color: _getCategoryColor(item.budgetName),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  item.budgetName,
-                                  style: GoogleFonts.kanit(fontSize: 15),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (val) =>
-                            setDialogState(() => selectedCategory = val),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: selectedCategory?.categoryId,
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Colors.black45,
+                          ),
+                          items: _budgetItems.map((item) {
+                            return DropdownMenuItem<String>(
+                              value: item.categoryId,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _getCategoryIcon(item.budgetName),
+                                    size: 20,
+                                    color: _getCategoryColor(item.budgetName),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    item.budgetName,
+                                    style: GoogleFonts.kanit(fontSize: 15),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setDialogState(() {
+                                selectedCategory = _budgetItems.firstWhere(
+                                  (item) => item.categoryId == val,
+                                );
+                              });
+                            }
+                          },
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: 24),
 
                   // จำนวนเงิน
@@ -336,42 +337,68 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2D955F),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF8F9FA),
+                            foregroundColor: Colors.black87,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(color: Colors.black12),
+                            ),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            'ยกเลิก',
+                            style: GoogleFonts.kanit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                      onPressed: () {
-                        final amt = double.tryParse(amountCtrl.text);
-                        if (amt != null &&
-                            amt > 0 &&
-                            selectedCategory != null) {
-                          final req = TransactionRequest(
-                            categoryId: int.parse(selectedCategory!.categoryId),
-                            amount: amt,
-                            transactionDate: selectedDate,
-                            description: descCtrl.text,
-                            budgetId: selectedCategory!.budgetId,
-                          );
-                          _saveTransaction(req);
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: Text(
-                        'บันทึกรายการ',
-                        style: GoogleFonts.kanit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2D955F),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            final amt = double.tryParse(amountCtrl.text);
+                            if (amt != null &&
+                                amt > 0 &&
+                                selectedCategory != null) {
+                              final req = TransactionRequest(
+                                categoryId: int.parse(selectedCategory!.categoryId),
+                                amount: amt,
+                                transactionDate: selectedDate,
+                                description: descCtrl.text,
+                                budgetId: selectedCategory!.budgetId,
+                              );
+                              _saveTransaction(req);
+                              Navigator.pop(context);
+                            }
+                          },
+                          child: Text(
+                            'บันทึก',
+                            style: GoogleFonts.kanit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -407,29 +434,14 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Text(
-                          'ปรับงบประมาณ',
-                          style: GoogleFonts.kanit(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    Center(
+                      child: Text(
+                        'ปรับงบประมาณ',
+                        style: GoogleFonts.kanit(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: const Icon(
-                              Icons.close,
-                              color: Colors.black45,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 8),
                     const Text(

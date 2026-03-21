@@ -12,9 +12,10 @@ import '../../../../features/auth/data/services/access_token_service.dart';
 
 class CategoryService {
   final String _url = '$baseUrl/api/categories';
-  final storage = FlutterSecureStorage();
+  
   Future<List<Categories>> getCategories() async {
     String? accessToken = await AccesstokenService().getAccessToken();
+    
     final response = await http.get(
       Uri.parse(_url),
       headers: {
@@ -22,8 +23,7 @@ class CategoryService {
         'Content-Type': 'application/json',
       },
     );
-    print("category status code : ${response.statusCode}");
-    print("category body : ${response.body}");
+
     if (response.statusCode == 200) {
       if (response.body.isEmpty) return [];
       final List<dynamic> jsonList = json.decode(response.body);
@@ -36,7 +36,7 @@ class CategoryService {
       );
     } else {
       String errorMessage =
-          'Failed to load budget (Status ${response.statusCode})';
+          'Failed to load categories (Status ${response.statusCode})';
       try {
         final errorBody = json.decode(response.body);
         errorMessage = errorBody['message'] ?? errorMessage;
@@ -48,9 +48,10 @@ class CategoryService {
   Future<Categories?> getCategoryById(int categoryId) async {
     try {
       String? accessToken = await AccesstokenService().getAccessToken();
+      final String finalUrl = "$_url/$categoryId";
 
       final response = await http.get(
-        Uri.parse("$_url/$categoryId"),
+        Uri.parse(finalUrl),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',

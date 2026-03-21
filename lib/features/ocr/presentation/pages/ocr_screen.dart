@@ -458,19 +458,38 @@ class _OCRScreenState extends State<OCRScreen> {
                               Expanded(
                                 child: ElevatedButton.icon(
                                   onPressed: () {
-                                    // Copy to clipboard or handle data
-                                    _copyToClipboard(context);
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/add-transaction',
+                                      arguments: _structuredData,
+                                    );
                                   },
-                                  icon: const Icon(Icons.copy_rounded, size: 20),
-                                  label: Text('คัดลอกข้อมูล', style: GoogleFonts.kanit(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  icon: const Icon(Icons.check_circle_outline, size: 24),
+                                  label: Text('บันทึกรายการนี้', style: GoogleFonts.kanit(fontSize: 18, fontWeight: FontWeight.bold)),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF2D955F),
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    padding: const EdgeInsets.symmetric(vertical: 18),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
-                                    elevation: 2,
+                                    elevation: 4,
+                                    shadowColor: const Color(0x662D955F),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextButton.icon(
+                                  onPressed: () => _copyToClipboard(context),
+                                  icon: const Icon(Icons.copy_all_rounded, size: 18),
+                                  label: Text('คัดลอกข้อมูล', style: GoogleFonts.kanit(fontSize: 14)),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: const Color(0xFF64748B),
                                   ),
                                 ),
                               ),
