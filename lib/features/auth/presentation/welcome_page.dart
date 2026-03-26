@@ -111,32 +111,41 @@ class _WelcomePageState extends State<WelcomePage> {
     setState(() => _isLoading = true);
     bool success = false;
     try {
+      print('!!! Starting LINE Login...');
       final result = await LineSDK.instance.login(
         scopes: ["profile", "openid", "email"],
       );
+      print('!!! LINE Login SDK Success. idToken length: ${result.accessToken.idTokenRaw?.length}');
+
       final res = await http.post(
         Uri.parse("$_baseUrl/login/line"),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'idToken': result.accessToken.idTokenRaw}),
       );
+
+      print('!!! LINE login backend status: ${res.statusCode}');
+      print('!!! LINE login backend body: ${res.body}');
+
       if (res.statusCode == 200 || res.statusCode == 201) {
         final data = jsonDecode(res.body);
         await AuthManager.saveToken(data['accessToken']);
         await storage.write(key: "refreshToken", value: data['refreshToken']);
-
-        // ✅ Register device after login
-        await NotificationService.instance.registerTokenToBackend(
-          accessToken: data['accessToken'],
-        );
-
         success = true;
+      } else {
+        print('!!! LINE backend login failed with status: ${res.statusCode}');
+        _showErrorDialog('Server error (${res.statusCode}): ${res.body}');
       }
     } catch (e) {
-      debugPrint("LINE Login Failed: $e");
-      // _showErrorDialog("LINE Login Failed: $e");
+      print('!!! LINE login error: $e');
+      _showErrorDialog("LINE Login Failed: $e");
     } finally {
+      if (!mounted) return;
       setState(() => _isLoading = false);
-      if (success) _navigateToHome();
+      print('!!! LINE flow finished. success=$success');
+      if (success) {
+        print('!!! Navigating to home from LINE login...');
+        _navigateToHome();
+      }
     }
   }
 
@@ -317,7 +326,24 @@ class _WelcomePageState extends State<WelcomePage> {
                     ),
                     const SizedBox(height: 28),
                     _buildAuthCard(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
+                    // Demo Bypass Button (For Presentation Safety)
+                    TextButton.icon(
+                      onPressed: () {
+                        print('!!! Demo Bypass Triggered');
+                        _navigateToHome();
+                      },
+                      icon: const Icon(Icons.double_arrow_rounded, size: 16, color: Colors.blueGrey),
+                      label: Text(
+                        'Demo Bypass (สำหรับนำเสนอเท่านั้น)',
+                        style: GoogleFonts.kanit(
+                          fontSize: 12,
+                          color: Colors.blueGrey,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     // Debug Logout (Temporary)
                     if (AuthManager.token != null)
                       TextButton(

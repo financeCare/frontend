@@ -229,6 +229,35 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                         ),
                       ),
           ),
+          // Footer Note (Disclaimer for Presentation)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                   Icon(Icons.tips_and_updates_rounded, color: Colors.blue[700], size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'หมายเหตุ: ระบบเลือกแนะนำงานจาก JobsDB และ Fastwork เนื่องจากเป็นแพลตฟอร์มที่ได้รับความนิยมและมีความน่าเชื่อถือสูงสุดในปัจจุบัน',
+                      style: GoogleFonts.kanit(
+                        fontSize: 11,
+                        color: Colors.grey[600],
+                        height: 1.4,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
