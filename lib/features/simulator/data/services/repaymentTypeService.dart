@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_application_1/features/simulator/data/models/repayment_strategy_response.dart';
 import 'package:flutter_application_1/features/simulator/data/models/repayment_simulation_model.dart';
+import 'package:flutter_application_1/features/simulator/data/models/debt_priority_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../../../../core/config/config.dart' as Config;
@@ -89,6 +90,46 @@ class RepaymentStrategyService {
     debugPrint("CREATE BODY => ${response.body}");
     if (response.statusCode != 201 && response.statusCode != 200) {
       throw Exception("Create plan failed");
+    }
+  }
+
+  Future<List<DebtPriorityResponse>> fetchDebtPriorities() async {
+    final token = await AccesstokenService().getAccessToken();
+    final url = Uri.parse("${Config.baseUrl}/api/debts/priorities");
+
+    final response = await http.get(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => DebtPriorityResponse.fromJson(e)).toList();
+    } else {
+      throw Exception("Failed to fetch debt priorities");
+    }
+  }
+
+  Future<void> updateDebtPriorities(
+    List<DebtPriorityUpdateRequest> priorities,
+  ) async {
+    final token = await AccesstokenService().getAccessToken();
+    final url = Uri.parse("${Config.baseUrl}/api/debts/priorities");
+
+    final response = await http.put(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode(priorities.map((e) => e.toJson()).toList()),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception("Failed to update debt priorities");
     }
   }
 

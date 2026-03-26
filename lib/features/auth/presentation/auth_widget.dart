@@ -6,7 +6,7 @@ import 'auth_manager.dart';
 
 final storage = AccesstokenService.sharedStorage;
 // 🌟 URL ฐานสำหรับการเรียก API
-const String _baseUrl =
+final String _baseUrl =
     Config.baseUrl; // สมมติว่า Config.baseUrl ถูกกำหนดไว้ใน config.dart
 
 class AuthService {

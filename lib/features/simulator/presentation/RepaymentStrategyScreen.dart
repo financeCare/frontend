@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_application_1/features/simulator/data/models/repayment_strategy_response.dart';
 import 'package:flutter_application_1/features/simulator/data/services/repaymentTypeService.dart';
-import 'RepaymentSimulatorPage.dart';
+import 'DebtPriorityScreen.dart';
+
 
 class RepaymentStrategyScreen extends StatefulWidget {
   const RepaymentStrategyScreen({super.key});
@@ -133,8 +134,9 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
-                      'ขั้นตอนที่ 1 จาก 2',
+                      'ขั้นตอนที่ 1 จาก 3',
                       style: GoogleFonts.kanit(
+
                         fontSize: 11,
                         color: const Color(0xFF2D955F),
                         fontWeight: FontWeight.w500,
@@ -639,13 +641,14 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => RepaymentSimulatorPage(
+                    builder: (_) => DebtPriorityScreen(
                       monthlyBudget: budget,
-                      strategy: _selectedStrategy,
-                      showConfirmButton: true,
+                      strategyId: _selectedStrategy,
+                      strategyName: selectedStrategyObj.strategyName,
                     ),
                   ),
                 );
+
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
