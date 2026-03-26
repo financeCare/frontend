@@ -20,7 +20,10 @@ class JobService {
           description:
               'ขับรถส่งอาหารกับแพลตฟอร์มชั้นนำ เลือกเวลาทำงานได้ตามใจชอบ เหมาะสำหรับคนมีมอเตอร์ไซค์ส่วนตัว',
           requirement: 'มีใบขับขี่รถจักรยานยนต์, สมาร์ทโฟน 1 เครื่อง',
-          applyUrl: 'https://example.com/rider-apply',
+          platformLinks: {
+            'JobsDB': 'https://th.jobsdb.com/th/search-jobs/rider/1',
+            'Fastwork': 'https://fastwork.co/search?q=rider',
+          },
           isRecommended: true,
         ),
         JobModel(
@@ -31,7 +34,10 @@ class JobService {
           description:
               'งานพิมพ์เอกสาร คีย์ข้อมูลลงระบบ สามารถทำที่บ้านได้ เหมาะสำหรับคนที่พิมพ์งานคล่องและมีคอมพิวเตอร์พกพา',
           requirement: 'คอมพิวเตอร์/โน้ตบุ๊ก, อินเทอร์เน็ต, ทักษะการพิมพ์ > 40 WPM',
-          applyUrl: 'https://example.com/data-entry-apply',
+          platformLinks: {
+            'Fastwork': 'https://fastwork.co/search?q=คีย์ข้อมูล',
+            'JobsDB': 'https://th.jobsdb.com/th/search-jobs/data-entry/1',
+          },
         ),
         JobModel(
           id: '3',
@@ -41,7 +47,10 @@ class JobService {
           description:
               'สอนหนังสือเด็กประถม-มัธยม ในรายวิชาที่ถนัด สามารถเลือกสอนแบบออนไลน์หรือนัดเจอสถานที่จริงได้',
           requirement: 'มีความเชี่ยวชาญในวิชาที่จะสอน, รักการสอนเด็ก',
-          applyUrl: 'https://example.com/tutor-apply',
+          platformLinks: {
+            'JobsDB': 'https://th.jobsdb.com/th/search-jobs/tutor/1',
+            'Fastwork': 'https://fastwork.co/search?q=สอนพิเศษ',
+          },
         ),
         JobModel(
           id: '4',
@@ -51,7 +60,9 @@ class JobService {
           description:
               'จัดเรียงสินค้าหน้าร้านและโกดังของซูเปอร์มาร์เก็ต มีให้เลือกหลายสาขาใกล้บ้าน',
           requirement: 'อายุ 18 ปีขึ้นไป, สุขภาพร่างกายแข็งแรง',
-          applyUrl: 'https://example.com/retail-apply',
+          platformLinks: {
+            'JobsDB': 'https://th.jobsdb.com/th/search-jobs/พนักงานห้าง/1',
+          },
         ),
         JobModel(
           id: '5',
@@ -61,7 +72,10 @@ class JobService {
           description:
               'ตอบคำถามลูกค้า ปิดการขาย คอนเฟิร์มออเดอร์ให้กับร้านค้าออนไลน์ มีสคริปต์ให้ ทำงานเป็นกะ 4-6 ชั่วโมง',
           requirement: 'มีสมาร์ทโฟน, พิมพ์ตอบโต้ภาษาไทยได้ถูกต้องและรวดเร็ว',
-          applyUrl: 'https://example.com/admin-apply',
+          platformLinks: {
+            'Fastwork': 'https://fastwork.co/search?q=admin',
+            'JobsDB': 'https://th.jobsdb.com/th/search-jobs/admin/1',
+          },
           isRecommended: true,
         ),
       ];

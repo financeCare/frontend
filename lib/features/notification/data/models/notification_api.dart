@@ -13,8 +13,9 @@ class NotificationApi {
     required String platform,
     required String deviceName,
   }) async {
-    final url = Uri.parse('$baseUrl/api/notifications/devices');
+    final url = Uri.parse('$baseUrl/api/notifications/devices/');
 
+    print('!!! Noti API: URL => $url');
     final res = await http.post(
       url,
       headers: {
@@ -29,8 +30,9 @@ class NotificationApi {
       }),
     );
 
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception('upsertDevice failed: ${res.statusCode} ${res.body}');
+    print('!!! Noti API: Status => ${res.statusCode}');
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception('Register device failed: ${res.statusCode}');
     }
   }
 }

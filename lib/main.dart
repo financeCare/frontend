@@ -96,9 +96,15 @@ class _MyAppState extends State<MyApp> {
     // ถ้ามี token (login แล้ว) -> ส่ง token ขึ้น backend
     final accessToken = AuthManager.token;
     if (accessToken != null && accessToken.isNotEmpty) {
-      await _notificationService.registerTokenToBackend(
-        accessToken: accessToken,
-      );
+      try {
+        print('!!! Booting notification registration...');
+        await _notificationService.registerTokenToBackend(
+          accessToken: accessToken,
+        );
+      } catch (e) {
+        print('!!! Notification boot failed (Silent): $e');
+        // ไม่ต้อง throw ต่อเพื่อให้แอปเปิดหน้าหลักได้ปกติแม้ระบบแจ้งเตือนจะขัดข้อง
+      }
     }
   }
 
