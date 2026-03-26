@@ -13,7 +13,7 @@ class NotificationApi {
     required String platform,
     required String deviceName,
   }) async {
-    final url = Uri.parse('$baseUrl/api/notifications/devices');
+    final url = Uri.parse('$baseUrl/api/notifications/devices/register');
 
     final res = await http.post(
       url,

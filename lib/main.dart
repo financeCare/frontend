@@ -8,6 +8,8 @@ import 'features/notification/data/models/notification_api.dart';
 import 'features/notification/data/services/notification_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'features/notification/data/services/slip_detection_service.dart';
+import 'dart:io';
 
 // 🚨 (1) เพิ่มการ Import ไฟล์ที่สร้างโดย FlutterFire CLI
 import 'firebase_options.dart';
@@ -56,6 +58,10 @@ Future<void> main() async {
   await LineSDK.instance.setup('2008279064');
   await PushService().init();
 
+  if (!kIsWeb && Platform.isAndroid) {
+    SlipDetectionService().init();
+  }
+
   runApp(const MyApp());
 }
 
@@ -74,10 +80,11 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
 
-    _notificationService = NotificationService(
-      api: NotificationApi(baseUrl: Config.baseUrl), // ✅ ใช้ baseUrl ของคุณ
+    NotificationService.initShared(
+      api: NotificationApi(baseUrl: Config.baseUrl),
       storage: AccesstokenService.sharedStorage,
     );
+    _notificationService = NotificationService.instance;
 
     _bootNotification();
   }

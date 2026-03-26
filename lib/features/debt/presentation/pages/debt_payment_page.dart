@@ -65,7 +65,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'ยอดชำระเกินยอดคงเหลือ (คงเหลือ ฿${NumberFormat('#,###.00').format(_selectedDebt!.principalAmount)})',
+            'ยอดชำระเกินยอดคงเหลือ (คงเหลือ ${NumberFormat('#,##0.00').format(_selectedDebt!.principalAmount)} ฿)',
           ),
         ),
       );
@@ -232,7 +232,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
         ),
         subtitle: Text(
           _selectedDebt != null
-              ? '${_selectedDebt!.debtType.debtTypeName} / ${_selectedDebt!.repaymentType.typeName} | คงเหลือ ฿${NumberFormat('#,###.00').format(_selectedDebt!.principalAmount)}'
+              ? '${_selectedDebt!.debtType.debtTypeName} / ${_selectedDebt!.repaymentType.typeName} | คงเหลือ ${NumberFormat('#,##0.00').format(_selectedDebt!.principalAmount)} ฿'
               : 'แตะเพื่อเลือกหนี้',
           style: GoogleFonts.kanit(fontSize: 12, color: Colors.black45),
         ),
@@ -300,7 +300,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
                         ),
                       ),
                       subtitle: Text(
-                        'คงเหลือ ฿${NumberFormat('#,###.00').format(debt.principalAmount)}',
+                        'คงเหลือ ${NumberFormat('#,##0.00').format(debt.principalAmount)} ฿',
                       ),
                       trailing: isSelected
                           ? const Icon(
@@ -346,7 +346,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            '฿${NumberFormat('#,###.00').format(debt.principalAmount)}',
+            '${NumberFormat('#,##0.00').format(debt.principalAmount)} ฿',
             style: GoogleFonts.kanit(
               color: Colors.white,
               fontSize: 32,
@@ -432,7 +432,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
               border: Border.all(color: Colors.black.withOpacity(0.05)),
             ),
             child: Text(
-              '฿${NumberFormat('#,###').format(amount)}',
+              '${NumberFormat('#,##0').format(amount)} ฿',
               style: GoogleFonts.kanit(fontSize: 13, color: Colors.black54),
             ),
           ),

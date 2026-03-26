@@ -1,7 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../data/models/notification_api.dart';
 import '../data/services/notification_service.dart';
-import '../../../core/config/config.dart' as Config;
 import '../../auth/presentation/auth_manager.dart';
 
 class NotificationManager {
@@ -18,10 +16,7 @@ class NotificationManager {
   late final NotificationService _service;
 
   Future<void> initialize() async {
-    _service = NotificationService(
-      api: NotificationApi(baseUrl: Config.baseUrl),
-      storage: storage,
-    );
+    _service = NotificationService.instance;
 
     await _service.init(onTap: ({refType, refId}) {
       onOpenNotification(refType: refType, refId: refId);

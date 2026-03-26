@@ -76,7 +76,40 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             ),
           ],
         ),
-        actions: const [SizedBox(width: 16)],
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF2D955F),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'ขั้นตอนที่ 3 จาก 3',
+                    style: GoogleFonts.kanit(
+                      fontSize: 11,
+                      color: const Color(0xFF2D955F),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       body: FutureBuilder<RepaymentSimulationResponse>(
         future: _simulationFuture,

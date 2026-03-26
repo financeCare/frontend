@@ -1,16 +1,11 @@
-// lib/services/api_service.dart
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../features/auth/presentation/auth_manager.dart';
-// ต้องมีการ import model นี้เพื่อแก้ compile error ที่พบก่อนหน้า
 import '../../features/budget/domain/models/budget_summary.dart';
+import '../../core/config/config.dart' as Config;
 
 class ApiService {
-  // *** สำคัญ: เปลี่ยน Port จาก 8000 เป็น 8080
-  // เพราะ Log แสดงว่า Spring Boot รันบน Port 8080
-  // หากใช้ Android Emulator ให้ลองใช้ 'http://10.0.2.2:8080/api'
-  static const String _baseUrl = 'http://192.168.1.100:8080/api';
+  static final String _baseUrl = '${Config.baseUrl}/api';
 
   /// Getter สำหรับสร้าง HTTP Headers พร้อมแนบ Token
   Map<String, String> get _getHeaders {

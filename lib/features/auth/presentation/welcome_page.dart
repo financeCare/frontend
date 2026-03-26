@@ -12,6 +12,7 @@ import 'auth_widget.dart';
 import '../../../core/config/config.dart' as Config;
 import '../data/services/access_token_service.dart';
 import '../data/services/device_service.dart';
+import '../../notification/data/services/notification_service.dart';
 
 final storage = AccesstokenService.sharedStorage;
 
@@ -77,6 +78,12 @@ class _WelcomePageState extends State<WelcomePage> {
           final data = jsonDecode(response.body);
           await AuthManager.saveToken(data['accessToken']);
           await storage.write(key: "refreshToken", value: data['refreshToken']);
+          
+          // ✅ Register device after login
+          await NotificationService.instance.registerTokenToBackend(
+            accessToken: data['accessToken'],
+          );
+
           print('!!! Tokens saved successfully');
           success = true;
         } else {
@@ -116,6 +123,12 @@ class _WelcomePageState extends State<WelcomePage> {
         final data = jsonDecode(res.body);
         await AuthManager.saveToken(data['accessToken']);
         await storage.write(key: "refreshToken", value: data['refreshToken']);
+
+        // ✅ Register device after login
+        await NotificationService.instance.registerTokenToBackend(
+          accessToken: data['accessToken'],
+        );
+
         success = true;
       }
     } catch (e) {
@@ -169,8 +182,16 @@ class _WelcomePageState extends State<WelcomePage> {
       _showErrorDialog(errorMessage);
     } finally {
       setState(() => _isLoading = false);
-      if (success && _isLoginMode)
+      if (success && _isLoginMode) {
+        // ✅ Register device after login
+        final token = AuthManager.token;
+        if (token != null) {
+          await NotificationService.instance.registerTokenToBackend(
+            accessToken: token,
+          );
+        }
         _navigateToHome();
+      }
       else if (!success && _isLoginMode)
         _showErrorDialog("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
     }

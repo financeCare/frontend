@@ -302,7 +302,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            '฿${NumberFormat('#,###.00').format(totalPrincipal)}',
+            '${NumberFormat('#,##0.00').format(totalPrincipal)} ฿',
             style: GoogleFonts.kanit(
               color: Colors.white,
               fontSize: 40,
@@ -347,7 +347,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                       children: [
                         const TextSpan(text: 'ยอดจ่ายขั้นต่ำรวม: '),
                         TextSpan(
-                          text: '฿${NumberFormat('#,###.00').format(minPayment)}',
+                          text: '${NumberFormat('#,##0.00').format(minPayment)} ฿',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const TextSpan(text: ' /เดือน'),
@@ -800,7 +800,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                             ),
                           ),
                           Text(
-                            '฿${NumberFormat('#,###.00').format(debt.principalAmount)}',
+                            '${NumberFormat('#,##0.00').format(debt.principalAmount)} ฿',
                             style: GoogleFonts.kanit(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -921,7 +921,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                   ),
                 ),
                 Text(
-                  '฿${NumberFormat('#,###.00').format(debt.principalAmount)} - ${debt.debtType.debtTypeName}',
+                  '${NumberFormat('#,##0.00').format(debt.principalAmount)} ฿ - ${debt.debtType.debtTypeName}',
                   style: GoogleFonts.kanit(fontSize: 12, color: Colors.black26),
                 ),
               ],

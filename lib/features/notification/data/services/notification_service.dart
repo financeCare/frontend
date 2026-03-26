@@ -11,6 +11,13 @@ typedef OnNotificationTap =
     void Function({required String? refType, required String? refId});
 
 class NotificationService {
+  static NotificationService? _instance;
+  static NotificationService get instance => _instance!;
+
+  static void initShared({required NotificationApi api, required FlutterSecureStorage storage}) {
+    _instance = NotificationService(api: api, storage: storage);
+  }
+
   NotificationService({required this.api, required this.storage});
 
   final NotificationApi api;

@@ -8,6 +8,7 @@ import 'package:flutter_application_1/features/debt/data/services/debt_service.d
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../domain/models/interest_calculation_type.dart';
 
 class MaxValueFormatter extends TextInputFormatter {
   final double max;
@@ -58,10 +59,20 @@ class _AddDebtPageState extends State<AddDebtPage> {
   final TextEditingController debtInterestCtrl = TextEditingController();
   final TextEditingController debtStartDateCtrl = TextEditingController();
   final TextEditingController debtEndDateCtrl = TextEditingController();
-  final TextEditingController debtPriorityCtrl = TextEditingController();
   final TextEditingController debtMinpaymentCtrl = TextEditingController();
   final TextEditingController debtDueDateCtrl = TextEditingController();
   final TextEditingController searchDebtTypeCtrl = TextEditingController();
+
+  final TextEditingController debtPenaltyRateCtrl = TextEditingController(text: '0');
+  final TextEditingController debtGracePeriodCtrl = TextEditingController(text: '0');
+  final TextEditingController debtPenaltyTriggerCtrl = TextEditingController(text: '0');
+  
+  bool isDefaulted = false;
+  bool isInformal = false;
+  InterestCalculationType interestCalculationType = InterestCalculationType.THIRTY_360;
+  
+  final List<InterestCalculationType> interestCalcTypes = InterestCalculationType.values;
+
 
   int _currentStep = 1;
   String? selectedDebtType;
@@ -121,11 +132,16 @@ class _AddDebtPageState extends State<AddDebtPage> {
     debtInterestCtrl.text = d.interestRate.toString();
     debtStartDateCtrl.text = d.startDate.toIso8601String().split('T')[0];
     debtEndDateCtrl.text = d.endDate.toIso8601String().split('T')[0];
-    debtPriorityCtrl.text = d.priority.toString();
     debtMinpaymentCtrl.text = d.minPayment.toString();
     debtDueDateCtrl.text = (d.dueDate ?? 1).toString();
     selectedDebtTypeId = d.debtType.debtTypeId;
     selectedRepaymentTypeId = d.repaymentType.typeId;
+    debtPenaltyRateCtrl.text = d.penaltyAnnualRate.toString();
+    debtGracePeriodCtrl.text = d.gracePeriodDays.toString();
+    debtPenaltyTriggerCtrl.text = d.penaltyTriggerDays.toString();
+    isDefaulted = d.isDefaulted;
+    isInformal = d.isInformal;
+    interestCalculationType = d.interestCalculationType;
   }
 
   Future<void> loadDebtTypeAndRepaymentType() async {
@@ -246,12 +262,18 @@ class _AddDebtPageState extends State<AddDebtPage> {
       endDate: debtEndDateCtrl.text.isNotEmpty
           ? DateTime.parse(debtEndDateCtrl.text)
           : DateTime.now().add(const Duration(days: 365)),
-      priority: int.tryParse(debtPriorityCtrl.text) ?? 0,
+      priority: 0,
       debtTypeId: selectedDebtTypeId,
       repaymentTypeId: selectedRepaymentTypeId,
       isActive: true,
       minPayment: double.tryParse(debtMinpaymentCtrl.text) ?? 0,
       dueDay: int.tryParse(debtDueDateCtrl.text) ?? 1,
+      penaltyAnnualRate: double.tryParse(debtPenaltyRateCtrl.text) ?? 0.0,
+      gracePeriodDays: int.tryParse(debtGracePeriodCtrl.text) ?? 0,
+      penaltyTriggerDays: int.tryParse(debtPenaltyTriggerCtrl.text) ?? 0,
+      isDefaulted: isDefaulted,
+      isInformal: isInformal,
+      interestCalculationType: interestCalculationType,
     );
 
     try {
@@ -297,9 +319,6 @@ class _AddDebtPageState extends State<AddDebtPage> {
     );
     final endDateCtrl = TextEditingController(
       text: debtDetail.endDate.toIso8601String().split('T')[0],
-    );
-    final priorityCtrl = TextEditingController(
-      text: debtDetail.priority.toString(),
     );
 
     String tempDebtType = debtDetail.debtType.debtTypeName;
@@ -405,13 +424,6 @@ class _AddDebtPageState extends State<AddDebtPage> {
                       );
                   },
                 ),
-                TextField(
-                  controller: priorityCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: "ลำดับความสำคัญ",
-                  ),
-                ),
               ],
             ),
           ),
@@ -424,8 +436,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
               onPressed: () async {
                 final dAmount = double.tryParse(amountCtrl.text);
                 final dInterest = double.tryParse(interestCtrl.text);
-                final dPriority = int.tryParse(priorityCtrl.text);
-                if (dAmount == null || dInterest == null || dPriority == null)
+                if (dAmount == null || dInterest == null)
                   return;
 
                 int typeId = debtTypeList
@@ -441,12 +452,18 @@ class _AddDebtPageState extends State<AddDebtPage> {
                   interestRate: dInterest,
                   startDate: DateTime.parse(startDateCtrl.text),
                   endDate: DateTime.parse(endDateCtrl.text),
-                  priority: dPriority,
+                  priority: 0,
                   debtTypeId: typeId,
                   repaymentTypeId: rTypeId,
                   isActive: debtDetail.isActive,
                   minPayment: debtDetail.minPayment,
                   dueDay: debtDetail.dueDate ?? 1,
+                  penaltyAnnualRate: debtDetail.penaltyAnnualRate,
+                  gracePeriodDays: debtDetail.gracePeriodDays,
+                  penaltyTriggerDays: debtDetail.penaltyTriggerDays,
+                  isDefaulted: debtDetail.isDefaulted,
+                  isInformal: debtDetail.isInformal,
+                  interestCalculationType: debtDetail.interestCalculationType,
                 );
 
                 try {
@@ -1031,10 +1048,45 @@ class _AddDebtPageState extends State<AddDebtPage> {
           errorText: debtAmountError ? "กรุณากรอกจำนวนเงิน" : null,
         ),
         const SizedBox(height: 16),
+        Text("ประเภทการคำนวณดอกเบี้ย", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<InterestCalculationType>(
+          value: interestCalculationType,
+          items: interestCalcTypes
+              .map((t) => DropdownMenuItem(value: t, child: Text(t.label, style: GoogleFonts.kanit())))
+              .toList(),
+          onChanged: (v) => setState(() => interestCalculationType = v!),
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: primaryColor, width: 1.5),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         _buildInputField(
           "อัตราดอกเบี้ย (ต่อปี)",
           debtInterestCtrl,
           Icons.percent,
+          "%",
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            MaxValueFormatter(100),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildInputField(
+          "อัตราดอกเบี้ยปรับรายปี",
+          debtPenaltyRateCtrl,
+          Icons.money_off,
           "%",
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
@@ -1049,11 +1101,17 @@ class _AddDebtPageState extends State<AddDebtPage> {
           "฿",
         ),
         const SizedBox(height: 16),
-        _buildInputField(
-          "ลำดับความสำคัญ",
-          debtPriorityCtrl,
-          Icons.list,
-          "0 = สำคัญที่สุด",
+        SwitchListTile(
+          title: Text("เป็นหนี้นอกระบบ", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
+          subtitle: Text("หนี้ที่ไม่ได้อยู่ในระบบสถาบันการเงิน", style: GoogleFonts.kanit(fontSize: 12, color: Colors.grey)),
+          value: isInformal,
+          activeColor: primaryColor,
+          contentPadding: EdgeInsets.zero,
+          onChanged: (bool value) {
+            setState(() {
+              isInformal = value;
+            });
+          },
         ),
         const SizedBox(height: 24),
         _buildInterestEstimateBox(),
@@ -1182,7 +1240,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
           style: GoogleFonts.kanit(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         Text(
-          "วันที่ชำระ",
+          "วันที่ชำระและค่าปรับล่าช้า",
           style: GoogleFonts.kanit(fontSize: 14, color: Colors.grey),
         ),
         const SizedBox(height: 24),
@@ -1202,11 +1260,38 @@ class _AddDebtPageState extends State<AddDebtPage> {
         ),
         const SizedBox(height: 16),
         _buildInputField(
-          "วันที่ต้องชำระ (1-31)",
+          "วันที่ต้องชำระของทุกเดือน (1-31)",
           debtDueDateCtrl,
           Icons.calendar_month,
-          "",
-          errorText: debtDueDateError ? "กรุณากรอกวันที่ต้องชำระ" : null,
+          "วันที่",
+          errorText: debtDueDateError ? "กรุณากรอกวันที่ 1-31" : null,
+        ),
+        const SizedBox(height: 16),
+        _buildInputField(
+          "ระยะเวลาผ่อนผัน (Grace Period)",
+          debtGracePeriodCtrl,
+          Icons.gavel,
+          "วัน",
+        ),
+        const SizedBox(height: 16),
+        _buildInputField(
+          "จำนวนวันเริ่มคิดค่าปรับ (Penalty Trigger)",
+          debtPenaltyTriggerCtrl,
+          Icons.gavel,
+          "วัน",
+        ),
+        const SizedBox(height: 16),
+        SwitchListTile(
+          title: Text("ผิดนัดชำระแล้ว (Defaulted)", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
+          subtitle: Text("ทำเครื่องหมายหากถูกจัดเป็นหนี้เสียหรือผิดนัดชำระไปแล้ว", style: GoogleFonts.kanit(fontSize: 12, color: Colors.grey)),
+          value: isDefaulted,
+          activeColor: primaryColor,
+          contentPadding: EdgeInsets.zero,
+          onChanged: (bool value) {
+            setState(() {
+              isDefaulted = value;
+            });
+          },
         ),
         const SizedBox(height: 24),
         _buildDurationBox(),
