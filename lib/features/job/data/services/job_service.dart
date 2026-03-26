@@ -1,3 +1,4 @@
+// Service for fetching suggested jobs from JobsDB and Fastwork
 import '../models/job_model.dart';
 
 class JobService {
