@@ -160,7 +160,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
             } catch (e) {
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(SnackBar(content: Text("Error: $e")));
+              ).showSnackBar(const SnackBar(content: Text("ไม่สามารถเปิดดูการจำลองได้ กรุณาลองใหม่อีกครั้ง")));
             }
           },
           style: ElevatedButton.styleFrom(

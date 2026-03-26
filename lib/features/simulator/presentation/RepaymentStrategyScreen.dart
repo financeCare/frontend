@@ -15,9 +15,7 @@ class RepaymentStrategyScreen extends StatefulWidget {
 }
 
 class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
-  final TextEditingController _budgetController = TextEditingController(
-    text: "0",
-  );
+  final TextEditingController _budgetController = TextEditingController();
   String _selectedStrategy = "";
   double _monthlyBudget = 0.0;
   List<RepaymentStrategyResponse> _strategies = [];
@@ -41,7 +39,9 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
         _monthlyBudget = overview.monthlyBudget;
         if (_strategies.isNotEmpty) {
           _selectedStrategy = _strategies.first.strategyId;
-          _budgetController.text = _monthlyBudget.toInt().toString();
+          if (_monthlyBudget > 0) {
+            _budgetController.text = _monthlyBudget.toInt().toString();
+          }
         }
         _isLoading = false;
       });
@@ -55,7 +55,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("เกิดข้อผิดพลาดในการดึงข้อมูลกลยุทธ์")),
+          const SnackBar(content: Text("ไม่สามารถดึงข้อมูลกลยุทธ์ได้ กรุณาลองใหม่อีกครั้ง")),
         );
       }
     }
@@ -335,9 +335,15 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       border: InputBorder.none,
                       isDense: true,
+                      hintText: "0",
+                      hintStyle: GoogleFonts.outfit(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade300,
+                      ),
                     ),
                   ),
                 ),
@@ -652,7 +658,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('เกิดข้อผิดพลาดในการสร้างแผน: $e')),
+                    const SnackBar(content: Text('ไม่สามารถสร้างแผนได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง')),
                   );
                 }
               }

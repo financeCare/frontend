@@ -144,9 +144,15 @@ class _MyAppState extends State<MyApp> {
         '/simulator': (context) => const RepaymentStrategyScreen(),
         '/notify': (context) => const NotificationScreen(),
         '/add_debt': (context) {
-          final debt =
-              ModalRoute.of(context)?.settings.arguments as DebtResponse?;
-          return AddDebtPage(debtToEdit: debt);
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is Map<String, dynamic>) {
+            return AddDebtPage(
+              debtToEdit: args['debt'] as DebtResponse?,
+              isViewOnly: args['isViewOnly'] as bool? ?? false,
+            );
+          } else {
+            return AddDebtPage(debtToEdit: args as DebtResponse?);
+          }
         },
         '/pay_debt': (context) => const DebtPaymentPage(),
         '/job_suggestion': (context) => const JobSuggestionPage(),

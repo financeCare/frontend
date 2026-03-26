@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_application_1/features/budget/data/services/budget_service.dart';
 import 'package:flutter_application_1/features/budget/data/services/transaction_service.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,9 +17,7 @@ class ExpenseEntryScreen extends StatefulWidget {
 class _ExpenseEntryScreenState extends State<ExpenseEntryScreen> {
   final _budgetService = BudgetService();
   final _transactionService = TransactionService();
-  final TextEditingController _amountController = TextEditingController(
-    text: "0.00",
-  );
+  final TextEditingController _amountController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
   List<BudgetOverview> _categories = [];
@@ -123,7 +122,8 @@ class _ExpenseEntryScreenState extends State<ExpenseEntryScreen> {
   }
 
   void _addAmount(double value) {
-    double current = double.tryParse(_amountController.text) ?? 0;
+    String text = _amountController.text.replaceAll(',', '');
+    double current = double.tryParse(text) ?? 0;
     setState(() {
       _amountController.text = (current + value).toStringAsFixed(2);
     });
@@ -148,7 +148,8 @@ class _ExpenseEntryScreenState extends State<ExpenseEntryScreen> {
       ).showSnackBar(const SnackBar(content: Text("กรุณาเลือกหมวดหมู่")));
       return;
     }
-    double amount = double.tryParse(_amountController.text) ?? 0;
+    String amountText = _amountController.text.replaceAll(',', '');
+    double amount = double.tryParse(amountText) ?? 0;
     if (amount <= 0) {
       ScaffoldMessenger.of(
         context,
@@ -176,7 +177,7 @@ class _ExpenseEntryScreenState extends State<ExpenseEntryScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text("เกิดข้อผิดพลาด: $e")));
+        ).showSnackBar(const SnackBar(content: Text("บันทึกรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -374,15 +375,24 @@ class _ExpenseEntryScreenState extends State<ExpenseEntryScreen> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+              ],
               style: GoogleFonts.kanit(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFFBDBDBD),
+                color: Colors.black87,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
+                hintText: "0.00",
+                hintStyle: GoogleFonts.kanit(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFBDBDBD),
+                ),
               ),
             ),
           ),

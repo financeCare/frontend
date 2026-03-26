@@ -46,29 +46,39 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'ยืนยันการลบ',
-          style: GoogleFonts.kanit(fontWeight: FontWeight.bold),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Color(0xFFE53935), size: 28),
+            const SizedBox(width: 8),
+            Text(
+              'ยืนยันการลบ',
+              style: GoogleFonts.kanit(fontWeight: FontWeight.bold, color: const Color(0xFFE53935)),
+            ),
+          ],
         ),
         content: Text(
-          'คุณแน่ใจหรือไม่ว่าต้องการลบรายการหนี้ "${debt.debtName}"? รายการนี้จะถูกลบถาวร',
-          style: GoogleFonts.kanit(),
+          'คุณแน่ใจหรือไม่ว่าต้องการลบรายการหนี้ "${debt.debtName}',
+          style: GoogleFonts.kanit(fontSize: 15, color: Colors.black87),
         ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'ยกเลิก',
-              style: GoogleFonts.kanit(color: Colors.black45),
+              style: GoogleFonts.kanit(color: Colors.black54, fontWeight: FontWeight.w500),
             ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEB5757),
+              backgroundColor: const Color(0xFFE53935),
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
             ),
-            child: Text('ลบ', style: GoogleFonts.kanit()),
+            child: Text('ลบรายการ', style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -80,16 +90,34 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
         await _debtService.deleteDebt(debt.debtId);
         await _loadData();
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('ลบรายการหนี้สำเร็จ')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'ลบรายการหนี้สำเร็จ',
+                      style: GoogleFonts.kanit(fontSize: 14, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFFE53935),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 3),
+            ),
+          );
         }
       } catch (e) {
         debugPrint("Error deleting debt: $e");
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาดในการลบ: $e')));
+          ).showSnackBar(const SnackBar(content: Text('ไม่สามารถลบรายการหนี้ได้ กรุณาตรวจสอบการเชื่อมต่อและลองใหม่อีกครั้ง')));
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
@@ -714,7 +742,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
             onTap: () => Navigator.pushNamed(
               context,
               '/add_debt',
-              arguments: debt,
+              arguments: {'debt': debt, 'isViewOnly': true},
             ).then((value) {
               if (value == true) _loadData();
             }),
@@ -777,9 +805,31 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                           }
                         },
                         itemBuilder: (context) => [
-                          const PopupMenuItem(value: 'edit', child: Text('แก้ไข')),
-                          const PopupMenuItem(value: 'delete', child: Text('ลบ', style: TextStyle(color: Colors.red))),
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.edit_outlined, color: Color(0xFF2196F3), size: 20),
+                                const SizedBox(width: 12),
+                                Text('แก้ไข', style: GoogleFonts.kanit(color: const Color(0xFF0F172A), fontSize: 15)),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuDivider(height: 1),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.delete_outline, color: Color(0xFFE53935), size: 20),
+                                const SizedBox(width: 12),
+                                Text('ลบ', style: GoogleFonts.kanit(color: const Color(0xFFE53935), fontSize: 15)),
+                              ],
+                            ),
+                          ),
                         ],
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 4,
+                        color: Colors.white,
                       ),
                     ],
                   ),

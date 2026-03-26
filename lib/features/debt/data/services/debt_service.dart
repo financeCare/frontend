@@ -208,19 +208,7 @@ class DebtService {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'principalAmount': debtRequest.principalAmount,
-        'interestRate': debtRequest.interestRate,
-        'repaymentTypeId': debtRequest.repaymentTypeId,
-        'startDate': debtRequest.startDate.toIso8601String().split('T')[0],
-        'endDate': debtRequest.endDate.toIso8601String().split('T')[0],
-        'isActive': debtRequest.isActive,
-        'priority': debtRequest.priority,
-        'debtTypeId': debtRequest.debtTypeId,
-        'debtName': debtRequest.debtName,
-        'minPayment': debtRequest.minPayment,
-        'dueDay': debtRequest.dueDay,
-      }),
+      body: jsonEncode(debtRequest.toJson()),
     );
 
     print("transaction status code : ${response.statusCode}");
@@ -251,17 +239,7 @@ class DebtService {
     String? accessToken = await AccesstokenService().getAccessToken();
     print("AccessToken: $accessToken");
 
-    final body = {
-      'principalAmount': debtRequest.principalAmount,
-      'interestRate': debtRequest.interestRate,
-      'repaymentTypeId': debtRequest.repaymentTypeId,
-      'startDate': debtRequest.startDate.toIso8601String().split('T')[0],
-      'endDate': debtRequest.endDate.toIso8601String().split('T')[0],
-      'isActive': debtRequest.isActive,
-      'priority': debtRequest.priority,
-      'debtTypeId': debtRequest.debtTypeId,
-      'debtName': debtRequest.debtName,
-    };
+    final body = debtRequest.toJson();
     print("Request body: $body");
 
     final response = await http.put(

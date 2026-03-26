@@ -87,7 +87,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e')));
+        ).showSnackBar(const SnackBar(content: Text('ไม่สามารถบันทึกยอดชำระหนี้ได้ กรุณาลองใหม่อีกครั้ง')));
       }
     } finally {
       if (mounted) {
@@ -135,7 +135,9 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF27AE60)),
             )
-          : SafeArea(
+          : _activeDebts.isEmpty
+              ? _buildEmptyState()
+              : SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -525,6 +527,68 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE8F5E9),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_outline,
+                size: 64,
+                color: Color(0xFF27AE60),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'ยอดเยี่ยมมาก!',
+              style: GoogleFonts.kanit(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'คุณไม่มีรายการหนี้ที่ต้องชำระในขณะนี้',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.kanit(
+                fontSize: 16,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF27AE60),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Text(
+                'กลับสู่หน้าก่อนหน้า',
+                style: GoogleFonts.kanit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
