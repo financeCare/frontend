@@ -4,6 +4,10 @@ class TransactionRequest {
   final DateTime transactionDate;
   final String description;
   final String? budgetId;
+  final String? senderBank;
+  final String? receiverName;
+  final String? imagePath;
+  final int? slipId;
 
   TransactionRequest({
     required this.categoryId,
@@ -11,9 +15,12 @@ class TransactionRequest {
     required this.transactionDate,
     required this.description,
     this.budgetId,
+    this.senderBank,
+    this.receiverName,
+    this.imagePath,
+    this.slipId,
   });
 
-  // สำหรับแปลงจาก JSON (response หรือ testing)
   factory TransactionRequest.fromJson(Map<String, dynamic> json) {
     return TransactionRequest(
       categoryId: json['categoryId'] ?? 0,
@@ -21,10 +28,13 @@ class TransactionRequest {
       transactionDate: DateTime.parse(json['transactionDate']),
       description: json['description'] ?? '',
       budgetId: json['budgetId'],
+      senderBank: json['senderBank'],
+      receiverName: json['receiverName'],
+      imagePath: json['imagePath'],
+      slipId: json['slipId'] is int ? json['slipId'] : (json['slipId'] != null ? int.tryParse(json['slipId'].toString()) : null),
     );
   }
 
-  // สำหรับส่ง POST request
   Map<String, dynamic> toJson() {
     return {
       'categoryId': categoryId,
@@ -32,6 +42,10 @@ class TransactionRequest {
       'transactionDate': transactionDate.toIso8601String(),
       'description': description,
       if (budgetId != null) 'budgetId': budgetId,
+      if (senderBank != null) 'senderBank': senderBank,
+      if (receiverName != null) 'receiverName': receiverName,
+      if (imagePath != null) 'imagePath': imagePath,
+      if (slipId != null) 'slipId': slipId,
     };
   }
 }

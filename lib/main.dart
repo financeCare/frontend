@@ -100,22 +100,14 @@ class _MyAppState extends State<MyApp> {
       },
     );
 
-    // ถ้ามี token (login แล้ว) -> ส่ง token ขึ้น backend
-    final accessToken = AuthManager.token;
-    if (accessToken != null && accessToken.isNotEmpty) {
-      await _notificationService.registerTokenToBackend(
-        accessToken: accessToken,
-      );
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     // !!! DEBUG: Temporarily forcing WelcomePage so you can see the redesign
-    // final initialScreen = AuthManager.token != null
-    //    ? const HomePage()
-    //    : const WelcomePage();
-    const initialScreen = WelcomePage();
+    final initialScreen = AuthManager.isLoggedIn
+        ? const HomePage()
+        : const WelcomePage();
 
     return MaterialApp(
       navigatorKey: _navKey,

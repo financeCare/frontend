@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../auth_widget.dart';
-import '../../../notification/data/services/notification_service.dart';
-import '../auth_manager.dart';
 
 class OtpPage extends StatefulWidget {
   final String email;
@@ -59,13 +57,7 @@ class _OtpPageState extends State<OtpPage> {
     setState(() => _isLoading = false);
 
     if (success && mounted) {
-      // ✅ Register device after login
-      final token = AuthManager.token;
-      if (token != null) {
-        await NotificationService.instance.registerTokenToBackend(
-          accessToken: token,
-        );
-      }
+      // ✅ Register device after login - MOVED TO HomePage
       Navigator.of(context).pushReplacementNamed('/home');
     } else {
       _showError("รหัส OTP ไม่ถูกต้อง โปรดลองอีกครั้ง");

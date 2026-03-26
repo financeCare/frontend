@@ -4,13 +4,12 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/core/config/config.dart' as Config;
 import 'package:flutter_application_1/features/auth/data/services/access_token_service.dart';
-import 'package:flutter_application_1/features/notification/presentation/notification_screen.dart';
 import 'package:flutter_application_1/features/notification/presentation/notification_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../settings/presentation/pages/user_settings_page.dart';
-import '../../../ocr/presentation/pages/ocr_screen.dart';
 
 // Import เดิมของคุณ
+import '../../../ocr/presentation/pages/ocr_screen.dart';
 import '../../../debt/presentation/pages/debt_overview_page.dart';
 import '../../../budget/presentation/pages/budget_per_month_screen.dart';
 
@@ -135,15 +134,46 @@ class _HomePageState extends State<HomePage> {
     final title = _getAppBarTitle(_selectedIndex);
     final widgetOptions = _getWidgetOptions();
 
-    return Scaffold(
-      appBar: title != null
-          ? AppBar(
-              title: Text(title),
-              backgroundColor: const Color(0xFF00796B),
-              foregroundColor: Colors.white,
-            )
-          : null,
-      body: widgetOptions[_selectedIndex],
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        final shouldPop = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('ยืนยันการปิดแอป'),
+            content: const Text('คุณทำงานเสร็จแล้วใช่ไหม?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('ยังก่อน'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('ใช่'),
+              ),
+            ],
+          ),
+        );
+        if (shouldPop ?? false) {
+           // ignore: use_build_context_synchronously
+           if (context.mounted) {
+             // SystemNavigator.pop() isn't working on all versions, 
+             // but 'Navigator.pop' with 'canPop: true' would work if we changed state.
+             // For now, let's just close it if confirmed.
+             Navigator.of(context).pop(); 
+           }
+        }
+      },
+      child: Scaffold(
+        appBar: title != null
+            ? AppBar(
+                title: Text(title),
+                backgroundColor: const Color(0xFF00796B),
+                foregroundColor: Colors.white,
+              )
+            : null,
+        body: widgetOptions[_selectedIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -199,7 +229,8 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-    );
+    ));
+    
   }
 
   Future<void> _markNotificationsAsRead() async {

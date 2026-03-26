@@ -160,7 +160,14 @@ class _AddDebtPageState extends State<AddDebtPage> {
         }
       });
     } catch (e) {
-      if (mounted) Navigator.of(context).pushReplacementNamed('/');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาดในการโหลดข้อมูลประเภทหนี้: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -293,7 +300,14 @@ class _AddDebtPageState extends State<AddDebtPage> {
         Navigator.pop(context, true); // Go back to overview
       }
     } catch (e) {
-      if (mounted) Navigator.of(context).pushReplacementNamed('/');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาดในการบันทึกหนี้: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -303,7 +317,14 @@ class _AddDebtPageState extends State<AddDebtPage> {
     try {
       debtDetail = await debtService.getDebtDetail(debt.id);
     } catch (e) {
-      if (mounted) Navigator.of(context).pushReplacementNamed('/');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาดในการโหลดรายละเอียดหนี้: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
       return;
     }
 

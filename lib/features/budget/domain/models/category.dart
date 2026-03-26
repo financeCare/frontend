@@ -15,11 +15,11 @@ class Categories {
 
   factory Categories.fromJson(Map<String, dynamic> json) {
     return Categories(
-      categoryId: json['categoryId'],
-      userId: json['userId'],
-      categoryName: json['categoryName'],
-      type: json['type'],
-      budgetId: json['budgetId'] ?? '', // <-- ถ้าไม่มี ให้เป็น empty string
+      categoryId: json['categoryId'] ?? 0,
+      userId: json['userId'] ?? '',
+      categoryName: json['categoryName'] ?? 'Unknown',
+      type: json['type'] ?? 'Expense',
+      budgetId: json['budgetId'] ?? '',
     );
   }
 

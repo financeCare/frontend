@@ -84,7 +84,7 @@ class DebtService {
   Future<int> mapNameToRepaymentId(String name) async {
     List<RepaymentTypeResponse> repaymentTypeList = await getRepaymentType();
     for (RepaymentTypeResponse repaymentType in repaymentTypeList) {
-      if (repaymentType == name) {
+      if (repaymentType.typeName == name) {
         return repaymentType.typeId;
       }
     }
@@ -93,9 +93,9 @@ class DebtService {
 
   Future<int> mapNameToDebtTypeId(String name) async {
     List<DebtTypeResponse> debtTypeResponseList = await getDebtType();
-    for (DebtTypeResponse repaymentType in debtTypeResponseList) {
-      if (repaymentType == name) {
-        return repaymentType.debtTypeId;
+    for (DebtTypeResponse debtType in debtTypeResponseList) {
+      if (debtType.debtTypeName == name) {
+        return debtType.debtTypeId;
       }
     }
     return 0;
@@ -208,19 +208,7 @@ class DebtService {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'principalAmount': debtRequest.principalAmount,
-        'interestRate': debtRequest.interestRate,
-        'repaymentTypeId': debtRequest.repaymentTypeId,
-        'startDate': debtRequest.startDate.toIso8601String().split('T')[0],
-        'endDate': debtRequest.endDate.toIso8601String().split('T')[0],
-        'isActive': debtRequest.isActive,
-        'priority': debtRequest.priority,
-        'debtTypeId': debtRequest.debtTypeId,
-        'debtName': debtRequest.debtName,
-        'minPayment': debtRequest.minPayment,
-        'dueDay': debtRequest.dueDay,
-      }),
+      body: jsonEncode(debtRequest.toJson()),
     );
 
     print("transaction status code : ${response.statusCode}");
@@ -248,29 +236,15 @@ class DebtService {
   Future<void> updateDebt(String id, DebtRequest debtRequest) async {
     print("Editing debt id: $id");
 
-    String? accessToken = await AccesstokenService().getAccessToken();
-    print("AccessToken: $accessToken");
-
-    final body = {
-      'principalAmount': debtRequest.principalAmount,
-      'interestRate': debtRequest.interestRate,
-      'repaymentTypeId': debtRequest.repaymentTypeId,
-      'startDate': debtRequest.startDate.toIso8601String().split('T')[0],
-      'endDate': debtRequest.endDate.toIso8601String().split('T')[0],
-      'isActive': debtRequest.isActive,
-      'priority': debtRequest.priority,
-      'debtTypeId': debtRequest.debtTypeId,
-      'debtName': debtRequest.debtName,
-    };
-    print("Request body: $body");
+    final accessToken = await AccesstokenService().getAccessToken();
 
     final response = await http.put(
-      Uri.parse('$baseUrl/api/debts/$id'), // <- ใช้ id ไม่ใช่ debtId
+      Uri.parse('$baseUrl/api/debts/$id'),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode(body),
+      body: jsonEncode(debtRequest.toJson()),
     );
 
     print("transaction status code : ${response.statusCode}");

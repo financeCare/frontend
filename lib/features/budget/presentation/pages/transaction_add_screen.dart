@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../domain/models/transaction_response.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../domain/models/transaction_request.dart';
@@ -10,8 +11,9 @@ import '../../data/services/category_service.dart';
 
 class TransactionAddScreen extends StatefulWidget {
   final Map<String, String>? ocrData;
+  final TransactionResponse? transactionToEdit;
 
-  const TransactionAddScreen({super.key, this.ocrData});
+  const TransactionAddScreen({super.key, this.ocrData, this.transactionToEdit});
 
   @override
   State<TransactionAddScreen> createState() => _TransactionAddScreenState();
@@ -24,6 +26,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
   
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+  final TextEditingController _receiverController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   Categories? _selectedCategory;
   List<Categories> _allCategories = [];
@@ -31,22 +34,60 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
 
+  // ฟิลด์ใหม่สำหรับรองรับข้อมูลสลิป/OCR
+  String? _senderBank;
+  String? _receiverName;
+  String? _imagePath;
+  int? _slipId;
+
+
   @override
   void initState() {
     super.initState();
     _loadData();
-    if (widget.ocrData != null) {
+    if (widget.transactionToEdit != null) {
+      _applyEditData();
+    } else if (widget.ocrData != null) {
       _applyOcrData();
     }
+  }
+
+  void _applyEditData() {
+    final tx = widget.transactionToEdit!;
+    _amountController.text = tx.amount.toString();
+    _descController.text = tx.description;
+    _receiverController.text = tx.receiverName ?? '';
+    _selectedDate = tx.transactionDate;
+    _senderBank = tx.senderBank;
+    _receiverName = tx.receiverName;
+    _imagePath = tx.imagePath;
+    _slipId = tx.slipId;
   }
 
   void _applyOcrData() {
     final amountStr = widget.ocrData!['amount']?.replaceAll(',', '') ?? '0.00';
     _amountController.text = amountStr;
     _descController.text = 'โอนให้: ${widget.ocrData!['receiver'] ?? '-'}';
+    _receiverController.text = widget.ocrData!['receiver'] ?? '';
     
+    // เก็บข้อมูลเพิ่มเติมจาก OCR
+    _senderBank = widget.ocrData!['sender_bank'];
+    _receiverName = widget.ocrData!['receiver'];
+    _imagePath = widget.ocrData!['image_path'];
+    _slipId = widget.ocrData!['slip_id'] != null 
+        ? int.tryParse(widget.ocrData!['slip_id']!) 
+        : null;
+
     // Parse date if possible
-    // For now keep current date or try to parse if format matches
+    final dateStr = widget.ocrData!['date'];
+    if (dateStr != null) {
+      try {
+        // คาดหวัง format YYYY-MM-DD หรือ ISO
+        _selectedDate = DateTime.parse(dateStr);
+      } catch (_) {
+        // ถ้า parse ไม่ได้ให้ใช้เวลาปัจจุบัน
+      }
+    }
   }
 
   Future<void> _loadData() async {
@@ -59,7 +100,14 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
           _allCategories = categories;
           _budgetItems = budgets;
           if (_allCategories.isNotEmpty) {
-            _selectedCategory = _allCategories.first;
+            if (widget.transactionToEdit != null) {
+              _selectedCategory = _allCategories.firstWhere(
+                (c) => c.categoryId == widget.transactionToEdit!.category.categoryId,
+                orElse: () => _allCategories.first,
+              );
+            } else {
+              _selectedCategory = _allCategories.first;
+            }
           }
           _isLoading = false;
         });
@@ -106,15 +154,24 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
       transactionDate: _selectedDate,
       description: _descController.text,
       budgetId: budgetId,
+      senderBank: _senderBank,
+      receiverName: _receiverController.text.isNotEmpty ? _receiverController.text : _receiverName,
+      imagePath: _imagePath,
+      slipId: _slipId,
     );
     
     setState(() => _isSaving = true);
     
     try {
-      await _transactionService.createTransaction(request);
+      if (widget.transactionToEdit != null) {
+        await _transactionService.updateTransaction(widget.transactionToEdit!.transactionId, request);
+      } else {
+        await _transactionService.createTransaction(request);
+      }
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('บันทึกรายการสำเร็จ')),
+          SnackBar(content: Text(widget.transactionToEdit != null ? 'แก้ไขรายการสำเร็จ' : 'บันทึกรายการสำเร็จ')),
         );
         Navigator.pop(context, true);
       }
@@ -151,6 +208,9 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
                       _buildInputLabel('วันที่ทำรายการ'),
                       _buildDatePicker(),
                       const SizedBox(height: 24),
+                      _buildInputLabel('ชื่อผู้รับ (ถ้ามี)'),
+                      _buildReceiverField(),
+                      const SizedBox(height: 24),
                       _buildInputLabel('คำอธิบายเพิ่มเติม'),
                       _buildDescriptionField(),
                       const SizedBox(height: 48),
@@ -173,7 +233,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
       backgroundColor: const Color(0xFF2D955F),
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
-          'บันทึกรายการ',
+          widget.transactionToEdit != null ? 'แก้ไขรายการ' : 'บันทึกรายการ',
           style: GoogleFonts.kanit(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -292,14 +352,22 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
   }
 
   Widget _buildDescriptionField() {
+    return _buildTextField(_descController, 'บันทึกความจำ หรือชื่อร้านค้า...', 3);
+  }
+
+  Widget _buildReceiverField() {
+    return _buildTextField(_receiverController, 'เช่น ชื่อผู้รับโอน หรือชื่อร้านค้า...', 1);
+  }
+
+  Widget _buildTextField(TextEditingController controller, String hint, int maxLines) {
     return TextField(
-      controller: _descController,
-      maxLines: 3,
+      controller: controller,
+      maxLines: maxLines,
       style: GoogleFonts.kanit(),
       decoration: InputDecoration(
         filled: true,
         fillColor: Colors.white,
-        hintText: 'บันทึกความจำ หรือชื่อร้านค้า...',
+        hintText: hint,
         hintStyle: GoogleFonts.kanit(color: Colors.black26),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -342,28 +410,41 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
   }
 
   Widget _getCategoryIcon(String name) {
-    IconData icon;
+    IconData iconData;
     Color color;
     
-    final lowerName = name.toLowerCase();
-    if (lowerName.contains('food') || lowerName.contains('กิน') || lowerName.contains('อาหาร')) {
-      icon = Icons.restaurant;
-      color = Colors.orange;
-    } else if (lowerName.contains('travel') || lowerName.contains('เดินทาง') || lowerName.contains('รถ')) {
-      icon = Icons.directions_car;
-      color = Colors.blue;
-    } else if (lowerName.contains('saving') || lowerName.contains('ออม')) {
-      icon = Icons.savings;
-      color = Colors.green;
-    } else if (lowerName.contains('bill') || lowerName.contains('น้ำ') || lowerName.contains('ไฟ')) {
-      icon = Icons.receipt_long;
-      color = Colors.purple;
-    } else if (lowerName.contains('health') || lowerName.contains('ยา') || lowerName.contains('หมอ')) {
-      icon = Icons.medical_services;
-      color = Colors.red;
-    } else {
-      icon = Icons.category;
-      color = Colors.grey;
+    switch (name) {
+      case 'Shopping':
+        iconData = Icons.shopping_bag_outlined;
+        color = const Color(0xFFFF9100);
+        break;
+      case 'Food':
+        iconData = Icons.restaurant_outlined;
+        color = const Color(0xFFEB5757);
+        break;
+      case 'Transport':
+        iconData = Icons.directions_car_outlined;
+        color = const Color(0xFF00B0FF);
+        break;
+      case 'Bills':
+        iconData = Icons.receipt_long_outlined;
+        color = const Color(0xFF2979FF);
+        break;
+      case 'Entertainment':
+        iconData = Icons.videogame_asset_outlined;
+        color = const Color(0xFFFF9100);
+        break;
+      case 'Health':
+        iconData = Icons.medical_services_outlined;
+        color = const Color(0xFF00BFA5);
+        break;
+      case 'Saving':
+        iconData = Icons.savings_outlined;
+        color = const Color(0xFF2D955F);
+        break;
+      default:
+        iconData = Icons.category_outlined;
+        color = const Color(0xFF546E7A);
     }
     
     return Container(
@@ -372,7 +453,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
         color: color.withOpacity(0.1),
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, color: color, size: 24),
+      child: Icon(iconData, color: color, size: 24),
     );
   }
 }

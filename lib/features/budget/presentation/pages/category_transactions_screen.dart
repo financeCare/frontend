@@ -42,6 +42,7 @@ class _CategoryTransactionsScreenState
       if (mounted) {
         setState(() {
           _transactions = data;
+          _transactions.sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
           _isLoading = false;
         });
       }
@@ -55,8 +56,19 @@ class _CategoryTransactionsScreenState
     }
   }
 
+  Map<String, List<TransactionDetail>> _groupTransactions(List<TransactionDetail> txs) {
+    final groups = <String, List<TransactionDetail>>{};
+    for (var tx in txs) {
+      final label = DateFormat('MMMM yyyy').format(tx.transactionDate);
+      groups.putIfAbsent(label, () => []).add(tx);
+    }
+    return groups;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final grouped = _groupTransactions(_transactions);
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -85,7 +97,7 @@ class _CategoryTransactionsScreenState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.receipt_long_outlined,
                     size: 64,
                     color: Colors.black12,
@@ -102,11 +114,29 @@ class _CategoryTransactionsScreenState
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(24),
-              itemCount: _transactions.length,
-              itemBuilder: (context, index) {
-                final tx = _transactions[index];
-                return _buildTransactionItem(tx);
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              itemCount: grouped.length,
+              itemBuilder: (context, groupIndex) {
+                final month = grouped.keys.elementAt(groupIndex);
+                final items = grouped[month]!;
+                
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        month,
+                        style: GoogleFonts.kanit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ),
+                    ...items.map((tx) => _buildTransactionItem(tx)).toList(),
+                  ],
+                );
               },
             ),
     );
