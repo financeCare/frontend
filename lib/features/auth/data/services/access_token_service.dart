@@ -20,7 +20,6 @@ class AccesstokenService {
   Future<String?> getAccessToken() async {
     try {
       String? accessToken = await storage.read(key: "accessToken");
-      print("access token : $accessToken");
 
       if (accessToken == null) {
         debugPrint("No accessToken found in storage");
@@ -35,7 +34,6 @@ class AccesstokenService {
         return null;
       }
 
-      debugPrint('isTokenExpired : $isTokenExpired');
       if (isTokenExpired) {
         String? refreshToken = await storage.read(key: "refreshToken");
 

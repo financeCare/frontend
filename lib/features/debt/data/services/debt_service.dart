@@ -127,7 +127,7 @@ class DebtService {
       );
     } else {
       String errorMessage =
-          'Failed to load transactions (Status ${response.statusCode})';
+          'Failed to load debts (Status ${response.statusCode})';
       try {
         final errorBody = json.decode(response.body);
         errorMessage = errorBody['message'] ?? errorMessage;
@@ -192,7 +192,7 @@ class DebtService {
       );
     } else {
       String errorMessage =
-          'Failed to load transactions (Status ${response.statusCode})';
+          'Failed to delete debt (Status ${response.statusCode})';
       try {
         final errorBody = json.decode(response.body);
         errorMessage = errorBody['message'] ?? errorMessage;
@@ -226,7 +226,7 @@ class DebtService {
       );
     } else {
       String errorMessage =
-          'Failed to create transaction (Status ${response.statusCode})';
+          'Failed to create debt (Status ${response.statusCode})';
       try {
         final errorBody = json.decode(response.body);
         errorMessage = errorBody['message'] ?? errorMessage;

@@ -61,11 +61,11 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
       return;
     }
 
-    if (amount > _selectedDebt!.principalAmount) {
+    if (amount > _selectedDebt!.principalOutstanding) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'ยอดชำระเกินยอดคงเหลือ (คงเหลือ ${NumberFormat('#,##0.00').format(_selectedDebt!.principalAmount)} ฿)',
+            'ยอดชำระเกินยอดคงเหลือ (คงเหลือ ${NumberFormat('#,##0.00').format(_selectedDebt!.principalOutstanding)} ฿)',
           ),
         ),
       );
@@ -170,7 +170,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
                           ),
                           TextButton(
                             onPressed: () => _onShortcutPressed(
-                              _selectedDebt!.principalAmount,
+                              _selectedDebt!.principalOutstanding,
                             ),
                             child: Text(
                               'ชำระทั้งหมด',
@@ -234,7 +234,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
         ),
         subtitle: Text(
           _selectedDebt != null
-              ? '${_selectedDebt!.debtType.debtTypeName} / ${_selectedDebt!.repaymentType.typeName} | คงเหลือ ${NumberFormat('#,##0.00').format(_selectedDebt!.principalAmount)} ฿'
+              ? '${_selectedDebt!.debtType.debtTypeName} / ${_selectedDebt!.repaymentType.typeName} | คงเหลือ ${NumberFormat('#,##0.00').format(_selectedDebt!.principalOutstanding)} ฿'
               : 'แตะเพื่อเลือกหนี้',
           style: GoogleFonts.kanit(fontSize: 12, color: Colors.black45),
         ),
@@ -302,7 +302,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
                         ),
                       ),
                       subtitle: Text(
-                        'คงเหลือ ${NumberFormat('#,##0.00').format(debt.principalAmount)} ฿',
+                        'คงเหลือ ${NumberFormat('#,##0.00').format(debt.principalOutstanding)} ฿',
                       ),
                       trailing: isSelected
                           ? const Icon(
@@ -348,7 +348,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            '${NumberFormat('#,##0.00').format(debt.principalAmount)} ฿',
+            '${NumberFormat('#,##0.00').format(debt.principalOutstanding)} ฿',
             style: GoogleFonts.kanit(
               color: Colors.white,
               fontSize: 32,

@@ -170,7 +170,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
                 const Icon(Icons.circle, size: 8, color: Color(0xFF2D955F)),
                 const SizedBox(width: 6),
                 Text(
-                  'Step 2 of 3',
+                  'ขั้นตอนที่ 2 จาก 3',
                   style: GoogleFonts.kanit(
                     fontSize: 12,
                     color: const Color(0xFF2D955F),
@@ -202,7 +202,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
         ),
         const SizedBox(width: 12),
         Text(
-          'Customize Priority',
+          'ปรับแต่งลำดับความสำคัญ',
           style: GoogleFonts.kanit(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -215,7 +215,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
 
   Widget _buildInstructionTitle() {
     return Text(
-      'Adjust Your Repayment Order',
+      'ปรับลำดับการชำระหนี้ของคุณ',
       style: GoogleFonts.outfit(
         fontSize: 32,
         fontWeight: FontWeight.bold,
@@ -227,7 +227,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
 
   Widget _buildInstructionDescription() {
     return Text(
-      'Drag and drop to customize which debts you want to pay off first. Your selected strategy has set an initial order, but you can adjust it to fit your needs.',
+      'ลากและวางเพื่อให้ลำดับหนี้ที่คุณต้องการปิดก่อน กลยุทธ์ที่คุณเลือกได้กำหนดลำดับเริ่มต้นไว้แล้ว แต่คุณสามารถปรับเปลี่ยนได้ตามความต้องการ',
       style: GoogleFonts.kanit(
         fontSize: 16,
         color: Colors.grey.shade600,
@@ -261,7 +261,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'How does priority work?',
+                  'ลำดับความสำคัญทำงานอย่างไร?',
                   style: GoogleFonts.outfit(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -270,7 +270,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Debts at the top of the list will receive extra payments first after all minimum payments are made. This helps you clear debts faster based on your preference.',
+                  'หนี้ที่อยู่ด้านบนสุดของรายการจะได้รับการชำระเพิ่มเติมก่อน หลังจากชำระขั้นต่ำของทุกหนี้ครบแล้ว ซึ่งจะช่วยให้คุณปิดหนี้ได้เร็วขึ้นตามความพึงพอใจของคุณ',
                   style: GoogleFonts.kanit(
                     fontSize: 13,
                     color: Colors.grey.shade600,
@@ -286,15 +286,15 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
   }
 
   Widget _buildStatsRow() {
-    double totalPrincipal = _debts.fold(0, (sum, item) => sum + item.principalAmount);
+    double totalPrincipal = _debts.fold(0, (sum, item) => sum + item.principalOutstanding);
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard('Total Debts', '${_debts.length}'),
+          child: _buildStatCard('หนี้ทั้งหมด', '${_debts.length}'),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: _buildStatCard('Total Principal', '฿${_currencyFormat.format(totalPrincipal)}'),
+          child: _buildStatCard('ยอดหนี้คงเหลือทั้งหมด', '฿${_currencyFormat.format(totalPrincipal)}'),
         ),
       ],
     );
@@ -347,7 +347,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'First to Pay Off',
+            'หนี้ที่ต้องปิดก่อน',
             style: GoogleFonts.kanit(
               fontSize: 12,
               color: Colors.grey.shade500,
@@ -373,7 +373,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Debt Priority Order',
+          'ลำดับการชำระหนี้',
           style: GoogleFonts.outfit(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -475,7 +475,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
                       const Icon(Icons.payments_outlined, size: 14, color: Colors.grey),
                       const SizedBox(width: 4),
                       Text(
-                        'Principal: ฿${_currencyFormat.format(debt.principalAmount)}',
+                        'ยอดคงเหลือ: ฿${_currencyFormat.format(debt.principalOutstanding)}',
                         style: GoogleFonts.kanit(
                           fontSize: 13,
                           color: Colors.grey.shade600,
@@ -508,7 +508,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Ready to see your repayment plan?',
+                      'พร้อมที่จะดูแผนการชำระหนี้หรือยัง?',
                       style: GoogleFonts.outfit(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -517,7 +517,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Continue to view the detailed repayment timeline.',
+                      'ดำเนินการต่อเพื่อดูรายละเอียดไทม์ไลน์การชำระหนี้',
                       style: GoogleFonts.kanit(
                         fontSize: 13,
                         color: const Color(0xFF1B5E20).withOpacity(0.7),
@@ -550,7 +550,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'View Plan',
+                          'ดูแผนการชำระหนี้',
                           style: GoogleFonts.outfit(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -570,7 +570,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
   Widget _buildFooterTip() {
     return Center(
       child: Text(
-        'Tip: Drag the grip icon on the left to reorder your debts.',
+        'เคล็ดลับ: ลากไอคอนด้านซ้ายเพื่อเปลี่ยนลำดับหนี้ของคุณ',
         style: GoogleFonts.kanit(
           fontSize: 12,
           color: Colors.grey.shade500,

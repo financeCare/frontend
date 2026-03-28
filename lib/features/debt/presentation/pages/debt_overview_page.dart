@@ -5,6 +5,7 @@ import '../../../../features/simulator/presentation/RepaymentSimulatorPage.dart'
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/services/debt_service.dart';
 import '../../domain/models/debt_response.dart';
+import '../../domain/models/monthly_debt_status.dart';
 
 class DebtOverviewPage extends StatefulWidget {
   final int unreadCount;
@@ -17,6 +18,7 @@ class DebtOverviewPage extends StatefulWidget {
 class _DebtOverviewPageState extends State<DebtOverviewPage> {
   final DebtService _debtService = DebtService();
   List<DebtResponse> _debtResponses = [];
+  MonthlyDebtStatus? _monthlyStatus;
   bool _isLoading = true;
 
   @override
@@ -30,9 +32,11 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
     setState(() => _isLoading = true);
     try {
       final List<DebtResponse> responses = await _debtService.getAllDebt();
+      final MonthlyStatus = await _debtService.getMonthlyDebtStatus();
       if (!mounted) return;
       setState(() {
         _debtResponses = responses;
+        _monthlyStatus = MonthlyStatus;
       });
     } catch (e) {
       debugPrint("Error loading debts: $e");
@@ -128,12 +132,12 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
   @override
   Widget build(BuildContext context) {
     final activeDebts = _debtResponses.where((d) => d.isActive).toList()
-      ..sort((a, b) => a.principalAmount.compareTo(b.principalAmount));
+      ..sort((a, b) => a.principalOutstanding.compareTo(b.principalOutstanding));
     final closedDebts = _debtResponses.where((d) => !d.isActive).toList();
 
-    double totalPrincipal = activeDebts.fold(
+    double totalBalance = activeDebts.fold(
       0.0,
-      (sum, d) => sum + d.principalAmount,
+      (sum, d) => sum + d.totalRemaining,
     );
     double avgInterest = activeDebts.isEmpty
         ? 0.0
@@ -221,11 +225,12 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                       ),
                       const SizedBox(height: 24),
                       _buildSummaryCard(
-                        totalPrincipal: totalPrincipal,
+                        totalPrincipal: totalBalance,
                         activeCount: activeDebts.length,
                         totalCount: _debtResponses.length,
                         avgInterest: avgInterest,
                         minPayment: totalMinPayment,
+                        monthlyStatus: _monthlyStatus,
                       ),
                       const SizedBox(height: 32),
                       Text(
@@ -277,6 +282,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
     required int totalCount,
     required double avgInterest,
     required double minPayment,
+    MonthlyDebtStatus? monthlyStatus,
   }) {
     return Container(
       width: double.infinity,
@@ -379,6 +385,20 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const TextSpan(text: ' /เดือน'),
+                        if (monthlyStatus != null && monthlyStatus.remainingAmount > 0) ...[
+                          const TextSpan(text: '\n'),
+                          const TextSpan(text: 'คงเหลือที่ต้องจ่ายในเดือนนี้: '),
+                          TextSpan(
+                            text: '${NumberFormat('#,##0.00').format(monthlyStatus.remainingAmount)} ฿',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFFCC00)),
+                          ),
+                        ] else if (monthlyStatus != null && monthlyStatus.remainingAmount <= 0) ...[
+                          const TextSpan(text: '\n'),
+                          TextSpan(
+                            text: 'ชำระของเดือนนี้ครบถ้วนแล้ว ✨',
+                            style: GoogleFonts.kanit(fontWeight: FontWeight.bold, color: const Color(0xFF4CAF50)),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -594,7 +614,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                           const Icon(Icons.auto_awesome, size: 16, color: Color(0xFF2D955F)),
                           const SizedBox(width: 8),
                           Text(
-                            'Smart Suggestion',
+                            'แนะนำอาชีพอัตโนมัติ',
                             style: GoogleFonts.kanit(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
@@ -768,10 +788,18 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                               style: GoogleFonts.kanit(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF0F172A),
+                                color: debt.principalOutstanding <= 0 ? const Color(0xFF2D955F) : const Color(0xFF0F172A),
                               ),
                             ),
                             const SizedBox(height: 4),
+                            Text(
+                              'เงินต้นทั้งหมด ${NumberFormat('#,##0.00').format(debt.principalAmount)} ฿',
+                              style: GoogleFonts.kanit(
+                                fontSize: 13,
+                                color: const Color(0xFF64748B),
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
                             Text(
                               '${debt.debtType.debtTypeName} • ${debt.repaymentType.typeName}',
                               style: GoogleFonts.kanit(
@@ -827,48 +855,94 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  if (debt.interestRemaining > 0 ||
+                      debt.lateFeeRemaining > 0 ||
+                      debt.penaltyInterestRemaining > 0) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
                         children: [
-                          Text(
-                            'เงินต้นคงเหลือ',
-                            style: GoogleFonts.kanit(
-                              fontSize: 14, 
-                              color: const Color(0xFF475569),
-                              fontWeight: FontWeight.w500,
+                          _buildBreakdownRow("เงินต้นคงเหลือ", debt.principalOutstanding, const Color(0xFF475569), false),
+                          if (debt.interestRemaining > 0) ...[
+                            const SizedBox(height: 8),
+                            _buildBreakdownRow("ดอกเบี้ยคงค้าง", debt.interestRemaining, const Color(0xFFE53935), false),
+                          ],
+                          if (debt.lateFeeRemaining + debt.penaltyInterestRemaining > 0) ...[
+                            const SizedBox(height: 8),
+                            _buildBreakdownRow(
+                              "ค่าธรรมเนียมและค่าปรับ",
+                              debt.lateFeeRemaining + debt.penaltyInterestRemaining,
+                              const Color(0xFFE53935),
+                              false,
                             ),
-                          ),
-                          Text(
-                            '${NumberFormat('#,##0.00').format(debt.principalAmount)} ฿',
-                            style: GoogleFonts.kanit(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF0F172A),
+                          ],
+                          if (debt.interestRemainingMonth + debt.lateFeeRemainingMonth + debt.penaltyInterestRemainingMonth > 0) ...[
+                            const SizedBox(height: 8),
+                            _buildBreakdownRow(
+                              "ส่วนที่ต้องชำระเฉพาะเดือนนี้",
+                              debt.interestRemainingMonth + debt.lateFeeRemainingMonth + debt.penaltyInterestRemainingMonth,
+                              const Color(0xFFE53935),
+                              false,
                             ),
+                          ],
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
                           ),
+                          _buildBreakdownRow("ยอดรวมทั้งหมด", debt.totalRemaining, const Color(0xFF0F172A), true),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(8),
+                    ),
+                  ] else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'เงินต้นคงเหลือ',
+                              style: GoogleFonts.kanit(
+                                fontSize: 14,
+                                color: const Color(0xFF475569),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              '${NumberFormat('#,##0.00').format(debt.principalOutstanding)} ฿',
+                              style: GoogleFonts.kanit(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: debt.principalOutstanding <= 0
+                                    ? const Color(0xFF2D955F)
+                                    : const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          'ดอกเบี้ย ${debt.interestRate}%',
-                          style: GoogleFonts.kanit(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF475569),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'ดอกเบี้ย ${debt.interestRate}%',
+                            style: GoogleFonts.kanit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF475569),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -983,6 +1057,30 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBreakdownRow(String label, double amount, Color color, bool isBold) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.kanit(
+            fontSize: isBold ? 16 : 14,
+            color: color,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+        Text(
+          '${NumberFormat('#,##0.00').format(amount)} ฿',
+          style: GoogleFonts.kanit(
+            fontSize: isBold ? 18 : 14,
+            color: color,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 

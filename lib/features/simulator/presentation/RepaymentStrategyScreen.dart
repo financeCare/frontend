@@ -40,7 +40,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
         if (_strategies.isNotEmpty) {
           _selectedStrategy = _strategies.first.strategyId;
           if (_monthlyBudget > 0) {
-            _budgetController.text = _monthlyBudget.toInt().toString();
+            _budgetController.text = _monthlyBudget.round().toString();
           }
         }
         _isLoading = false;
@@ -226,7 +226,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                   ..._strategies.map(
                     (strategy) => _buildStrategyCard(
                       id: strategy.strategyId,
-                      title: strategy.strategyName,
+                      title: _translateStrategyName(strategy.strategyName),
                       description: strategy.description,
                       tags: strategy.tags,
                       icon: _getStrategyIcon(strategy.strategyName),
@@ -611,7 +611,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                       ),
                       const TextSpan(text: ' ด้วย '),
                       TextSpan(
-                        text: selectedStrategyObj.strategyName,
+                        text: _translateStrategyName(selectedStrategyObj.strategyName),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -650,7 +650,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                     builder: (_) => DebtPriorityScreen(
                       monthlyBudget: budget,
                       strategyId: _selectedStrategy,
-                      strategyName: selectedStrategyObj.strategyName,
+                      strategyName: _translateStrategyName(selectedStrategyObj.strategyName),
                     ),
                   ),
                 );
@@ -692,26 +692,28 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
   }
 
   IconData _getStrategyIcon(String name) {
-    switch (name.toLowerCase()) {
-      case 'snowball method':
-      case 'snowball':
-        return Icons.track_changes_outlined;
-      case 'avalanche method':
-      case 'avalanche':
-        return Icons.trending_down_outlined;
-      case 'hybrid method':
-      case 'hybrid':
-        return Icons.compare_arrows_outlined;
-      case 'highest balance first':
-        return Icons.vertical_align_bottom_outlined;
-      default:
-        return Icons.stars_outlined;
-    }
+    final lowerName = name.toLowerCase();
+    if (lowerName.contains('snowball')) return Icons.track_changes_outlined;
+    if (lowerName.contains('avalanche')) return Icons.trending_down_outlined;
+    if (lowerName.contains('minimum')) return Icons.vertical_align_bottom_outlined;
+    if (lowerName.contains('optimal')) return Icons.auto_awesome_outlined;
+    return Icons.stars_outlined;
   }
 
   String? _getStrategyBadge(String name) {
-    if (name.toLowerCase().contains('snowball')) return "ยอดนิยม";
-    if (name.toLowerCase().contains('avalanche')) return "แนะนำ";
+    final lowerName = name.toLowerCase();
+    if (lowerName.contains('snowball')) return "ยอดนิยม";
+    if (lowerName.contains('avalanche')) return "แนะนำ";
+    if (lowerName.contains('optimal')) return "คุ้มสุด";
     return null;
+  }
+
+  String _translateStrategyName(String name) {
+    final lowerName = name.toLowerCase();
+    if (lowerName.contains('snowball')) return 'สโนว์บอล (Snowball)';
+    if (lowerName.contains('avalanche')) return 'แอฟวาลานซ์ (Avalanche)';
+    if (lowerName.contains('minimum')) return 'จ่ายขั้นต่ำเท่านั้น';
+    if (lowerName.contains('optimal')) return 'ต้นทุนต่ำสุด (Optimal)';
+    return name;
   }
 }

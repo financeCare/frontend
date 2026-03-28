@@ -106,7 +106,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
           final rules = getPlanRules(widget.planName);
           final totalDebtAmount = debts.fold(
             0.0,
-            (sum, item) => sum + item.principalAmount,
+            (sum, item) => sum + item.principalOutstanding,
           );
 
           return SingleChildScrollView(
@@ -262,7 +262,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       child: Column(
         children: [
           _summaryRow(
-            "Total Debt",
+            "Remaining Debt",
             "฿${totalDebt.toStringAsFixed(0)}",
             Colors.black,
           ),
@@ -363,7 +363,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
                     ),
                   ),
                   Text(
-                    "฿${debt.principalAmount.toStringAsFixed(0)}",
+                    "฿${debt.principalOutstanding.toStringAsFixed(0)}",
                     style: GoogleFonts.kanit(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,

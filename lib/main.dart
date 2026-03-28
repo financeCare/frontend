@@ -59,7 +59,7 @@ Future<void> main() async {
   await PushService().init();
 
   if (!kIsWeb && Platform.isAndroid) {
-    SlipDetectionService().init();
+    await SlipDetectionService().init();
   }
 
   runApp(const MyApp());

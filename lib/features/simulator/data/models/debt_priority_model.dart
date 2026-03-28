@@ -3,12 +3,14 @@ class DebtPriorityResponse {
   final String debtName;
   final int priority;
   final double principalAmount;
+  final double principalOutstanding;
 
   DebtPriorityResponse({
     required this.debtId,
     required this.debtName,
     required this.priority,
     required this.principalAmount,
+    required this.principalOutstanding,
   });
 
   factory DebtPriorityResponse.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class DebtPriorityResponse {
       debtName: json['debtName']?.toString() ?? '',
       priority: json['priority'] ?? 0,
       principalAmount: (json['principalAmount'] as num?)?.toDouble() ?? 0.0,
+      principalOutstanding: (json['principalOutstanding'] as num?)?.toDouble() ?? (json['principalAmount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
