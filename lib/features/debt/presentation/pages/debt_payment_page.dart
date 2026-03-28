@@ -18,9 +18,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
   bool _isLoading = true;
   bool _isSubmitting = false;
 
-  final TextEditingController _amountController = TextEditingController(
-    text: '0.00',
-  );
+  final TextEditingController _amountController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
 
   @override
@@ -275,7 +273,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
                       onTap: () {
                         setState(() {
                           _selectedDebt = debt;
-                          _amountController.text = '0.00';
+                          _amountController.clear();
                         });
                         Navigator.pop(context);
                       },
@@ -372,8 +370,83 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
               ),
             ],
           ),
+          if (debt.plannedPayment > 0) ...[
+            const SizedBox(height: 24),
+            _buildMonthlyProgressInternal(debt),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildMonthlyProgressInternal(DebtResponse debt) {
+    final progress = (debt.paidThisMonth / debt.plannedPayment).clamp(0.0, 1.0);
+    final isCompleted = progress >= 1.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'เป้าหมายการชำระเดือนนี้',
+              style: GoogleFonts.kanit(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              '${NumberFormat('#,##0.0').format(debt.paidThisMonth)} / ${NumberFormat('#,##0.0').format(debt.plannedPayment)} ฿',
+              style: GoogleFonts.kanit(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Stack(
+            children: [
+              Container(
+                height: 6,
+                width: double.infinity,
+                color: Colors.white.withOpacity(0.2),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                height: 6,
+                width: MediaQuery.of(context).size.width * 0.7 * progress,
+                decoration: BoxDecoration(
+                  color: isCompleted ? const Color(0xFF81C784) : Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (isCompleted) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.check_circle, color: Color(0xFF81C784), size: 14),
+              const SizedBox(width: 4),
+              Text(
+                'ชำระตามแผนของเดือนนี้สำเร็จแล้ว',
+                style: GoogleFonts.kanit(
+                  color: const Color(0xFF81C784),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 

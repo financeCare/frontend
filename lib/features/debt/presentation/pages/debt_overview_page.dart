@@ -943,6 +943,10 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                         ),
                       ],
                     ),
+                  if (debt.plannedPayment > 0) ...[
+                    const SizedBox(height: 20),
+                    _buildMonthlyPaymentProgress(debt),
+                  ],
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1002,6 +1006,83 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMonthlyPaymentProgress(DebtResponse debt) {
+    final progress = (debt.paidThisMonth / debt.plannedPayment).clamp(0.0, 1.0);
+    final isCompleted = progress >= 1.0;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isCompleted ? Icons.check_circle_outline : Icons.pending_actions_outlined,
+                  size: 14,
+                  color: isCompleted ? const Color(0xFF2D955F) : const Color(0xFF64748B),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "เป้าหมายการชำระเดือนนี้",
+                  style: GoogleFonts.kanit(
+                    fontSize: 13,
+                    color: const Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.kanit(fontSize: 13),
+                children: [
+                  TextSpan(
+                    text: NumberFormat('#,##0.0').format(debt.paidThisMonth),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isCompleted ? const Color(0xFF2D955F) : const Color(0xFF0F172A),
+                    ),
+                  ),
+                  TextSpan(
+                    text: " / ${NumberFormat('#,##0.0').format(debt.plannedPayment)} ฿",
+                    style: const TextStyle(color: Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Stack(
+            children: [
+              Container(
+                height: 8,
+                width: double.infinity,
+                color: const Color(0xFFF1F5F9),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                height: 8,
+                width: MediaQuery.of(context).size.width * 0.8 * progress, // Approximation for the card width
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isCompleted 
+                      ? [const Color(0xFF2D955F), const Color(0xFF66BB6A)]
+                      : [const Color(0xFF3B82F6), const Color(0xFF60A5FA)],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

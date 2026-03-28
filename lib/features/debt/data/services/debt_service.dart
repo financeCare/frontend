@@ -311,7 +311,7 @@ class DebtService {
   Future<MonthlyDebtStatus> getMonthlyDebtStatus() async {
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.get(
-      Uri.parse('$baseUrl/api/repayment-plans/monthly-status'),
+      Uri.parse('$baseUrl/api/debts/monthly-status'),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',

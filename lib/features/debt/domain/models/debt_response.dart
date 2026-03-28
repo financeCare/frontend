@@ -37,6 +37,8 @@ class DebtResponse {
   final double initialInterestRemaining;
   final double initialLateFeeRemaining;
   final double initialPenaltyRemaining;
+  final double plannedPayment;
+  final double paidThisMonth;
 
   DebtResponse({
     required this.debtId,
@@ -71,6 +73,8 @@ class DebtResponse {
     this.initialInterestRemaining = 0.0,
     this.initialLateFeeRemaining = 0.0,
     this.initialPenaltyRemaining = 0.0,
+    this.plannedPayment = 0.0,
+    this.paidThisMonth = 0.0,
   });
 
   factory DebtResponse.fromJson(Map<String, dynamic> json) {
@@ -113,6 +117,8 @@ class DebtResponse {
       lateFeeRemainingMonth: summaryJson != null ? (summaryJson['lateFeeRemainingMonth'] as num?)?.toDouble() ?? 0.0 : 0.0,
       penaltyInterestRemainingMonth: summaryJson != null ? (summaryJson['penaltyInterestRemainingMonth'] as num?)?.toDouble() ?? 0.0 : 0.0,
       totalRemaining: summaryJson != null ? (summaryJson['totalRemaining'] as num?)?.toDouble() ?? 0.0 : 0.0,
+      plannedPayment: summaryJson != null ? (summaryJson['plannedPayment'] as num?)?.toDouble() ?? 0.0 : 0.0,
+      paidThisMonth: summaryJson != null ? (summaryJson['paidThisMonth'] as num?)?.toDouble() ?? 0.0 : 0.0,
       initialInterestRemaining: (debtJson['initialInterestRemaining'] as num?)?.toDouble() ?? 0.0,
       initialLateFeeRemaining: (debtJson['initialLateFeeRemaining'] as num?)?.toDouble() ?? 0.0,
       initialPenaltyRemaining: (debtJson['initialPenaltyRemaining'] as num?)?.toDouble() ?? 0.0,

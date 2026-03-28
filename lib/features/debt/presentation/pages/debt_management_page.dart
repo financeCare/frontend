@@ -481,35 +481,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
                   ],
                   decoration: const InputDecoration(labelText: "ดอกเบี้ย (%)"),
                 ),
-                TextField(
-                  controller: startDateCtrl,
-                  readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: "วันที่เริ่มต้น",
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
-                  onTap: () async {
-                    DateTime initial = DateTime.tryParse(startDateCtrl.text) ??
-                        debtDetail.startDate;
-                    DateTime? p = await showDatePicker(
-                      context: context,
-                      initialDate: initial,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (p != null) {
-                      setDialogState(
-                        () => startDateCtrl.text =
-                            p.toIso8601String().split('T')[0],
-                      );
-                      // Adjust end date if needed
-                      final end = DateTime.tryParse(endDateCtrl.text);
-                      if (end != null && end.isBefore(p)) {
-                        setDialogState(() => endDateCtrl.text = "");
-                      }
-                    }
-                  },
-                ),
+                // Hiding startDate to prevent accidental mass accrual from the past
+                // startDate is handled automatically based on the initial value or now()
                 TextField(
                   controller: endDateCtrl,
                   readOnly: true,
@@ -1473,11 +1446,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
           style: GoogleFonts.kanit(fontSize: 14, color: Colors.grey),
         ),
         const SizedBox(height: 24),
-        _buildDatePickerField(
-          "วันที่เริ่มต้น",
-          debtStartDateCtrl,
-          errorText: debtStartDateError ? "กรุณาเลือกวันที่เริ่มต้น" : null,
-        ),
+        // startDate is now automatically set to current date to prevent issues
+        // _buildDatePickerField("วันที่เริ่มต้น", debtStartDateCtrl, ...),
         const SizedBox(height: 16),
         _buildDatePickerField(
           "วันที่สิ้นสุด",
