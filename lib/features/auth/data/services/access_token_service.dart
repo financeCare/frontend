@@ -6,9 +6,9 @@ import '../../../../core/config/config.dart'; // ไฟล์ config.dart ที
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 class AccesstokenService {
-  // TEMPORARY FIX: Disable encryption to bypass potential Keystore corruption
+  // Hardware-backed encryption enabled for extra security
   static const _androidOptions = AndroidOptions(
-    encryptedSharedPreferences: false, // Changed from true to false
+    encryptedSharedPreferences: true,
   );
 
   static const _storage = FlutterSecureStorage(aOptions: _androidOptions);
@@ -20,7 +20,7 @@ class AccesstokenService {
   Future<String?> getAccessToken() async {
     try {
       String? accessToken = await storage.read(key: "accessToken");
-      print("access token : $accessToken");
+      print("access token found");
 
       if (accessToken == null) {
         debugPrint("No accessToken found in storage");

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'features/notification/data/services/push_service.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -37,6 +38,7 @@ import 'features/budget/presentation/pages/transaction_add_screen.dart';
 // 🚨 ฟังก์ชัน main() ต้องเป็น async และรวมการเริ่มต้น (Initialization) ของทั้งสองบริการ
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
 
   try {
     if (kIsWeb) {
@@ -58,9 +60,7 @@ Future<void> main() async {
   await LineSDK.instance.setup('2008279064');
   await PushService().init();
 
-  if (!kIsWeb && Platform.isAndroid) {
-    SlipDetectionService().init();
-  }
+  // REMOVED: Jailbreak/Security check as requested
 
   runApp(const MyApp());
 }

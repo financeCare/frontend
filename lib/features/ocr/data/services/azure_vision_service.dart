@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../../../core/utils/logger_util.dart';
 
 class AzureVisionService {
   final String endpoint = "https://vision-api-app.cognitiveservices.azure.com/";
-  final String key = "E7nG31gyrAlsm7Z2kFum6ccey2g7H81RjMYDjYzw3nRwgtVfKS0bJQQJ99CCACqBBLyXJ3w3AAAFACOGS57l";
+  final String key = dotenv.env['AZURE_VISION_KEY'] ?? "";
   final String apiVersion = "2024-02-01";
 
   Future<String?> analyzeImage(File imageFile) async {
