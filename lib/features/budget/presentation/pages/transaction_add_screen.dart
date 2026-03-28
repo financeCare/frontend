@@ -33,6 +33,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
   List<BudgetOverview> _budgetItems = [];
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isIncome = false;
 
   // ฟิลด์ใหม่สำหรับรองรับข้อมูลสลิป/OCR
   String? _senderBank;
@@ -62,12 +63,21 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
     _receiverName = tx.receiverName;
     _imagePath = tx.imagePath;
     _slipId = tx.slipId;
+    _isIncome = tx.category.type == 'Income';
   }
 
   void _applyOcrData() {
     final amountStr = widget.ocrData!['amount']?.replaceAll(',', '') ?? '0.00';
     _amountController.text = amountStr;
-    _descController.text = 'โอนให้: ${widget.ocrData!['receiver'] ?? '-'}';
+    
+    // ใช้ description จาก OCR ถ้ามี ถ้าไม่มีให้ใช้รูปแบบ "โอนให้: [ชื่อผู้รับ]"
+    final ocrDesc = widget.ocrData!['description'];
+    if (ocrDesc != null && ocrDesc.isNotEmpty) {
+      _descController.text = ocrDesc;
+    } else {
+      _descController.text = 'โอนให้: ${widget.ocrData!['receiver'] ?? '-'}';
+    }
+    
     _receiverController.text = widget.ocrData!['receiver'] ?? '';
     
     // เก็บข้อมูลเพิ่มเติมจาก OCR
@@ -83,11 +93,25 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
     if (dateStr != null) {
       try {
         // คาดหวัง format YYYY-MM-DD หรือ ISO
-        _selectedDate = DateTime.parse(dateStr);
+        _selectedDate = _normalizeDate(DateTime.parse(dateStr));
       } catch (_) {
         // ถ้า parse ไม่ได้ให้ใช้เวลาปัจจุบัน
       }
     }
+  }
+
+  DateTime _normalizeDate(DateTime date) {
+    if (date.year > 2500) {
+      return DateTime(
+        date.year - 543,
+        date.month,
+        date.day,
+        date.hour,
+        date.minute,
+        date.second,
+      );
+    }
+    return date;
   }
 
   Future<void> _loadData() async {
@@ -105,9 +129,20 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
                 (c) => c.categoryId == widget.transactionToEdit!.category.categoryId,
                 orElse: () => _allCategories.first,
               );
+            } else if (widget.ocrData != null && widget.ocrData!['category_id'] != null) {
+              final ocrCategoryId = int.tryParse(widget.ocrData!['category_id']!);
+              _selectedCategory = _allCategories.firstWhere(
+                (c) => c.categoryId == ocrCategoryId,
+                orElse: () => _allCategories.first,
+              );
             } else {
-              _selectedCategory = _allCategories.first;
+              // Default to first Expense category if available
+              _selectedCategory = _allCategories.firstWhere(
+                (c) => c.type == 'Expense',
+                orElse: () => _allCategories.first,
+              );
             }
+            _isIncome = _selectedCategory?.type == 'Income';
           }
           _isLoading = false;
         });
@@ -205,8 +240,18 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
                     children: [
                       _buildAmountCard(),
                       const SizedBox(height: 32),
+                      _buildTypeSelection(),
+                      const SizedBox(height: 24),
+                      _buildInputLabel('หมวดหมู่'),
+                      _buildCategoryGrid(),
+                      const SizedBox(height: 32),
                       _buildInputLabel('วันที่ทำรายการ'),
                       _buildDatePicker(),
+                      if (_senderBank != null && _senderBank!.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        _buildInputLabel('ธนาคารต้นทาง'),
+                        _buildSenderBankInfo(),
+                      ],
                       const SizedBox(height: 24),
                       _buildInputLabel('ชื่อผู้รับ (ถ้ามี)'),
                       _buildReceiverField(),
@@ -381,6 +426,32 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
     );
   }
 
+  Widget _buildSenderBankInfo() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.account_balance, color: Color(0xFF64748B), size: 20),
+          const SizedBox(width: 12),
+          Text(
+            _senderBank!,
+            style: GoogleFonts.kanit(
+              fontSize: 16,
+              color: const Color(0xFF334155),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
@@ -455,5 +526,197 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
       ),
       child: Icon(iconData, color: color, size: 24),
     );
+  }
+
+  Widget _buildTypeSelection() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isIncome = false;
+                  // Auto-select first expense category
+                  try {
+                    _selectedCategory = _allCategories.firstWhere((c) => c.type == 'Expense');
+                  } catch (_) {}
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: !_isIncome ? const Color(0xFFEF4444).withOpacity(0.1) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    'รายจ่าย',
+                    style: GoogleFonts.kanit(
+                      fontWeight: FontWeight.bold,
+                      color: !_isIncome ? const Color(0xFFEF4444) : Colors.black45,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isIncome = true;
+                  // Auto-select "Extra Income"
+                  try {
+                    _selectedCategory = _allCategories.firstWhere(
+                      (c) => c.categoryName.toLowerCase() == 'extra income'
+                    );
+                  } catch (_) {
+                    try {
+                      _selectedCategory = _allCategories.firstWhere((c) => c.type == 'Income');
+                    } catch (_) {}
+                  }
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: _isIncome ? const Color(0xFF2D955F).withOpacity(0.1) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    'รายรับ',
+                    style: GoogleFonts.kanit(
+                      fontWeight: FontWeight.bold,
+                      color: _isIncome ? const Color(0xFF2D955F) : Colors.black45,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryGrid() {
+    final filteredCategories = _allCategories.where((c) {
+      if (_isIncome) {
+        return c.categoryName.toLowerCase() == 'extra income';
+      } else {
+        return c.type == 'Expense';
+      }
+    }).toList();
+
+    if (filteredCategories.isEmpty) {
+      return Center(
+        child: Text(
+          'ไม่มีหมวดหมู่ที่เหมาะสม',
+          style: GoogleFonts.kanit(color: Colors.black45),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        mainAxisExtent: 100,
+      ),
+      itemCount: filteredCategories.length,
+      itemBuilder: (context, index) {
+        final cat = filteredCategories[index];
+        bool isSelected = _selectedCategory?.categoryId == cat.categoryId;
+        
+        return GestureDetector(
+          onTap: () => setState(() => _selectedCategory = cat),
+          child: Column(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF2D955F).withOpacity(0.1) : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFF2D955F) : const Color(0xFFE2E8F0),
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    _getCategoryIcon(cat.categoryName),
+                    if (isSelected)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF2D955F),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(2),
+                          child: const Icon(
+                            Icons.check,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _getCategoryThaiName(cat.categoryName),
+                style: GoogleFonts.kanit(
+                  fontSize: 12,
+                  color: isSelected ? Colors.black87 : Colors.black54,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _getCategoryThaiName(String name) {
+    switch (name.toLowerCase()) {
+      case 'food':
+        return 'อาหาร';
+      case 'transport':
+        return 'เดินทาง';
+      case 'health':
+        return 'สุขภาพ';
+      case 'shopping':
+        return 'ช้อปปิ้ง';
+      case 'bills':
+        return 'บิล';
+      case 'entertainment':
+        return 'บันเทิง';
+      case 'saving':
+        return 'เงินออม';
+      case 'extra income':
+        return 'รายได้เสริม';
+      default:
+        return name;
+    }
   }
 }

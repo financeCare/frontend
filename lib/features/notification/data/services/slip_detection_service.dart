@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import '../../../../core/config/config.dart' as config;
+import '../../../../features/auth/data/services/access_token_service.dart';
+import '../../../budget/domain/models/transaction_response.dart';
+import 'dart:convert';
 
 class SlipDetectionService {
   static const _channel = MethodChannel('com.example.financeCare/slip_detector');
@@ -29,33 +32,60 @@ class SlipDetectionService {
 
     print('SlipDetectionService: Detect new image: $filePath');
     
-    // Send to Python OCR API
+    // ส่งไปยัง Backend API (ซึ่งจะส่งต่อให้ Python OCR อีกที)
     await _uploadToOcr(file);
   }
 
   Future<void> _uploadToOcr(File file) async {
     try {
-      final url = Uri.parse('${config.baseUrl}/api/ocr/process-slip');
+      await processManualSlip(file);
+    } catch (e) {
+      print('SlipDetectionService: Error in _uploadToOcr: $e');
+    }
+  }
+
+  Future<TransactionResponse?> processManualSlip(File file) async {
+    try {
+      final token = await AccesstokenService().getAccessToken();
+      if (token == null) {
+        throw Exception('No access token found');
+      }
+
+      final url = Uri.parse('${config.baseUrl}/api/slips/upload');
       final request = http.MultipartRequest('POST', url);
       
+      request.headers['Authorization'] = 'Bearer $token';
+
       request.files.add(
         await http.MultipartFile.fromPath(
-          'file',
+          'files',
           file.path,
         ),
       );
 
       print('SlipDetectionService: Uploading to $url');
-      final response = await request.send();
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
       
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final resBody = await response.stream.bytesToString();
-        print('SlipDetectionService: OCR Upload Tech Success: $resBody');
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        if (jsonList.isNotEmpty) {
+          final Map<String, dynamic> firstItem = jsonList.first;
+          final Map<String, dynamic> dataToParse = firstItem.containsKey('slip') 
+              ? firstItem['slip'] as Map<String, dynamic>
+              : firstItem;
+          final tx = TransactionResponse.fromJson(dataToParse);
+          print('SlipDetectionService: OCR Success for ${tx.receiverName}, amount: ${tx.amount}');
+          return tx;
+        }
       } else {
-        print('SlipDetectionService: OCR Upload Failed: ${response.statusCode}');
+        print('SlipDetectionService: OCR Upload Failed: ${response.statusCode} - ${response.body}');
+        throw Exception('OCR processing failed with status ${response.statusCode}');
       }
     } catch (e) {
-      print('SlipDetectionService: Error uploading to OCR: $e');
+      print('SlipDetectionService: Error processing slip: $e');
+      rethrow;
     }
+    return null;
   }
 }

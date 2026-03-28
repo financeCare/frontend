@@ -25,9 +25,13 @@ class TransactionResponse {
 
   factory TransactionResponse.fromJson(Map<String, dynamic> json) {
     return TransactionResponse(
-      transactionId: json['transactionId'] as String,
-      amount: (json['amount'] as num).toDouble(),
-      transactionDate: DateTime.parse(json['transactionDate']),
+      transactionId: (json['transactionId'] ?? json['id'] ?? '').toString(),
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      transactionDate: _normalizeDate(json['transactionDate'] != null 
+          ? DateTime.parse(json['transactionDate'])
+          : (json['transferDate'] != null 
+              ? DateTime.parse(json['transferDate']) 
+              : DateTime.now())),
       description: json['description'] as String? ?? '',
       category: Categories.fromJson(
         (json['categoryDTO'] ?? json['category']) as Map<String, dynamic>? ?? {},
@@ -37,5 +41,19 @@ class TransactionResponse {
       imagePath: json['imagePath'] as String?,
       slipId: json['slipId'] as int?,
     );
+  }
+
+  static DateTime _normalizeDate(DateTime date) {
+    if (date.year > 2500) {
+      return DateTime(
+        date.year - 543,
+        date.month,
+        date.day,
+        date.hour,
+        date.minute,
+        date.second,
+      );
+    }
+    return date;
   }
 }

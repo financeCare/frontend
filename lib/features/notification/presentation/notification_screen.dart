@@ -66,6 +66,21 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
+  Future<void> _markAllAsRead() async {
+    try {
+      final accessToken = await AccesstokenService().getAccessToken();
+      if (accessToken != null) {
+        // เรียกใช้ API เพื่อ mark เป็นอ่านทั้งหมด
+        final success = await _api.markAllAsRead(accessToken: accessToken);
+        if (success) {
+          debugPrint("NotificationScreen: Marked all as read successfully");
+        }
+      }
+    } catch (e) {
+      debugPrint("Error marking all as read: $e");
+    }
+  }
+
   Map<String, List<NotificationLogItem>> _groupNotifications() {
     final Map<String, List<NotificationLogItem>> groups = {};
     final now = DateTime.now();
@@ -97,25 +112,32 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            _buildFilters(),
-            Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF2D955F),
-                      ),
-                    )
-                  : _notifications.isEmpty
-                  ? _buildEmptyState()
-                  : _buildNotificationList(),
-            ),
-          ],
+    return PopScope(
+      onPopInvoked: (didPop) {
+        if (didPop) {
+          _markAllAsRead();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(),
+              _buildFilters(),
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF2D955F),
+                        ),
+                      )
+                    : _notifications.isEmpty
+                        ? _buildEmptyState()
+                        : _buildNotificationList(),
+              ),
+            ],
+          ),
         ),
       ),
     );

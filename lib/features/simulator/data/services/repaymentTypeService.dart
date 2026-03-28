@@ -140,13 +140,7 @@ class RepaymentStrategyService {
     final token = await AccesstokenService().getAccessToken();
     // Assuming the API expects query parameters for budget and strategy based on the GET spec
     // Config.baseUrl/api/repayment-plans/simulate (GET)
-    final url = Uri.parse("${Config.baseUrl}/api/repayment-plans/simulate")
-        .replace(
-          queryParameters: {
-            "monthlyBudget": budget.toString(),
-            "strategy": strategy,
-          },
-        );
+    final url = Uri.parse("${Config.baseUrl}/api/repayment-plans");
 
     debugPrint("SIMULATE URL => $url");
 

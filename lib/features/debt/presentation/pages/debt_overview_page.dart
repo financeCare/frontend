@@ -420,13 +420,6 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
         'route': '/simulator_results',
       },
       {
-        'icon': Icons.account_balance_wallet_outlined,
-        'label': 'รายรับ/รายจ่าย',
-        'color': const Color(0xFFF6FFED),
-        'iconColor': const Color(0xFF52C41A),
-        'route': '/expense_entry',
-      },
-      {
         'icon': Icons.payments_outlined,
         'label': 'ชำระหนี้',
         'color': const Color(0xFFE9F7F7),

@@ -16,6 +16,9 @@ import 'package:flutter_application_1/features/budget/presentation/widgets/expan
 import 'package:flutter_application_1/features/budget/presentation/pages/receiver_mapping_screen.dart';
 import 'package:flutter_application_1/features/budget/data/services/receiver_mapping_service.dart';
 import 'package:flutter_application_1/features/budget/domain/models/mapping_request.dart';
+import 'package:flutter_application_1/features/debt/data/services/debt_service.dart';
+import 'package:flutter_application_1/features/debt/domain/models/monthly_debt_status.dart';
+
 
 class BudgetPerMonthScreen extends StatefulWidget {
   const BudgetPerMonthScreen({super.key});
@@ -44,7 +47,9 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
   double _totalIncome = 0;
   double _totalExpense = 0;
   double _totalSavings = 0;
+  MonthlyDebtStatus? _debtStatus;
   List<TransactionResponse> _pendingTransactions = [];
+
   List<Categories> _allCategories = [];
   bool _isShowingModal = false;
 
@@ -77,6 +82,13 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
     }
 
     final double income = await _budgetService.getIncomeAmount();
+    MonthlyDebtStatus? debtStat;
+    try {
+      debtStat = await DebtService().getMonthlyDebtStatus();
+    } catch (e) {
+      debugPrint("Error loading debt status: $e");
+    }
+
 
     // คำนวณแนวโน้มรายเดือนจาก Transactions
     try {
@@ -92,7 +104,9 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       _totalExpense = expense;
       _totalSavings = savings;
       _totalIncome = income;
+      _debtStatus = debtStat;
     });
+
 
     // ดึงรายการ Pending และ Category ทั้งหมด
     try {
@@ -238,6 +252,15 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
     return "$prefix${diff.toStringAsFixed(0)}% จากเดือนก่อน";
   }
 
+  List<Categories> _getFilteredCategories(String type) {
+    return _allCategories.where((c) {
+      if (type == 'Income') {
+        return c.type == 'Income' && c.categoryName == 'Extra Income';
+      }
+      return c.type == 'Expense';
+    }).toList();
+  }
+
   // --- Task 4 Integration ---
   Future<void> _saveTransaction(TransactionRequest request) async {
     try {
@@ -277,14 +300,24 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
   void _showAddTransactionDialog() {
     final TextEditingController amountCtrl = TextEditingController(text: "0.00");
     final TextEditingController descCtrl = TextEditingController();
-    final TextEditingController receiverCtrl = TextEditingController(); // เพิ่มฟิลด์ผู้รับเงิน
+    final TextEditingController receiverCtrl = TextEditingController(); 
     DateTime selectedDate = DateTime.now();
-    BudgetOverview? selectedCategory = _budgetItems.isNotEmpty ? _budgetItems.first : null;
+    
+    // ตั้งค่าเริ่มต้น
+    String transactionType = 'Expense'; // 'Expense' หรือ 'Income'
+    Categories? selectedCategory;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
+          final filteredCategories = _getFilteredCategories(transactionType);
+          
+          // ถ้ายังไม่ได้เลือกหมวดหมู่ หรือหมวดหมู่ที่เคยเลือกไม่อยู่ในประเภทที่เปลี่ยนใหม่ ให้เลือกตัวแรก
+          if (selectedCategory == null || !filteredCategories.any((c) => c.categoryId == selectedCategory!.categoryId)) {
+            selectedCategory = filteredCategories.isNotEmpty ? filteredCategories.first : null;
+          }
+
           return Dialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
@@ -296,7 +329,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
+                   Center(
                     child: Column(
                       children: [
                         Text(
@@ -307,9 +340,9 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'บันทึกรายจ่ายของคุณ',
-                          style: TextStyle(
+                        Text(
+                          transactionType == 'Expense' ? 'บันทึกรายจ่ายของคุณ' : 'บันทึกรายรับของคุณ',
+                          style: const TextStyle(
                             color: Colors.black45,
                             fontSize: 13,
                           ),
@@ -317,7 +350,37 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
+
+                  // ส่วนเลือกประเภท รายจ่าย / รายรับ
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildTypeToggleBtn(
+                            'รายจ่าย', 
+                            transactionType == 'Expense',
+                            const Color(0xFFEB5757),
+                            () => setDialogState(() => transactionType = 'Expense'),
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildTypeToggleBtn(
+                            'รายรับ', 
+                            transactionType == 'Income',
+                            const Color(0xFF2D955F),
+                            () => setDialogState(() => transactionType = 'Income'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
                   // หมวดหมู่
                   Text(
@@ -329,11 +392,11 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (_budgetItems.isEmpty)
+                  if (_allCategories.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 20),
                       child: Text(
-                        'ไม่พบข้อมูลหมวดหมู่ กรุณารอครู่...',
+                        'ไม่พบข้อมูลหมวดหมู่ กรุณารอสักครู่...',
                         style: TextStyle(color: Colors.black45),
                       ),
                     )
@@ -342,32 +405,32 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: const Color(0xFF2D955F),
+                          color: transactionType == 'Expense' ? const Color(0xFFEB5757).withOpacity(0.5) : const Color(0xFF2D955F),
                           width: 1.5,
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
+                        child: DropdownButton<int>(
                           isExpanded: true,
                           value: selectedCategory?.categoryId,
                           icon: const Icon(
                             Icons.keyboard_arrow_down,
                             color: Colors.black45,
                           ),
-                          items: _budgetItems.map((item) {
-                            return DropdownMenuItem<String>(
+                          items: filteredCategories.map((item) {
+                            return DropdownMenuItem<int>(
                               value: item.categoryId,
                               child: Row(
                                 children: [
                                   Icon(
-                                    _getCategoryIcon(item.budgetName),
+                                    _getCategoryIcon(item.categoryName),
                                     size: 20,
-                                    color: _getCategoryColor(item.budgetName),
+                                    color: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F),
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
-                                    item.budgetName,
+                                    item.categoryName,
                                     style: GoogleFonts.kanit(fontSize: 15),
                                   ),
                                 ],
@@ -377,7 +440,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                           onChanged: (val) {
                             if (val != null) {
                               setDialogState(() {
-                                selectedCategory = _budgetItems.firstWhere(
+                                selectedCategory = _allCategories.firstWhere(
                                   (item) => item.categoryId == val,
                                 );
                               });
@@ -406,9 +469,9 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(
-                        Icons.currency_bitcoin,
-                        color: Color(0xFF2D955F),
+                      prefixIcon: Icon(
+                        Icons.payments_outlined,
+                        color: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F),
                         size: 20,
                       ),
                       border: OutlineInputBorder(
@@ -463,7 +526,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                         children: [
                           Text(
                             DateFormat(
-                              'MM/dd/yyyy HH:mm A',
+                              'MM/dd/yyyy',
                             ).format(selectedDate),
                             style: GoogleFonts.kanit(fontSize: 15),
                           ),
@@ -480,7 +543,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
 
                   // ผู้รับเงิน
                   Text(
-                    'ผู้รับเงิน (ไม่บังคับ)',
+                    transactionType == 'Expense' ? 'ผู้รับเงิน (ไม่บังคับ)' : 'แหล่งที่มา/ผู้จ่าย (ไม่บังคับ)',
                     style: GoogleFonts.kanit(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -491,7 +554,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                   TextField(
                     controller: receiverCtrl,
                     decoration: InputDecoration(
-                      hintText: 'เช่น นาย กอบศักดิ์ หรือ ชื่อบริษัท',
+                      hintText: transactionType == 'Expense' ? 'เช่น ร้านสะดวกซื้อ' : 'เช่น เงินรางวัล',
                       hintStyle: GoogleFonts.kanit(
                         color: Colors.black26,
                         fontSize: 14,
@@ -526,7 +589,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                     controller: descCtrl,
                     maxLength: 128,
                     decoration: InputDecoration(
-                      hintText: 'เช่น ค่าอาหารกลางวัน',
+                      hintText: 'รายละเอียดเพิ่มเติม...',
                       hintStyle: GoogleFonts.kanit(
                         color: Colors.black26,
                         fontSize: 14,
@@ -581,7 +644,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2D955F),
+                            backgroundColor: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F),
                             foregroundColor: Colors.white,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -591,16 +654,26 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                           ),
                           onPressed: () {
                             final amt = double.tryParse(amountCtrl.text);
-                            if (amt != null &&
-                                amt > 0 &&
-                                selectedCategory != null) {
+                            if (amt != null && amt > 0 && selectedCategory != null) {
+                              
+                              // หา budgetId ถ้าเป็นรายจ่าย
+                              String? budgetId;
+                              if (transactionType == 'Expense') {
+                                try {
+                                  final matchingBudget = _budgetItems.firstWhere(
+                                    (b) => int.tryParse(b.categoryId) == selectedCategory!.categoryId
+                                  );
+                                  budgetId = matchingBudget.budgetId;
+                                } catch (_) {}
+                              }
+
                               final req = TransactionRequest(
-                                categoryId: int.parse(selectedCategory!.categoryId),
+                                categoryId: selectedCategory!.categoryId,
                                 amount: amt,
                                 transactionDate: selectedDate,
                                 description: descCtrl.text,
-                                receiverName: receiverCtrl.text, // ส่งข้อมูลผู้รับเงิน
-                                budgetId: selectedCategory!.budgetId,
+                                receiverName: receiverCtrl.text,
+                                budgetId: budgetId,
                               );
                               _saveTransaction(req);
                               Navigator.pop(context);
@@ -622,6 +695,36 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTypeToggleBtn(String label, bool isSelected, Color activeColor, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            )
+          ] : [],
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.kanit(
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? activeColor : Colors.black45,
+          ),
+        ),
       ),
     );
   }
@@ -1268,10 +1371,76 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
             Icons.savings_outlined,
             showTrend: _savingsTrend.isNotEmpty,
           ),
+          const SizedBox(width: 16),
+          _buildDebtStatCard(),
         ],
       ),
     );
   }
+
+  Widget _buildDebtStatCard() {
+    final status = _debtStatus;
+    if (status == null) return const SizedBox();
+
+    final remaining = status.remainingAmount;
+    final paid = status.paidAmount;
+    final total = status.totalAmount;
+
+    return Container(
+      width: 160,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'ชำระหนี้',
+                style: GoogleFonts.kanit(color: Colors.black45, fontSize: 12),
+              ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.priority_high,
+                  size: 16,
+                  color: Color(0xFFEB5757),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '฿${NumberFormat('#,###').format(remaining)}',
+            style: GoogleFonts.kanit(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'จ่ายแล้ว ฿${NumberFormat('#,###').format(paid)} / ฿${NumberFormat('#,###').format(total)}',
+            style: GoogleFonts.kanit(
+              fontSize: 10,
+              color: Colors.black38,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildStatCard(
     String title,
