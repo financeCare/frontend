@@ -34,7 +34,8 @@ class MaxValueFormatter extends TextInputFormatter {
 
 class AddDebtPage extends StatefulWidget {
   final DebtResponse? debtToEdit;
-  const AddDebtPage({super.key, this.debtToEdit});
+  final bool isViewOnly;
+  const AddDebtPage({super.key, this.debtToEdit, this.isViewOnly = false});
 
   @override
   State<AddDebtPage> createState() => _AddDebtPageState();
@@ -63,9 +64,9 @@ class _AddDebtPageState extends State<AddDebtPage> {
   final TextEditingController debtDueDateCtrl = TextEditingController();
   final TextEditingController searchDebtTypeCtrl = TextEditingController();
 
-  final TextEditingController debtPenaltyRateCtrl = TextEditingController(text: '0');
-  final TextEditingController debtGracePeriodCtrl = TextEditingController(text: '0');
-  final TextEditingController debtPenaltyTriggerCtrl = TextEditingController(text: '0');
+  final TextEditingController debtPenaltyRateCtrl = TextEditingController();
+  final TextEditingController debtGracePeriodCtrl = TextEditingController();
+  final TextEditingController debtPenaltyTriggerCtrl = TextEditingController();
   
   bool isDefaulted = false;
   bool isInformal = false;
@@ -126,17 +127,21 @@ class _AddDebtPageState extends State<AddDebtPage> {
     }
   }
 
+  String _formatDouble(double value) {
+    return value % 1 == 0 ? value.toInt().toString() : value.toString();
+  }
+
   void _fillEditData(DebtResponse d) {
     debtNameCtrl.text = d.debtName;
-    debtAmountCtrl.text = d.principalAmount.toString();
-    debtInterestCtrl.text = d.interestRate.toString();
+    debtAmountCtrl.text = _formatDouble(d.principalAmount);
+    debtInterestCtrl.text = _formatDouble(d.interestRate);
     debtStartDateCtrl.text = d.startDate.toIso8601String().split('T')[0];
     debtEndDateCtrl.text = d.endDate.toIso8601String().split('T')[0];
-    debtMinpaymentCtrl.text = d.minPayment.toString();
+    debtMinpaymentCtrl.text = _formatDouble(d.minPayment);
     debtDueDateCtrl.text = (d.dueDate ?? 1).toString();
     selectedDebtTypeId = d.debtType.debtTypeId;
     selectedRepaymentTypeId = d.repaymentType.typeId;
-    debtPenaltyRateCtrl.text = d.penaltyAnnualRate.toString();
+    debtPenaltyRateCtrl.text = _formatDouble(d.penaltyAnnualRate);
     debtGracePeriodCtrl.text = d.gracePeriodDays.toString();
     debtPenaltyTriggerCtrl.text = d.penaltyTriggerDays.toString();
     isDefaulted = d.isDefaulted;
@@ -161,12 +166,13 @@ class _AddDebtPageState extends State<AddDebtPage> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('เกิดข้อผิดพลาดในการโหลดข้อมูลประเภทหนี้: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        if (e.toString().contains('401')) {
+          Navigator.of(context).pushReplacementNamed('/');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('เกิดข้อผิดพลาดในการโหลดข้อมูลประเภทหนี้: ${e.toString().replaceAll('Exception: ', '')}')),
+          );
+        }
       }
     }
   }
@@ -292,21 +298,36 @@ class _AddDebtPageState extends State<AddDebtPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              widget.debtToEdit != null ? "แก้ไขหนี้สำเร็จ" : "เพิ่มหนี้สำเร็จ",
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.debtToEdit != null ? "อัปเดตข้อมูลหนี้เรียบร้อยแล้ว!" : "เพิ่มรายการหนี้สำเร็จ!",
+                    style: GoogleFonts.kanit(fontSize: 14, color: Colors.white),
+                  ),
+                ),
+              ],
             ),
+            backgroundColor: widget.debtToEdit != null ? const Color(0xFF2196F3) : const Color(0xFF27AE60),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
           ),
         );
         Navigator.pop(context, true); // Go back to overview
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('เกิดข้อผิดพลาดในการบันทึกหนี้: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        if (e.toString().contains('401')) {
+          Navigator.of(context).pushReplacementNamed('/');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('ไม่สามารถบันทึกรายการได้: ${e.toString().replaceAll('Exception: ', '')}')),
+          );
+        }
       }
     }
   }
@@ -318,12 +339,13 @@ class _AddDebtPageState extends State<AddDebtPage> {
       debtDetail = await debtService.getDebtDetail(debt.id);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('เกิดข้อผิดพลาดในการโหลดรายละเอียดหนี้: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        if (e.toString().contains('401')) {
+          Navigator.of(context).pushReplacementNamed('/');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('เกิดข้อผิดพลาดในการดึงข้อมูล: ${e.toString().replaceAll('Exception: ', '')}')),
+          );
+        }
       }
       return;
     }
@@ -492,7 +514,15 @@ class _AddDebtPageState extends State<AddDebtPage> {
                   fetchDebt();
                   if (mounted) Navigator.pop(context);
                 } catch (e) {
-                  if (mounted) Navigator.of(context).pushReplacementNamed('/');
+                  if (mounted) {
+                    if (e.toString().contains('401')) {
+                      Navigator.of(context).pushReplacementNamed('/');
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('แก้ไขรายการไม่สำเร็จ: ${e.toString().replaceAll('Exception: ', '')}')),
+                      );
+                    }
+                  }
                 }
               },
               child: const Text("บันทึก"),
@@ -522,7 +552,15 @@ class _AddDebtPageState extends State<AddDebtPage> {
                 fetchDebt();
                 if (mounted) Navigator.pop(context);
               } catch (e) {
-                if (mounted) Navigator.of(context).pushReplacementNamed('/');
+                if (mounted) {
+                  if (e.toString().contains('401')) {
+                    Navigator.of(context).pushReplacementNamed('/');
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('ลบรายการไม่สำเร็จ: ${e.toString().replaceAll('Exception: ', '')}')),
+                    );
+                  }
+                }
               }
             },
             child: const Text("ลบ"),
@@ -576,13 +614,16 @@ class _AddDebtPageState extends State<AddDebtPage> {
                     borderRadius: BorderRadius.circular(24),
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_currentStep == 1) _buildStep1(),
-                          if (_currentStep == 2) _buildStep2(),
-                          if (_currentStep == 3) _buildStep3(),
-                        ],
+                      child: AbsorbPointer(
+                        absorbing: widget.isViewOnly,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_currentStep == 1) _buildStep1(),
+                            if (_currentStep == 2) _buildStep2(),
+                            if (_currentStep == 3) _buildStep3(),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -625,7 +666,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  widget.debtToEdit != null ? 'แก้ไขหนี้' : 'เพิ่มหนี้ใหม่',
+                  widget.isViewOnly ? 'รายละเอียดหนี้' : (widget.debtToEdit != null ? 'แก้ไขหนี้' : 'เพิ่มหนี้ใหม่'),
                   style: GoogleFonts.kanit(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -1066,6 +1107,10 @@ class _AddDebtPageState extends State<AddDebtPage> {
           debtAmountCtrl,
           Icons.money,
           "฿",
+          hintText: "0.00",
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+          ],
           errorText: debtAmountError ? "กรุณากรอกจำนวนเงิน" : null,
         ),
         const SizedBox(height: 16),
@@ -1109,6 +1154,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
           debtPenaltyRateCtrl,
           Icons.money_off,
           "%",
+          hintText: "0.0",
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
             MaxValueFormatter(100),
@@ -1120,6 +1166,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
           debtMinpaymentCtrl,
           Icons.payments,
           "฿",
+          hintText: "0.0",
         ),
         const SizedBox(height: 16),
         SwitchListTile(
@@ -1146,6 +1193,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
     IconData icon,
     String suffix, {
     String? errorText,
+    String? hintText,
     List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
@@ -1160,6 +1208,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
           decoration: InputDecoration(
             prefixIcon: Icon(icon),
             suffixText: suffix,
+            hintText: hintText,
+            hintStyle: GoogleFonts.kanit(color: Colors.grey.shade400, fontWeight: FontWeight.normal),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.shade300),
@@ -1285,6 +1335,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
           debtDueDateCtrl,
           Icons.calendar_month,
           "วันที่",
+          hintText: "1-31",
           errorText: debtDueDateError ? "กรุณากรอกวันที่ 1-31" : null,
         ),
         const SizedBox(height: 16),
@@ -1293,6 +1344,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
           debtGracePeriodCtrl,
           Icons.gavel,
           "วัน",
+          hintText: "0",
         ),
         const SizedBox(height: 16),
         _buildInputField(
@@ -1300,6 +1352,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
           debtPenaltyTriggerCtrl,
           Icons.gavel,
           "วัน",
+          hintText: "0",
         ),
         const SizedBox(height: 16),
         SwitchListTile(
@@ -1587,56 +1640,65 @@ class _AddDebtPageState extends State<AddDebtPage> {
                 ),
               ),
             ),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  if (_currentStep == 1) {
-                    debtNameError = debtNameCtrl.text.isEmpty;
-                    if (!debtNameError) _currentStep++;
-                  } else if (_currentStep == 2) {
-                    debtAmountError = debtAmountCtrl.text.isEmpty;
-                    debtInterestError = debtInterestCtrl.text.isEmpty;
-                    if (!debtAmountError && !debtInterestError) _currentStep++;
-                  } else if (_currentStep == 3) {
-                    debtStartDateError = debtStartDateCtrl.text.isEmpty;
-                    debtEndDateError = debtEndDateCtrl.text.isEmpty;
-                    debtDueDateError = debtDueDateCtrl.text.isEmpty;
-                    if (!debtStartDateError &&
-                        !debtEndDateError &&
-                        !debtDueDateError) {
-                      addDebt();
-                    }
+          if (!widget.isViewOnly || _currentStep < 3)
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: () {
+                  if (widget.isViewOnly) {
+                    setState(() {
+                      if (_currentStep < 3) {
+                        _currentStep++;
+                      }
+                    });
+                    return;
                   }
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  setState(() {
+                    if (_currentStep == 1) {
+                      debtNameError = debtNameCtrl.text.isEmpty;
+                      if (!debtNameError) _currentStep++;
+                    } else if (_currentStep == 2) {
+                      debtAmountError = debtAmountCtrl.text.isEmpty;
+                      debtInterestError = debtInterestCtrl.text.isEmpty;
+                      if (!debtAmountError && !debtInterestError) _currentStep++;
+                    } else if (_currentStep == 3) {
+                      debtStartDateError = debtStartDateCtrl.text.isEmpty;
+                      debtEndDateError = debtEndDateCtrl.text.isEmpty;
+                      debtDueDateError = debtDueDateCtrl.text.isEmpty;
+                      if (!debtStartDateError &&
+                          !debtEndDateError &&
+                          !debtDueDateError) {
+                        addDebt();
+                      }
+                    }
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _currentStep == 3
+                          ? (widget.debtToEdit != null
+                                ? "บันทึกการแก้ไข"
+                                : "สร้างรายการหนี้")
+                          : "ถัดไป",
+                      style: GoogleFonts.kanit(fontWeight: FontWeight.bold),
+                    ),
+                    if (_currentStep < 3) const Icon(Icons.chevron_right),
+                    if (_currentStep == 3) const SizedBox(width: 8),
+                    if (_currentStep == 3) const Icon(Icons.check, size: 18),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _currentStep == 3
-                        ? (widget.debtToEdit != null
-                              ? "บันทึกการแก้ไข"
-                              : "สร้างรายการหนี้")
-                        : "ถัดไป",
-                    style: GoogleFonts.kanit(fontWeight: FontWeight.bold),
-                  ),
-                  if (_currentStep < 3) const Icon(Icons.chevron_right),
-                  if (_currentStep == 3) const SizedBox(width: 8),
-                  if (_currentStep == 3) const Icon(Icons.check, size: 18),
-                ],
-              ),
             ),
-          ),
         ],
       ),
     );

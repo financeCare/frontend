@@ -1,3 +1,4 @@
+// Premium Job Card with multi-platform links (JobsDB, Fastwork)
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -178,43 +179,108 @@ class JobCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Container( // Added a more prominent reference box
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2), // Very light red/orange for warning/reference
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFFECACA)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(
-                        Icons.info_outline_rounded,
-                        color: Color(0xFFEF4444),
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '*รายได้นี้เป็นเพียงการประมาณการ อ้างอิงจากข้อมูลตลาดแรงงาน ธปท. (bot.or.th) และสถิติค่าจ้างขั้นต่ำ กระทรวงแรงงาน (mol.go.th) ปี 2567 เท่านั้น',
-                          style: GoogleFonts.kanit(
-                            fontSize: 11,
-                            color: const Color(0xFFB91C1C),
-                            height: 1.4,
+                const SizedBox(height: 20),
+                // Branded Action Buttons (Multi-platform)
+                Column(
+                  children: job.platformLinks.entries.map((entry) {
+                    final platform = entry.key;
+                    final url = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: InkWell(
+                        onTap: () => _launchUrl(url),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: _getPlatformColors(platform),
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _getPlatformColors(platform)[0].withOpacity(0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _getPlatformIcon(platform),
+                              const SizedBox(width: 10),
+                              Text(
+                                'ดูงานนี้ที่ $platform',
+                                style: GoogleFonts.kanit(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Icon(
+                                Icons.open_in_new_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ],
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    '* แพลตฟอร์มแนะนำที่มีความน่าเชื่อถือและยอดนิยมสูงสุดในขณะนี้',
+                    style: GoogleFonts.kanit(
+                      fontSize: 10,
+                      color: Colors.grey[500],
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ),
-                // Apply button removed as per user request
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  List<Color> _getPlatformColors(String platform) {
+    switch (platform.toLowerCase()) {
+      case 'fastwork':
+        return [const Color(0xFF0066FF), const Color(0xFF00A3FF)];
+      case 'jobsdb':
+        return [const Color(0xFF003366), const Color(0xFF0055AA)];
+      case 'temp':
+        return [const Color(0xFFFF8C00), const Color(0xFFFFA500)];
+      default:
+        return [const Color(0xFF2D955F), const Color(0xFF43A047)];
+    }
+  }
+
+  Widget _getPlatformIcon(String platform) {
+    IconData iconData;
+    switch (platform.toLowerCase()) {
+      case 'fastwork':
+        iconData = Icons.bolt_rounded;
+        break;
+      case 'jobsdb':
+        iconData = Icons.search_rounded;
+        break;
+      case 'temp':
+        iconData = Icons.access_time_rounded;
+        break;
+      default:
+        iconData = Icons.rocket_launch_rounded;
+    }
+    return Icon(iconData, color: Colors.white, size: 22);
   }
 }

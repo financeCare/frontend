@@ -5,7 +5,7 @@ class JobModel {
   final String estimatedIncome;
   final String description;
   final String requirement;
-  final String applyUrl;
+  final Map<String, String> platformLinks; // e.g., {'JobsDB': 'url', 'Fastwork': 'url'}
   final bool isRecommended;
 
   JobModel({
@@ -15,9 +15,9 @@ class JobModel {
     required this.estimatedIncome,
     required this.description,
     required this.requirement,
-    required this.applyUrl,
+    required this.platformLinks,
     this.isRecommended = false,
   }) : assert(title.isNotEmpty, 'Job title cannot be empty'),
        assert(estimatedIncome.isNotEmpty, 'Estimated income must be provided'),
-       assert(type.isNotEmpty, 'Job type must be specified');
+       assert(platformLinks.isNotEmpty, 'At least one platform link must be provided');
 }

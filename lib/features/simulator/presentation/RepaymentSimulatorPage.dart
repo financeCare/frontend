@@ -877,6 +877,35 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
   Widget _buildErrorState(Object error) {
     final errorStr = error.toString();
     final bool isBudgetError = errorStr.contains('400');
+    final bool isNoPlanError = errorStr.contains('404') || !isBudgetError; // Default to 'No Plan' if not budget error
+
+    Color bgColor = const Color(0xFFFFEBEE);
+    Color iconColor = const Color(0xFFEB5757);
+    IconData icon = Icons.error_outline_rounded;
+    String title = 'ขออภัย! เกิดข้อผิดพลาดบางอย่าง';
+    String description = 'เราพบข้อผิดพลาดขณะคำนวณแผนการชำระหนี้ของคุณ กรุณาลองใหม่อีกครั้งในภายหลัง หรือติดต่อฝ่ายสนับสนุนหากปัญหายังคงอยู่';
+    String buttonText = 'ย้อนกลับ';
+    VoidCallback onButtonPressed = () => Navigator.pop(context);
+
+    if (isBudgetError) {
+      bgColor = const Color(0xFFFFF3E0);
+      iconColor = const Color(0xFFF57C00);
+      icon = Icons.account_balance_wallet_outlined;
+      title = 'งบประมาณรายเดือนไม่เพียงพอ';
+      description = 'งบประมาณรายเดือนของคุณต่ำกว่ายอดชำระขั้นต่ำที่จำเป็นในการเคลียร์หนี้ กรุณาเพิ่มงบประมาณและลองใหม่อีกครั้ง';
+      buttonText = 'ปรับงบประมาณ';
+    } else if (isNoPlanError) {
+      bgColor = const Color(0xFFE8F5E9);
+      iconColor = const Color(0xFF2D955F);
+      icon = Icons.add_chart_rounded;
+      title = 'ยังไม่มีแผนการชำระหนี้';
+      description = 'ดูเหมือนว่าคุณยังไม่ได้สร้างแผนการชำระหนี้เลย มาเริ่มสร้างแผนเพื่อปลดหนี้ให้ไวขึ้นกันเถอะ!';
+      buttonText = 'สร้างแผนการชำระหนี้';
+      onButtonPressed = () {
+        Navigator.pop(context);
+        Navigator.pushNamed(context, '/simulator');
+      };
+    }
 
     return Center(
       child: Padding(
@@ -887,26 +916,18 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: isBudgetError
-                    ? const Color(0xFFFFF3E0)
-                    : const Color(0xFFFFEBEE),
+                color: bgColor,
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                isBudgetError
-                    ? Icons.account_balance_wallet_outlined
-                    : Icons.error_outline_rounded,
+                icon,
                 size: 64,
-                color: isBudgetError
-                    ? const Color(0xFFF57C00)
-                    : const Color(0xFFEB5757),
+                color: iconColor,
               ),
             ),
             const SizedBox(height: 32),
             Text(
-              isBudgetError
-                  ? 'งบประมาณรายเดือนไม่เพียงพอ'
-                  : 'ขออภัย! เกิดข้อผิดพลาดบางอย่าง',
+              title,
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(
                 fontSize: 24,
@@ -916,9 +937,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              isBudgetError
-                  ? 'งบประมาณรายเดือนของคุณต่ำกว่ายอดชำระขั้นต่ำที่จำเป็นในการเคลียร์หนี้ กรุณาเพิ่มงบประมาณและลองใหม่อีกครั้ง'
-                  : 'เราพบข้อผิดพลาดขณะคำนวณแผนการชำระหนี้ของคุณ กรุณาลองใหม่อีกครั้งในภายหลัง หรือติดต่อฝ่ายสนับสนุนหากปัญหายังคงอยู่',
+              description,
               textAlign: TextAlign.center,
               style: GoogleFonts.kanit(
                 fontSize: 16,
@@ -930,7 +949,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: onButtonPressed,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2D955F),
                   foregroundColor: Colors.white,
@@ -941,7 +960,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                   elevation: 0,
                 ),
                 child: Text(
-                  isBudgetError ? 'ปรับงบประมาณ' : 'ย้อนกลับ',
+                  buttonText,
                   style: GoogleFonts.kanit(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

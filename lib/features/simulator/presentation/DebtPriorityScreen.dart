@@ -46,7 +46,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาดในการดึงข้อมูล: $e')),
+        const SnackBar(content: Text('ไม่สามารถดึงข้อมูลลำดับหนี้ได้ กรุณาลองใหม่อีกครั้ง')),
       );
     }
   }
@@ -77,7 +77,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('เกิดข้อผิดพลาดในการบันทึก: $e')),
+          const SnackBar(content: Text('บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')),
         );
       }
     } finally {

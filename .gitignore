@@ -1,6 +1,7 @@
 # Miscellaneous
 *.class
 *.log
+analyze_output.txt
 *.pyc
 *.swp
 .DS_Store

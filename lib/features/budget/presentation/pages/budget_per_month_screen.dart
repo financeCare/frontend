@@ -291,14 +291,14 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e')));
+      ).showSnackBar(const SnackBar(content: Text('ไม่สามารถบันทึกรายการรายรับรายจ่ายได้ กรุณาลองใหม่อีกครั้ง')));
     }
   }
 
   // --- Popups ---
 
   void _showAddTransactionDialog() {
-    final TextEditingController amountCtrl = TextEditingController(text: "0.00");
+    final TextEditingController amountCtrl = TextEditingController();
     final TextEditingController descCtrl = TextEditingController();
     final TextEditingController receiverCtrl = TextEditingController(); 
     DateTime selectedDate = DateTime.now();
@@ -468,11 +468,19 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                    ],
                     decoration: InputDecoration(
                       prefixIcon: Icon(
                         Icons.payments_outlined,
                         color: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F),
                         size: 20,
+                      ),
+                      hintText: "0.00",
+                      hintStyle: GoogleFonts.kanit(
+                        color: Colors.black26,
+                        fontWeight: FontWeight.normal,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
