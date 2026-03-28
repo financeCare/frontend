@@ -8,7 +8,7 @@ class RepaymentSimulatorService {
   Future<Map<String, dynamic>> simulate() async {
     final token = await AccesstokenService().getAccessToken();
 
-    final url = Uri.parse("${Config.baseUrl}/api/repayment-plans/simulate");
+    final url = Uri.parse("${Config.baseUrl}/api/repayment-plans");
 
     debugPrint("====== SIMULATE API ======");
     debugPrint("URL => $url");

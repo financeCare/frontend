@@ -20,7 +20,7 @@ class AuthService {
     print("login status : ${response.statusCode}");
     print("login body : ${response.body}");
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
       String accessToken = data['accessToken'];
       String refreshToken = data['refreshToken'];
       await AuthManager.saveToken(accessToken);
@@ -81,7 +81,7 @@ class AuthService {
     } else {
       String errorMessage = "Registration failed";
       try {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
         errorMessage = data['message'] ?? data['error'] ?? errorMessage;
       } catch (_) {
         errorMessage = response.body.isNotEmpty ? response.body : errorMessage;

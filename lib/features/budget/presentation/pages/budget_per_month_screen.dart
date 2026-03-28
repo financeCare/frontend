@@ -1,15 +1,24 @@
-import '../../../auth/presentation/auth_manager.dart';
-import '../../domain/models/transaction_request.dart';
-import '../../data/services/transaction_service.dart';
-
-import '../../domain/models/budget_overview.dart';
-import '../../data/services/budget_service.dart';
-import 'category_transactions_screen.dart';
-import '../widgets/expandable_fab.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
+import 'package:flutter_application_1/features/budget/domain/models/transaction_request.dart';
+import 'package:flutter_application_1/features/budget/domain/models/transaction_response.dart';
+import 'package:flutter_application_1/features/budget/data/services/transaction_service.dart';
+import 'package:flutter_application_1/features/budget/domain/models/budget_overview.dart';
+import 'package:flutter_application_1/features/budget/data/services/budget_service.dart';
+import 'package:flutter_application_1/features/budget/data/services/category_service.dart';
+import 'package:flutter_application_1/features/budget/domain/models/category.dart';
+import 'package:flutter_application_1/features/budget/presentation/pages/category_transactions_screen.dart';
+import 'package:flutter_application_1/features/budget/presentation/widgets/expandable_fab.dart';
+import 'package:flutter_application_1/features/budget/presentation/pages/receiver_mapping_screen.dart';
+import 'package:flutter_application_1/features/budget/data/services/receiver_mapping_service.dart';
+import 'package:flutter_application_1/features/budget/domain/models/mapping_request.dart';
+import 'package:flutter_application_1/features/debt/data/services/debt_service.dart';
+import 'package:flutter_application_1/features/debt/domain/models/monthly_debt_status.dart';
+
 
 class BudgetPerMonthScreen extends StatefulWidget {
   const BudgetPerMonthScreen({super.key});
@@ -35,9 +44,22 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
   }
 
   List<BudgetOverview> _budgetItems = [];
-  double _totalIncome = 42000; // Mocked for now
+  double _totalIncome = 0;
   double _totalExpense = 0;
   double _totalSavings = 0;
+  MonthlyDebtStatus? _debtStatus;
+  List<TransactionResponse> _pendingTransactions = [];
+
+  List<Categories> _allCategories = [];
+  bool _isShowingModal = false;
+
+  // แนวโน้มรายเดือน (%)
+  String _incomeTrend = "";
+  String _expenseTrend = "";
+  String _savingsTrend = "";
+  bool _isIncomePositive = true;
+  bool _isExpensePositive = true;
+  bool _isSavingsPositive = true;
 
   @override
   void initState() {
@@ -60,6 +82,21 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
     }
 
     final double income = await _budgetService.getIncomeAmount();
+    MonthlyDebtStatus? debtStat;
+    try {
+      debtStat = await DebtService().getMonthlyDebtStatus();
+    } catch (e) {
+      debugPrint("Error loading debt status: $e");
+    }
+
+
+    // คำนวณแนวโน้มรายเดือนจาก Transactions
+    try {
+      final transactions = await TransactionService().getOwnTransactions();
+      _calculateMonthlyTrends(transactions);
+    } catch (e) {
+      debugPrint("Error calculating trends: $e");
+    }
 
     if (!mounted) return;
     setState(() {
@@ -67,7 +104,161 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       _totalExpense = expense;
       _totalSavings = savings;
       _totalIncome = income;
+      _debtStatus = debtStat;
     });
+
+
+    // ดึงรายการ Pending และ Category ทั้งหมด
+    try {
+      final pending = await TransactionService().getPendingTransactions();
+      final cats = await CategoryService().getCategories();
+      if (mounted) {
+        setState(() {
+          _pendingTransactions = pending;
+          _allCategories = cats;
+        });
+        if (_pendingTransactions.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showNextPendingTransaction();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading pending/categories: $e");
+    }
+  }
+
+  void _showNextPendingTransaction() {
+    if (_pendingTransactions.isEmpty || _isShowingModal) return;
+    final tx = _pendingTransactions.first;
+    _showTransactionConfirmationModal(tx);
+  }
+
+  void _showTransactionConfirmationModal(TransactionResponse tx) {
+    if (!mounted) return;
+    setState(() => _isShowingModal = true);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (context) => _TransactionConfirmationContent(
+        transaction: tx,
+        categories: _allCategories,
+        onConfirm: (updatedTx) async {
+          try {
+            await TransactionService().updateTransaction(tx.transactionId, updatedTx);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('ยืนยันรายการสำเร็จ')),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
+              );
+            }
+          }
+          _handleNextAfterAction();
+        },
+        onReject: () async {
+          try {
+            await TransactionService().deleteTransaction(tx.transactionId);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('ลบรายการแล้ว')),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('เกิดข้อผิดพลาดในการลบ: $e')),
+              );
+            }
+          }
+          _handleNextAfterAction();
+        },
+        onClose: () {
+          setState(() {
+            _isShowingModal = false;
+            _pendingTransactions.removeAt(0);
+          });
+          _showNextPendingTransaction();
+        },
+      ),
+    ).then((_) {
+      if (mounted) setState(() => _isShowingModal = false);
+    });
+  }
+
+  void _handleNextAfterAction() {
+    if (!mounted) return;
+    setState(() {
+      _isShowingModal = false;
+      _pendingTransactions.removeAt(0);
+    });
+    // ให้เวลา Modal ปิดตัวลงก่อนเริ่มอันใหม่
+    Future.delayed(const Duration(milliseconds: 300), () {
+      _showNextPendingTransaction();
+    });
+  }
+
+  void _calculateMonthlyTrends(List<TransactionResponse> transactions) {
+    final now = DateTime.now();
+    final currentMonth = now.month;
+    final currentYear = now.year;
+
+    final prevMonth = currentMonth == 1 ? 12 : currentMonth - 1;
+    final prevYear = currentMonth == 1 ? currentYear - 1 : currentYear;
+
+    double curInc = 0, curExp = 0, curSav = 0;
+    double preInc = 0, preExp = 0, preSav = 0;
+
+    for (var tx in transactions) {
+      final d = tx.transactionDate;
+      final isSaving = tx.category.categoryName == 'Saving';
+      final isIncome = tx.category.type == 'Income';
+
+      if (d.month == currentMonth && d.year == currentYear) {
+        if (isIncome) curInc += tx.amount;
+        else if (isSaving) curSav += tx.amount;
+        else curExp += tx.amount;
+      } else if (d.month == prevMonth && d.year == prevYear) {
+        if (isIncome) preInc += tx.amount;
+        else if (isSaving) preSav += tx.amount;
+        else preExp += tx.amount;
+      }
+    }
+
+    setState(() {
+      _incomeTrend = _formatTrend(curInc, preInc);
+      _isIncomePositive = curInc >= preInc;
+      
+      _expenseTrend = _formatTrend(curExp, preExp);
+      _isExpensePositive = curExp >= preExp;
+
+      _savingsTrend = _formatTrend(curSav, preSav);
+      _isSavingsPositive = curSav >= preSav;
+    });
+  }
+
+  String _formatTrend(double current, double previous) {
+    if (previous == 0) return current > 0 ? "+100% จากเดือนก่อน" : "0% จากเดือนก่อน";
+    final diff = ((current - previous) / previous) * 100;
+    final prefix = diff >= 0 ? "+" : "";
+    return "$prefix${diff.toStringAsFixed(0)}% จากเดือนก่อน";
+  }
+
+  List<Categories> _getFilteredCategories(String type) {
+    return _allCategories.where((c) {
+      if (type == 'Income') {
+        return c.type == 'Income' && c.categoryName == 'Extra Income';
+      }
+      return c.type == 'Expense';
+    }).toList();
   }
 
   // --- Task 4 Integration ---
@@ -77,7 +268,24 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('บันทึกรายการสำเร็จ')));
+       ).showSnackBar(const SnackBar(content: Text('บันทึกรายการสำเร็จ')));
+      
+      // Auto-save Receiver Mapping
+      if (request.receiverName != null && request.receiverName!.isNotEmpty) {
+        try {
+          await ReceiverMappingService().saveMapping(
+            MappingRequest(
+              receiverName: request.receiverName!,
+              categoryId: request.categoryId,
+            ),
+          );
+          print("Auto-mapping saved for: ${request.receiverName}");
+        } catch (e) {
+          // Mapping might already exist, we can ignore or log it
+          print("Note: Auto-mapping skipped or failed: $e");
+        }
+      }
+
       _loadBudgetData();
     } catch (e) {
       if (!mounted) return;
@@ -92,15 +300,24 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
   void _showAddTransactionDialog() {
     final TextEditingController amountCtrl = TextEditingController();
     final TextEditingController descCtrl = TextEditingController();
+    final TextEditingController receiverCtrl = TextEditingController(); 
     DateTime selectedDate = DateTime.now();
-    BudgetOverview? selectedCategory = _budgetItems.isNotEmpty
-        ? _budgetItems.first
-        : null;
+    
+    // ตั้งค่าเริ่มต้น
+    String transactionType = 'Expense'; // 'Expense' หรือ 'Income'
+    Categories? selectedCategory;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
+          final filteredCategories = _getFilteredCategories(transactionType);
+          
+          // ถ้ายังไม่ได้เลือกหมวดหมู่ หรือหมวดหมู่ที่เคยเลือกไม่อยู่ในประเภทที่เปลี่ยนใหม่ ให้เลือกตัวแรก
+          if (selectedCategory == null || !filteredCategories.any((c) => c.categoryId == selectedCategory!.categoryId)) {
+            selectedCategory = filteredCategories.isNotEmpty ? filteredCategories.first : null;
+          }
+
           return Dialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
@@ -112,7 +329,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
+                   Center(
                     child: Column(
                       children: [
                         Text(
@@ -123,9 +340,9 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'บันทึกรายจ่ายของคุณ',
-                          style: TextStyle(
+                        Text(
+                          transactionType == 'Expense' ? 'บันทึกรายจ่ายของคุณ' : 'บันทึกรายรับของคุณ',
+                          style: const TextStyle(
                             color: Colors.black45,
                             fontSize: 13,
                           ),
@@ -133,7 +350,37 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
+
+                  // ส่วนเลือกประเภท รายจ่าย / รายรับ
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildTypeToggleBtn(
+                            'รายจ่าย', 
+                            transactionType == 'Expense',
+                            const Color(0xFFEB5757),
+                            () => setDialogState(() => transactionType = 'Expense'),
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildTypeToggleBtn(
+                            'รายรับ', 
+                            transactionType == 'Income',
+                            const Color(0xFF2D955F),
+                            () => setDialogState(() => transactionType = 'Income'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
                   // หมวดหมู่
                   Text(
@@ -145,11 +392,11 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (_budgetItems.isEmpty)
+                  if (_allCategories.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 20),
                       child: Text(
-                        'ไม่พบข้อมูลหมวดหมู่ กรุณารอครู่...',
+                        'ไม่พบข้อมูลหมวดหมู่ กรุณารอสักครู่...',
                         style: TextStyle(color: Colors.black45),
                       ),
                     )
@@ -158,32 +405,32 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: const Color(0xFF2D955F),
+                          color: transactionType == 'Expense' ? const Color(0xFFEB5757).withOpacity(0.5) : const Color(0xFF2D955F),
                           width: 1.5,
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
+                        child: DropdownButton<int>(
                           isExpanded: true,
                           value: selectedCategory?.categoryId,
                           icon: const Icon(
                             Icons.keyboard_arrow_down,
                             color: Colors.black45,
                           ),
-                          items: _budgetItems.map((item) {
-                            return DropdownMenuItem<String>(
+                          items: filteredCategories.map((item) {
+                            return DropdownMenuItem<int>(
                               value: item.categoryId,
                               child: Row(
                                 children: [
                                   Icon(
-                                    _getCategoryIcon(item.budgetName),
+                                    _getCategoryIcon(item.categoryName),
                                     size: 20,
-                                    color: _getCategoryColor(item.budgetName),
+                                    color: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F),
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
-                                    item.budgetName,
+                                    item.categoryName,
                                     style: GoogleFonts.kanit(fontSize: 15),
                                   ),
                                 ],
@@ -193,7 +440,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                           onChanged: (val) {
                             if (val != null) {
                               setDialogState(() {
-                                selectedCategory = _budgetItems.firstWhere(
+                                selectedCategory = _allCategories.firstWhere(
                                   (item) => item.categoryId == val,
                                 );
                               });
@@ -225,9 +472,9 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                     ],
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(
-                        Icons.currency_bitcoin,
-                        color: Color(0xFF2D955F),
+                      prefixIcon: Icon(
+                        Icons.payments_outlined,
+                        color: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F),
                         size: 20,
                       ),
                       hintText: "0.00",
@@ -287,7 +534,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                         children: [
                           Text(
                             DateFormat(
-                              'MM/dd/yyyy HH:mm A',
+                              'MM/dd/yyyy',
                             ).format(selectedDate),
                             style: GoogleFonts.kanit(fontSize: 15),
                           ),
@@ -297,6 +544,40 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                             color: Colors.black87,
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ผู้รับเงิน
+                  Text(
+                    transactionType == 'Expense' ? 'ผู้รับเงิน (ไม่บังคับ)' : 'แหล่งที่มา/ผู้จ่าย (ไม่บังคับ)',
+                    style: GoogleFonts.kanit(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: receiverCtrl,
+                    decoration: InputDecoration(
+                      hintText: transactionType == 'Expense' ? 'เช่น ร้านสะดวกซื้อ' : 'เช่น เงินรางวัล',
+                      hintStyle: GoogleFonts.kanit(
+                        color: Colors.black26,
+                        fontSize: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.black12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.black12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
                       ),
                     ),
                   ),
@@ -316,7 +597,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                     controller: descCtrl,
                     maxLength: 128,
                     decoration: InputDecoration(
-                      hintText: 'เช่น ค่าอาหารกลางวัน',
+                      hintText: 'รายละเอียดเพิ่มเติม...',
                       hintStyle: GoogleFonts.kanit(
                         color: Colors.black26,
                         fontSize: 14,
@@ -371,7 +652,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2D955F),
+                            backgroundColor: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F),
                             foregroundColor: Colors.white,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -380,17 +661,27 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                             ),
                           ),
                           onPressed: () {
-                            final text = amountCtrl.text.replaceAll(',', '');
-                            final amt = double.tryParse(text);
-                            if (amt != null &&
-                                amt > 0 &&
-                                selectedCategory != null) {
+                            final amt = double.tryParse(amountCtrl.text);
+                            if (amt != null && amt > 0 && selectedCategory != null) {
+                              
+                              // หา budgetId ถ้าเป็นรายจ่าย
+                              String? budgetId;
+                              if (transactionType == 'Expense') {
+                                try {
+                                  final matchingBudget = _budgetItems.firstWhere(
+                                    (b) => int.tryParse(b.categoryId) == selectedCategory!.categoryId
+                                  );
+                                  budgetId = matchingBudget.budgetId;
+                                } catch (_) {}
+                              }
+
                               final req = TransactionRequest(
-                                categoryId: int.parse(selectedCategory!.categoryId),
+                                categoryId: selectedCategory!.categoryId,
                                 amount: amt,
                                 transactionDate: selectedDate,
                                 description: descCtrl.text,
-                                budgetId: selectedCategory!.budgetId,
+                                receiverName: receiverCtrl.text,
+                                budgetId: budgetId,
                               );
                               _saveTransaction(req);
                               Navigator.pop(context);
@@ -412,6 +703,36 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTypeToggleBtn(String label, bool isSelected, Color activeColor, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            )
+          ] : [],
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.kanit(
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? activeColor : Colors.black45,
+          ),
+        ),
       ),
     );
   }
@@ -779,6 +1100,15 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
         distance: 70.0,
         children: [
           ActionButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ReceiverMappingScreen()),
+            ),
+            icon: const Icon(Icons.sync_alt, size: 22),
+            tooltip: 'จับคู่ผู้รับ-หมวดหมู่',
+            color: const Color(0xFF64748B), // Slate blue-grey
+          ),
+          ActionButton(
             onPressed: () => Navigator.pushNamed(context, '/transactions'),
             icon: const Icon(Icons.receipt_long, size: 22),
             tooltip: 'ดูรายการทั้งหมด',
@@ -950,31 +1280,47 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
     );
   }
 
-  Widget _buildDonutChart(double total, double spent) {
-    final double percent = total > 0 ? (spent / total).clamp(0, 1) : 0;
+  Widget _buildDonutChart(double totalLimit, double totalSpent) {
+    // เตรียมข้อมูลสำหรับวงกลมแยกสี (รวมทุกหมวดหมู่ที่มีการใช้จ่ายจริง)
+    final List<ChartSegment> segments = _budgetItems
+      .where((item) => item.amount > 0)
+      .map((item) => ChartSegment(
+        value: item.amount,
+        color: _getCategoryColor(item.budgetName),
+      ))
+      .toList();
+
+    // คำนวณยอดรวมที่นำมาวาดจริงในแผนภูมิ
+    final double chartTotal = segments.fold(0, (sum, seg) => sum + seg.value);
+    final double percent = totalLimit > 0 ? (totalSpent / totalLimit).clamp(0, 1) : 0;
+
     return Container(
-      width: 100,
-      height: 100,
+      width: 110,
+      height: 110,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          SizedBox(
-            width: 100,
-            height: 100,
-            child: CircularProgressIndicator(
-              value: percent,
-              strokeWidth: 12,
+          CustomPaint(
+            size: const Size(110, 110),
+            painter: DonutChartPainter(
+              segments: segments,
+              totalSpent: chartTotal,
               backgroundColor: const Color(0xFFF1F3F4),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                percent > 1.0
-                    ? const Color(0xFFEB5757)
-                    : const Color(0xFF00E676),
-              ),
+              strokeWidth: 12,
             ),
           ),
-          Text(
-            '${(percent * 100).toInt()}%',
-            style: GoogleFonts.kanit(fontSize: 16, fontWeight: FontWeight.bold),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${(percent * 100).toInt()}%',
+                style: GoogleFonts.kanit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1007,34 +1353,102 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
           _buildStatCard(
             'รายรับ',
             '฿${NumberFormat('#,###').format(_totalIncome)}',
-            '',
-            const Color(0xFFE8F5E9),
-            const Color(0xFF2D955F),
+            _incomeTrend,
+            _isIncomePositive ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+            _isIncomePositive ? const Color(0xFF2D955F) : const Color(0xFFEB5757),
             Icons.trending_up,
-            showTrend: false,
+            showTrend: _incomeTrend.isNotEmpty,
           ),
           const SizedBox(width: 16),
           _buildStatCard(
             'รายจ่าย',
             '฿${NumberFormat('#,###').format(_totalExpense)}',
-            '+8% จากเดือนก่อน',
-            const Color(0xFFFFEBEE),
-            const Color(0xFFEB5757),
+            _expenseTrend,
+            !_isExpensePositive ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+            !_isExpensePositive ? const Color(0xFF2D955F) : const Color(0xFFEB5757),
             Icons.trending_down,
+            showTrend: _expenseTrend.isNotEmpty,
           ),
           const SizedBox(width: 16),
           _buildStatCard(
             'เงินออม',
             '฿${NumberFormat('#,###').format(_totalSavings)}',
-            '-3% จากเดือนก่อน',
-            const Color(0xFFE3F2FD),
-            const Color(0xFF1565C0),
+            _savingsTrend,
+            _isSavingsPositive ? const Color(0xFFE3F2FD) : const Color(0xFFFFEBEE),
+            _isSavingsPositive ? const Color(0xFF1565C0) : const Color(0xFFEB5757),
             Icons.savings_outlined,
+            showTrend: _savingsTrend.isNotEmpty,
+          ),
+          const SizedBox(width: 16),
+          _buildDebtStatCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDebtStatCard() {
+    final status = _debtStatus;
+    if (status == null) return const SizedBox();
+
+    final remaining = status.remainingAmount;
+    final paid = status.paidAmount;
+    final total = status.totalAmount;
+
+    return Container(
+      width: 160,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'ชำระหนี้',
+                style: GoogleFonts.kanit(color: Colors.black45, fontSize: 12),
+              ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFEBEE),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.priority_high,
+                  size: 16,
+                  color: Color(0xFFEB5757),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '฿${NumberFormat('#,###').format(remaining)}',
+            style: GoogleFonts.kanit(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'จ่ายแล้ว ฿${NumberFormat('#,###').format(paid)} / ฿${NumberFormat('#,###').format(total)}',
+            style: GoogleFonts.kanit(
+              fontSize: 10,
+              color: Colors.black38,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
     );
   }
+
 
   Widget _buildStatCard(
     String title,
@@ -1275,5 +1689,366 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       default:
         return Icons.category_outlined;
     }
+  }
+}
+
+class ChartSegment {
+  final double value;
+  final Color color;
+  ChartSegment({required this.value, required this.color});
+}
+
+class DonutChartPainter extends CustomPainter {
+  final List<ChartSegment> segments;
+  final double totalSpent;
+  final Color backgroundColor;
+  final double strokeWidth;
+
+  DonutChartPainter({
+    required this.segments,
+    required this.totalSpent,
+    required this.backgroundColor,
+    this.strokeWidth = 12,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    // วาดพื้นหลัง (วงกลมสีเทา)
+    final bgPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, bgPaint);
+
+    if (totalSpent <= 0 || segments.isEmpty) return;
+
+    double startAngle = -1.5708; // เริ่มที่ 12 นาฬิกา (-PI/2)
+    
+    for (var segment in segments) {
+      final sweepAngle = (segment.value / totalSpent) * 6.28318; // (value/total) * 2PI
+      
+      final paint = Paint()
+        ..color = segment.color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = segments.length == 1 ? StrokeCap.round : StrokeCap.butt;
+
+      canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
+      startAngle += sweepAngle;
+    }
+
+    // ถ้าต้องการให้รอยต่อดูเนียนขึ้นในกรณีที่มีหลายสี และหัวท้ายชนกัน
+    // ในที่นี้ใช้ StrokeCap.butt เพื่อให้สีไม่ทับกัน
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _TransactionConfirmationContent extends StatefulWidget {
+  final TransactionResponse transaction;
+  final List<Categories> categories;
+  final Function(TransactionRequest) onConfirm;
+  final VoidCallback onReject;
+  final VoidCallback onClose;
+
+  const _TransactionConfirmationContent({
+    required this.transaction,
+    required this.categories,
+    required this.onConfirm,
+    required this.onReject,
+    required this.onClose,
+  });
+
+  @override
+  State<_TransactionConfirmationContent> createState() =>
+      _TransactionConfirmationContentState();
+}
+
+class _TransactionConfirmationContentState
+    extends State<_TransactionConfirmationContent> {
+  late TextEditingController _descController;
+  late TextEditingController _receiverController;
+  late Categories _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    _descController =
+        TextEditingController(text: widget.transaction.description);
+    _receiverController =
+        TextEditingController(text: widget.transaction.receiverName ?? '');
+    _selectedCategory = widget.transaction.category;
+  }
+
+  @override
+  void dispose() {
+    _descController.dispose();
+    _receiverController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: EdgeInsets.only(
+        top: 24,
+        left: 24,
+        right: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'ตรวจสอบรายการใหม่',
+                style: GoogleFonts.kanit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  widget.onClose();
+                },
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Amount Card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  '฿${NumberFormat('#,###.00').format(widget.transaction.amount)}',
+                  style: GoogleFonts.kanit(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D955F).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    widget.transaction.category.categoryName,
+                    style: GoogleFonts.kanit(
+                      fontSize: 12,
+                      color: const Color(0xFF2D955F),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Form Fields
+          _buildLabel('หมวดหมู่'),
+          _buildCategoryDropdown(),
+          const SizedBox(height: 16),
+          _buildLabel('รายละเอียด'),
+          _buildTextField(_descController, 'เช่น ค่าอาหาร'),
+          const SizedBox(height: 16),
+          _buildLabel('ผู้รับเงิน'),
+          _buildTextField(_receiverController, 'ระบุชื่อผู้รับ'),
+
+          // Slip Preview
+          if (widget.transaction.imagePath != null) ...[
+            const SizedBox(height: 20),
+            _buildSlipPreview(),
+          ],
+
+          const SizedBox(height: 32),
+          // Actions
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    widget.onReject();
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.red.withOpacity(0.05),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'ปฏิเสธ',
+                    style: GoogleFonts.kanit(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    final updatedTx = TransactionRequest(
+                      categoryId: _selectedCategory.categoryId,
+                      amount: widget.transaction.amount,
+                      transactionDate: widget.transaction.transactionDate,
+                      description: _descController.text,
+                      receiverName: _receiverController.text,
+                      budgetId: _selectedCategory.budgetId,
+                      imagePath: widget.transaction.imagePath,
+                      slipId: widget.transaction.slipId,
+                    );
+                    Navigator.pop(context);
+                    widget.onConfirm(updatedTx);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2D955F),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'ยืนยันข้อมูล',
+                    style: GoogleFonts.kanit(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        label,
+        style: GoogleFonts.kanit(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.black54,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String hint) {
+    return TextFormField(
+      controller: controller,
+      style: GoogleFonts.kanit(fontSize: 15),
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: const Color(0xFFF1F3F5),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+    );
+  }
+
+  Widget _buildCategoryDropdown() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F3F5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<Categories>(
+          value: widget.categories.any((c) => c.categoryId == _selectedCategory.categoryId)
+              ? widget.categories.firstWhere((c) => c.categoryId == _selectedCategory.categoryId)
+              : null,
+          isExpanded: true,
+          hint: const Text('เลือกหมวดหมู่'),
+          items: widget.categories.map((cat) {
+            return DropdownMenuItem(
+              value: cat,
+              child: Text(cat.categoryName, style: GoogleFonts.kanit()),
+            );
+          }).toList(),
+          onChanged: (cat) {
+            if (cat != null) {
+              setState(() => _selectedCategory = cat);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSlipPreview() {
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: InteractiveViewer(
+              child: Image.file(File(widget.transaction.imagePath!)),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        height: 80,
+        width: 120,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.black12),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.file(
+              File(widget.transaction.imagePath!),
+              fit: BoxFit.cover,
+            ),
+            const Center(
+              child: Icon(Icons.zoom_in, color: Colors.white, size: 32),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

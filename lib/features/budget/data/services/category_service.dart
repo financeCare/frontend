@@ -26,7 +26,7 @@ class CategoryService {
 
     if (response.statusCode == 200) {
       if (response.body.isEmpty) return [];
-      final List<dynamic> jsonList = json.decode(response.body);
+      final List<dynamic> jsonList = json.decode(utf8.decode(response.bodyBytes));
       return jsonList.map((json) => Categories.fromJson(json)).toList();
     } else if (response.statusCode == 401) {
       throw Exception('Authorization failed (401). Please log in again.');
@@ -38,7 +38,7 @@ class CategoryService {
       String errorMessage =
           'Failed to load categories (Status ${response.statusCode})';
       try {
-        final errorBody = json.decode(response.body);
+        final errorBody = json.decode(utf8.decode(response.bodyBytes));
         errorMessage = errorBody['message'] ?? errorMessage;
       } catch (_) {}
       throw Exception(errorMessage);
@@ -63,7 +63,7 @@ class CategoryService {
 
       if (response.statusCode == 200) {
         if (response.body.isEmpty) return null;
-        final jsonData = json.decode(response.body);
+        final jsonData = json.decode(utf8.decode(response.bodyBytes));
         return Categories.fromJson(jsonData);
       } else if (response.statusCode == 401) {
         throw Exception("Unauthorized (401). Please login again.");
@@ -72,7 +72,7 @@ class CategoryService {
       } else {
         String message = "Error loading category (${response.statusCode})";
         try {
-          final errorBody = json.decode(response.body);
+          final errorBody = json.decode(utf8.decode(response.bodyBytes));
           message = errorBody["message"] ?? message;
         } catch (_) {}
         throw Exception(message);

@@ -24,7 +24,7 @@ class TransactionService {
     print("transaction body : ${response.body}");
     if (response.statusCode == 200) {
       if (response.body.isEmpty) return [];
-      final List<dynamic> jsonList = json.decode(response.body);
+      final List<dynamic> jsonList = json.decode(utf8.decode(response.bodyBytes));
       return jsonList
           .map((json) => TransactionResponse.fromJson(json))
           .toList();
@@ -39,7 +39,7 @@ class TransactionService {
       String errorMessage =
           'Failed to load transactions (Status ${response.statusCode})';
       try {
-        final errorBody = json.decode(response.body);
+        final errorBody = json.decode(utf8.decode(response.bodyBytes));
         errorMessage = errorBody['message'] ?? errorMessage;
       } catch (_) {
         // Do nothing if body is not JSON
@@ -54,10 +54,23 @@ class TransactionService {
 
     // Filter เฉพาะ categoryName = "salary"
     final salaryTransactions = allTransactions
-        .where((tx) => tx.categoryId == "salary")
+        .where((tx) => tx.category.categoryName.toLowerCase() == "salary")
         .toList();
 
     return salaryTransactions;
+  }
+
+  Future<List<TransactionResponse>> getPendingTransactions() async {
+    // ดึงรายการทั้งหมดก่อน
+    final allTransactions = await getOwnTransactions();
+
+    // Filter เฉพาะรายการที่ยังไม่ได้ยืนยัน (สมมติว่าเช็คจาก categoryName = "pending")
+    // และรายการที่มี slipId หรือ imagePath (รายการที่มาจาก OCR)
+    final pendingTransactions = allTransactions
+        .where((tx) => (tx.category.categoryName.toLowerCase() == "pending" || tx.category.categoryName == "Unknown"))
+        .toList();
+
+    return pendingTransactions;
   }
 
   Future<List<TransactionDetail>> getTransactionsByCategory(
@@ -79,7 +92,7 @@ class TransactionService {
 
     if (response.statusCode == 200) {
       if (response.body.isEmpty) return [];
-      final Map<String, dynamic> data = json.decode(response.body);
+      final Map<String, dynamic> data = json.decode(utf8.decode(response.bodyBytes));
 
       // Page<Transaction> typically has a 'content' field
       final List<dynamic> content = data['content'] ?? [];
@@ -98,12 +111,7 @@ class TransactionService {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'categoryId': transaction.categoryId,
-        'amount': transaction.amount,
-        'transactionDate': transaction.transactionDate.toIso8601String(),
-        'description': transaction.description,
-      }),
+      body: jsonEncode(transaction.toJson()),
     );
 
     print("transaction status code : ${response.statusCode}");
@@ -122,6 +130,55 @@ class TransactionService {
           'Failed to create transaction (Status ${response.statusCode})';
       try {
         final errorBody = json.decode(response.body);
+        errorMessage = errorBody['message'] ?? errorMessage;
+      } catch (_) {}
+      throw Exception(errorMessage);
+    }
+  }
+
+  Future<void> updateTransaction(String id, TransactionRequest transaction) async {
+    String? accessToken = await AccesstokenService().getAccessToken();
+    final url = '$_transactionsUrl/$id';
+
+    final response = await http.put(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(transaction.toJson()),
+    );
+
+    print("update transaction status: ${response.statusCode}");
+
+    if (response.statusCode != 200) {
+      String errorMessage = 'Failed to update transaction';
+      try {
+        final errorBody = json.decode(utf8.decode(response.bodyBytes));
+        errorMessage = errorBody['message'] ?? errorMessage;
+      } catch (_) {}
+      throw Exception(errorMessage);
+    }
+  }
+
+  Future<void> deleteTransaction(String id) async {
+    String? accessToken = await AccesstokenService().getAccessToken();
+    final url = '$_transactionsUrl/$id';
+
+    final response = await http.delete(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    print("delete transaction status: ${response.statusCode}");
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      String errorMessage = 'Failed to delete transaction';
+      try {
+        final errorBody = json.decode(utf8.decode(response.bodyBytes));
         errorMessage = errorBody['message'] ?? errorMessage;
       } catch (_) {}
       throw Exception(errorMessage);

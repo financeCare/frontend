@@ -11,6 +11,8 @@ import 'package:http/http.dart' as http;
 import '../../../../core/config/config.dart';
 import '../../../../features/auth/data/services/access_token_service.dart';
 import '../../domain/models/debt_request.dart';
+import '../../domain/models/monthly_debt_status.dart';
+
 
 class DebtService {
   final String url = '$baseUrl/api/debts';
@@ -84,7 +86,7 @@ class DebtService {
   Future<int> mapNameToRepaymentId(String name) async {
     List<RepaymentTypeResponse> repaymentTypeList = await getRepaymentType();
     for (RepaymentTypeResponse repaymentType in repaymentTypeList) {
-      if (repaymentType == name) {
+      if (repaymentType.typeName == name) {
         return repaymentType.typeId;
       }
     }
@@ -93,9 +95,9 @@ class DebtService {
 
   Future<int> mapNameToDebtTypeId(String name) async {
     List<DebtTypeResponse> debtTypeResponseList = await getDebtType();
-    for (DebtTypeResponse repaymentType in debtTypeResponseList) {
-      if (repaymentType == name) {
-        return repaymentType.debtTypeId;
+    for (DebtTypeResponse debtType in debtTypeResponseList) {
+      if (debtType.debtTypeName == name) {
+        return debtType.debtTypeId;
       }
     }
     return 0;
@@ -236,19 +238,15 @@ class DebtService {
   Future<void> updateDebt(String id, DebtRequest debtRequest) async {
     print("Editing debt id: $id");
 
-    String? accessToken = await AccesstokenService().getAccessToken();
-    print("AccessToken: $accessToken");
-
-    final body = debtRequest.toJson();
-    print("Request body: $body");
+    final accessToken = await AccesstokenService().getAccessToken();
 
     final response = await http.put(
-      Uri.parse('$baseUrl/api/debts/$id'), // <- ใช้ id ไม่ใช่ debtId
+      Uri.parse('$baseUrl/api/debts/$id'),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode(body),
+      body: jsonEncode(debtRequest.toJson()),
     );
 
     print("transaction status code : ${response.statusCode}");
@@ -281,7 +279,11 @@ class DebtService {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({'debtId': debtId, 'amount': amount, 'paidAt': paidAt}),
+      body: jsonEncode({
+        'debtId': debtId,
+        'paymentAmount': amount,
+        'paymentDate': paidAt,
+      }),
     );
 
     print("Pay debt status code : ${response.statusCode}");
@@ -303,6 +305,29 @@ class DebtService {
         errorMessage = errorBody['message'] ?? errorMessage;
       } catch (_) {}
       throw Exception(errorMessage);
+    }
+  }
+
+  Future<MonthlyDebtStatus> getMonthlyDebtStatus() async {
+    String? accessToken = await AccesstokenService().getAccessToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/repayment-plans/monthly-status'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    print("Monthly Debt Status code : ${response.statusCode}");
+    print("Monthly Debt Status body : ${response.body}");
+
+    if (response.statusCode == 200) {
+      if (response.body.isEmpty) return MonthlyDebtStatus(totalAmount: 0, paidAmount: 0, remainingAmount: 0);
+      final Map<String, dynamic> jsonMap = json.decode(response.body);
+      return MonthlyDebtStatus.fromJson(jsonMap);
+    } else {
+      // คืนค่าว่างถ้าไม่พบแผนการจ่ายเงินหรือเกิดข้อผิดพลาด
+      return MonthlyDebtStatus(totalAmount: 0, paidAmount: 0, remainingAmount: 0);
     }
   }
 }

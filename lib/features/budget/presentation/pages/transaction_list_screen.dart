@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../data/services/transaction_service.dart';
 import '../../domain/models/transaction_response.dart';
-import '../../data/services/category_service.dart';
-import '../../domain/models/category.dart';
+import 'transaction_add_screen.dart';
+import '../widgets/transaction_detail_bottom_sheet.dart';
 
 class TransactionListScreen extends StatefulWidget {
   const TransactionListScreen({super.key});
@@ -15,12 +15,15 @@ class TransactionListScreen extends StatefulWidget {
 
 class _TransactionListScreenState extends State<TransactionListScreen> {
   final TransactionService _transactionService = TransactionService();
-  final CategoryService _categoryService = CategoryService();
-  
+
   bool _isLoading = true;
   List<TransactionResponse> _transactions = [];
-  Map<int, Categories> _categoriesMap = {};
   String? _errorMessage;
+
+  String _searchQuery = '';
+  String _selectedFilter = 'All';
+  DateTime? _filterDate;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -30,14 +33,15 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   Future<void> _loadData() async {
     try {
-      List<Categories> categories = await _categoryService.getCategories();
-      List<TransactionResponse> transactions = await _transactionService.getOwnTransactions();
-      
+      List<TransactionResponse> transactions = await _transactionService
+          .getOwnTransactions();
+
       if (mounted) {
         setState(() {
-          _categoriesMap = {for (var c in categories) c.categoryId: c};
           _transactions = transactions;
-          _transactions.sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
+          _transactions.sort(
+            (a, b) => b.transactionDate.compareTo(a.transactionDate),
+          );
           _isLoading = false;
         });
       }
@@ -51,157 +55,361 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     }
   }
 
+  List<TransactionResponse> get _filteredTransactions {
+    return _transactions.where((tx) {
+      // Search Filter
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        final desc = tx.description.toLowerCase();
+        final cat = tx.category.categoryName.toLowerCase();
+        if (!desc.contains(query) && !cat.contains(query)) return false;
+      }
+
+      // Type Filter
+      if (_selectedFilter == 'Income' &&
+          tx.category.type.toLowerCase() != 'income')
+        return false;
+      if (_selectedFilter == 'Expense' &&
+          tx.category.type.toLowerCase() != 'expense')
+        return false;
+
+      // Date Filter
+      if (_filterDate != null) {
+        final d1 = DateTime(
+          _filterDate!.year,
+          _filterDate!.month,
+          _filterDate!.day,
+        );
+        final d2 = DateTime(
+          tx.transactionDate.year,
+          tx.transactionDate.month,
+          tx.transactionDate.day,
+        );
+        if (d1 != d2) return false;
+      }
+
+      return true;
+    }).toList();
+  }
+
+  Map<String, List<TransactionResponse>> _groupTransactions(
+    List<TransactionResponse> txs,
+  ) {
+    final groups = <String, List<TransactionResponse>>{};
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    for (var tx in txs) {
+      final date = DateTime(
+        tx.transactionDate.year,
+        tx.transactionDate.month,
+        tx.transactionDate.day,
+      );
+      String label;
+      if (date == today) {
+        label = 'วันนี้';
+      } else if (date == yesterday) {
+        label = 'เมื่อวาน';
+      } else {
+        label = DateFormat('dd MMMM yyyy').format(date);
+      }
+      groups.putIfAbsent(label, () => []).add(tx);
+    }
+    return groups;
+  }
+
+  double _calculateTotalInGroup(List<TransactionResponse> group) {
+    return group.fold(0, (sum, tx) => sum + tx.amount);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final filtered = _filteredTransactions;
+    final grouped = _groupTransactions(filtered);
+    final totalExpense = filtered
+        .where((tx) => tx.category.type.toLowerCase() == 'expense')
+        .fold(0.0, (sum, tx) => sum + tx.amount);
+    final todayExpense = filtered
+        .where((tx) {
+          final now = DateTime.now();
+          return tx.transactionDate.year == now.year &&
+              tx.transactionDate.month == now.month &&
+              tx.transactionDate.day == now.day &&
+              tx.category.type.toLowerCase() == 'expense';
+        })
+        .fold(0.0, (sum, tx) => sum + tx.amount);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          if (_isLoading)
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator(color: Color(0xFF2D955F))),
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF2D955F)),
             )
-          else if (_errorMessage != null)
-            SliverFillRemaining(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Text(_errorMessage!, style: GoogleFonts.kanit(color: Colors.red)),
+          : CustomScrollView(
+              slivers: [
+                _buildAppBar(totalExpense, todayExpense, filtered.length),
+                SliverToBoxAdapter(child: _buildControls()),
+                if (_errorMessage != null)
+                  SliverFillRemaining(
+                    child: Center(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  )
+                else if (filtered.isEmpty)
+                  SliverFillRemaining(child: _buildEmptyState())
+                else
+                  ...grouped.entries
+                      .map(
+                        (entry) =>
+                            _buildTransactionGroup(entry.key, entry.value),
+                      )
+                      .toList(),
+                const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildAppBar(double totalExpense, double todayExpense, int count) {
+    return SliverAppBar(
+      floating: false,
+      pinned: true,
+      backgroundColor: const Color(0xFFF8F9FA),
+      surfaceTintColor: const Color(0xFFF8F9FA),
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
+        onPressed: () => Navigator.pop(context),
+      ),
+      actions: const [],
+      title: Text(
+        'รายการธุรกรรม',
+        style: GoogleFonts.kanit(
+          color: Colors.black87,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildControls() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        children: [
+          // Search Bar
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-            )
-          else if (_transactions.isEmpty)
-            SliverFillRemaining(
-              child: _buildEmptyState(),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.all(24),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final tx = _transactions[index];
-                    final category = _categoriesMap[tx.categoryId];
-                    return _buildTransactionItem(tx, category);
-                  },
-                  childCount: _transactions.length,
-                ),
+              ],
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val),
+              decoration: InputDecoration(
+                hintText: 'ค้นหารายการ...',
+                hintStyle: GoogleFonts.kanit(color: Colors.grey[400]),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 15),
               ),
             ),
+          ),
+          const SizedBox(height: 16),
+          // Filter Bar
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChip('All'),
+                _buildFilterChip('Income'),
+                _buildFilterChip('Expense'),
+                _buildDateFilterChip(),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSliverAppBar() {
-    final double totalExpense = _transactions.fold(0, (sum, item) => sum + item.amount);
-    
-    return SliverAppBar(
-      expandedHeight: 200.0,
-      floating: false,
-      pinned: true,
-      backgroundColor: const Color(0xFF2D955F),
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          'รายการธุรกรรม',
-          style: GoogleFonts.kanit(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        centerTitle: true,
-        background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF2D955F), Color(0xFF4CB07D)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+  Widget _buildFilterChip(String label) {
+    bool isSelected = _selectedFilter == label;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        onTap: () => setState(() => _selectedFilter = label),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF2D955F) : Colors.white,
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              if (!isSelected)
+                BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 5),
+            ],
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.kanit(
+              color: isSelected ? Colors.white : Colors.black87,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateFilterChip() {
+    bool isSelected = _filterDate != null;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: _filterDate ?? DateTime.now(),
+            firstDate: DateTime(2000),
+            lastDate: DateTime(2100),
+            builder: (context, child) {
+              return Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: Color(0xFF2D955F),
+                  ),
+                ),
+                child: child!,
+              );
+            },
+          );
+          if (picked != null) setState(() => _filterDate = picked);
+        },
+        onLongPress: () => setState(() => _filterDate = null),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF2D955F) : Colors.white,
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              if (!isSelected)
+                BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 5),
+            ],
+          ),
+          child: Row(
             children: [
-              const SizedBox(height: 40),
-              Text(
-                'รายจ่ายทั้งหมดในเดือนนี้',
-                style: GoogleFonts.kanit(color: Colors.white70, fontSize: 14),
+              Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: isSelected ? Colors.white : Colors.black54,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(width: 8),
               Text(
-                '฿${NumberFormat('#,###.##').format(totalExpense)}',
+                isSelected
+                    ? DateFormat('dd MMM').format(_filterDate!)
+                    : 'Select Date',
                 style: GoogleFonts.kanit(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
+                  color: isSelected ? Colors.white : Colors.black87,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                '${_transactions.length} รายการ',
-                style: GoogleFonts.kanit(color: Colors.white60, fontSize: 12),
-              ),
+              if (isSelected)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: InkWell(
+                    onTap: () => setState(() => _filterDate = null),
+                    child: const Icon(
+                      Icons.close,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
       ),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
+    );
+  }
+
+  Widget _buildTransactionGroup(String date, List<TransactionResponse> txs) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      date,
+                      style: GoogleFonts.kanit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    if (date == 'วันนี้')
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2D955F),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'TODAY',
+                          style: GoogleFonts.kanit(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                Text(
+                  'รวม ฿${NumberFormat('#,###.##').format(_calculateTotalInGroup(txs))}',
+                  style: GoogleFonts.kanit(color: Colors.black45, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          ...txs.map((tx) => _buildTransactionItem(tx)).toList(),
+        ]),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 20,
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.receipt_long_rounded,
-            size: 64,
-            color: Color(0xFFCBD5E1),
-          ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'ไม่พบรายการธุรกรรม',
-          style: GoogleFonts.kanit(
-            color: const Color(0xFF64748B),
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'เริ่มบันทึกรายจ่ายของคุณเพื่อติดตามการเงิน',
-          style: GoogleFonts.kanit(color: const Color(0xFF94A3B8), fontSize: 14),
-        ),
-      ],
-    );
-  }
+  Widget _buildTransactionItem(TransactionResponse tx) {
+    final bool isIncome = tx.category.type.toLowerCase() == 'income';
 
-  Widget _buildTransactionItem(TransactionResponse tx, Categories? category) {
-    final categoryName = category?.categoryName ?? '';
-    final color = _getCategoryColor(categoryName);
-    final icon = _getCategoryIcon(categoryName);
-    
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -211,41 +419,54 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () {}, // Detail view can be added later
+          onTap: () => TransactionDetailBottomSheet.show(context, tx, () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    TransactionAddScreen(transactionToEdit: tx),
+              ),
+            );
+            if (result == true) {
+              _loadData(); // Reload list after edit
+            }
+          }),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 22,
-                  ),
-                ),
+                _buildCategoryIcon(tx.category.categoryName),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        tx.description.isNotEmpty ? tx.description : (categoryName.isNotEmpty ? categoryName : 'ไม่มีคำอธิบาย'),
+                        tx.description.isNotEmpty
+                            ? tx.description
+                            : tx.category.categoryName,
                         style: GoogleFonts.kanit(
-                          fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1E293B),
+                          fontSize: 15,
+                          color: Colors.black87,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormat('dd MMM yyyy • HH:mm').format(tx.transactionDate),
-                        style: GoogleFonts.kanit(fontSize: 12, color: const Color(0xFF94A3B8)),
-                      ),
+                      if (tx.receiverName != null &&
+                          tx.receiverName!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          tx.receiverName!,
+                          style: GoogleFonts.kanit(
+                            color: Colors.orange,
+                            fontSize: 11,
+                            fontWeight: FontWeight.normal,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -253,23 +474,20 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '฿${NumberFormat('#,###.##').format(tx.amount)}',
+                      '${isIncome ? '+' : ''}฿${NumberFormat('#,###.##').format(tx.amount)}',
                       style: GoogleFonts.kanit(
-                        fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFFEF4444),
+                        fontSize: 16,
+                        color: isIncome
+                            ? const Color(0xFF2D955F)
+                            : Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        categoryName.isNotEmpty ? categoryName : 'อื่นๆ',
-                        style: GoogleFonts.kanit(fontSize: 10, color: const Color(0xFF64748B)),
+                    Text(
+                      DateFormat('HH:mm').format(tx.transactionDate),
+                      style: GoogleFonts.kanit(
+                        color: Colors.black26,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -282,25 +500,68 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
-  Color _getCategoryColor(String name) {
-    final lowerName = name.toLowerCase();
-    if (lowerName.contains('food')) return const Color(0xFFEF4444);
-    if (lowerName.contains('shopping')) return const Color(0xFFF59E0B);
-    if (lowerName.contains('travel')) return const Color(0xFF3B82F6);
-    if (lowerName.contains('bill')) return const Color(0xFF8B5CF6);
-    if (lowerName.contains('health')) return const Color(0xFF10B981);
-    if (lowerName.contains('saving')) return const Color(0xFF2D955F);
-    return const Color(0xFF64748B);
+  Widget _buildCategoryIcon(String name) {
+    IconData iconData;
+    Color color;
+
+    switch (name) {
+      case 'Shopping':
+        iconData = Icons.shopping_bag_outlined;
+        color = const Color(0xFFFF9100);
+        break;
+      case 'Food':
+        iconData = Icons.restaurant_outlined;
+        color = const Color(0xFFEB5757);
+        break;
+      case 'Transport':
+        iconData = Icons.directions_car_outlined;
+        color = const Color(0xFF00B0FF);
+        break;
+      case 'Bills':
+        iconData = Icons.receipt_long_outlined;
+        color = const Color(0xFF2979FF);
+        break;
+      case 'Entertainment':
+        iconData = Icons.videogame_asset_outlined;
+        color = const Color(0xFFFF9100);
+        break;
+      case 'Health':
+        iconData = Icons.medical_services_outlined;
+        color = const Color(0xFF00BFA5);
+        break;
+      case 'Saving':
+        iconData = Icons.savings_outlined;
+        color = const Color(0xFF2D955F);
+        break;
+      default:
+        iconData = Icons.category_outlined;
+        color = const Color(0xFF546E7A);
+    }
+
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(iconData, color: color, size: 24),
+    );
   }
 
-  IconData _getCategoryIcon(String name) {
-    final lowerName = name.toLowerCase();
-    if (lowerName.contains('food')) return Icons.restaurant_rounded;
-    if (lowerName.contains('shopping')) return Icons.shopping_bag_rounded;
-    if (lowerName.contains('travel')) return Icons.directions_car_rounded;
-    if (lowerName.contains('bill')) return Icons.receipt_long_rounded;
-    if (lowerName.contains('health')) return Icons.medical_services_rounded;
-    if (lowerName.contains('saving')) return Icons.savings_rounded;
-    return Icons.category_rounded;
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off_rounded, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text(
+            'ไม่พบรายการที่ค้นหา',
+            style: GoogleFonts.kanit(color: Colors.grey, fontSize: 16),
+          ),
+        ],
+      ),
+    );
   }
 }
