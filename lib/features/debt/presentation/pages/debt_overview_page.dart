@@ -232,6 +232,10 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                         minPayment: totalMinPayment,
                         monthlyStatus: _monthlyStatus,
                       ),
+                      if (_monthlyStatus != null && _monthlyStatus!.isBudgetInsufficient) ...[
+                        const SizedBox(height: 16),
+                        _buildBudgetWarningCard(_monthlyStatus!),
+                      ],
                       const SizedBox(height: 32),
                       Text(
                         'เมนูลัด',
@@ -943,7 +947,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                         ),
                       ],
                     ),
-                  if (debt.plannedPayment > 0) ...[
+                  if (debt.plannedPayment > 0 || debt.minPayment > 0) ...[
                     const SizedBox(height: 20),
                     _buildMonthlyPaymentProgress(debt),
                   ],
@@ -1010,7 +1014,10 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
   }
 
   Widget _buildMonthlyPaymentProgress(DebtResponse debt) {
-    final progress = (debt.paidThisMonth / debt.plannedPayment).clamp(0.0, 1.0);
+    final targetPayment = debt.plannedPayment > 0 ? debt.plannedPayment : debt.minPayment;
+    if (targetPayment <= 0) return const SizedBox.shrink();
+    
+    final progress = (debt.paidThisMonth / targetPayment).clamp(0.0, 1.0);
     final isCompleted = progress >= 1.0;
     
     return Column(
@@ -1028,7 +1035,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  "เป้าหมายการชำระเดือนนี้",
+                  debt.plannedPayment > 0 ? "เป้าหมายการชำระเดือนนี้" : "ยอดขั้นต่ำที่ต้องจ่าย",
                   style: GoogleFonts.kanit(
                     fontSize: 13,
                     color: const Color(0xFF64748B),
@@ -1049,7 +1056,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                     ),
                   ),
                   TextSpan(
-                    text: " / ${NumberFormat('#,##0.0').format(debt.plannedPayment)} ฿",
+                    text: " / ${NumberFormat('#,##0.0').format(targetPayment)} ฿",
                     style: const TextStyle(color: Color(0xFF64748B)),
                   ),
                 ],
@@ -1239,6 +1246,81 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBudgetWarningCard(MonthlyDebtStatus status) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3F3),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFFFCCCC)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFE5E5),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.warning_amber_rounded,
+              color: Color(0xFFE53935),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'งบประมาณรายเดือนไม่เพียงพอ',
+                  style: GoogleFonts.kanit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'งบประมาณปัจจุบันของคุณ (${NumberFormat('#,##0').format(status.totalAmount)} ฿) ไม่ครอบคลุมยอดขั้นต่ำรวม (${NumberFormat('#,##0').format(status.requiredMinPayment)} ฿)',
+                  style: GoogleFonts.kanit(
+                    fontSize: 13,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, '/simulator');
+                  },
+                  child: Row(
+                    children: [
+                      Text(
+                        'ปรับแก้แผนของคุณ',
+                        style: GoogleFonts.kanit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFE53935),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 14,
+                        color: Color(0xFFE53935),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

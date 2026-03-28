@@ -370,7 +370,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
               ),
             ],
           ),
-          if (debt.plannedPayment > 0) ...[
+          if (debt.plannedPayment > 0 || debt.minPayment > 0) ...[
             const SizedBox(height: 24),
             _buildMonthlyProgressInternal(debt),
           ],
@@ -380,7 +380,10 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
   }
 
   Widget _buildMonthlyProgressInternal(DebtResponse debt) {
-    final progress = (debt.paidThisMonth / debt.plannedPayment).clamp(0.0, 1.0);
+    final targetPayment = debt.plannedPayment > 0 ? debt.plannedPayment : debt.minPayment;
+    if (targetPayment <= 0) return const SizedBox.shrink();
+    
+    final progress = (debt.paidThisMonth / targetPayment).clamp(0.0, 1.0);
     final isCompleted = progress >= 1.0;
 
     return Column(
@@ -390,7 +393,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'เป้าหมายการชำระเดือนนี้',
+              debt.plannedPayment > 0 ? 'เป้าหมายการชำระเดือนนี้' : 'ยอดขั้นต่ำที่ต้องจ่าย',
               style: GoogleFonts.kanit(
                 color: Colors.white.withOpacity(0.9),
                 fontSize: 13,
@@ -398,7 +401,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
               ),
             ),
             Text(
-              '${NumberFormat('#,##0.0').format(debt.paidThisMonth)} / ${NumberFormat('#,##0.0').format(debt.plannedPayment)} ฿',
+              '${NumberFormat('#,##0.0').format(debt.paidThisMonth)} / ${NumberFormat('#,##0.0').format(targetPayment)} ฿',
               style: GoogleFonts.kanit(
                 color: Colors.white,
                 fontSize: 13,
