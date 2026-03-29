@@ -42,6 +42,16 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   }
 
   Future<void> _handleLogout() async {
+    final confirmed = await _showConfirmDialog(
+      title: 'ออกจากระบบ',
+      message: 'คุณแน่ใจหรือว่าต้องการออกจากระบบบัญชีของคุณในขณะนี้?',
+      confirmText: 'ออกจากระบบ',
+      confirmColor: const Color(0xFFEB5757),
+      icon: Icons.logout_rounded,
+    );
+
+    if (confirmed != true) return;
+
     try {
       await LineSDK.instance.logout();
       await _googleSignIn.signOut();
@@ -92,6 +102,16 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   }
 
   Future<void> _saveSettings() async {
+    final confirmed = await _showConfirmDialog(
+      title: 'บันทึกการตั้งค่า',
+      message: 'คุณต้องการบันทึกการเปลี่ยนแปลงทั้งหมดของการตั้งค่าใช่หรือไม่?',
+      confirmText: 'บันทึก',
+      confirmColor: const Color(0xFF27AE60),
+      icon: Icons.save_as_rounded,
+    );
+
+    if (confirmed != true) return;
+
     setState(() {
       _isLoading = true;
       _isSalaryInvalid = false;
@@ -164,6 +184,115 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     }
   }
 
+  Future<bool?> _showConfirmDialog({
+    required String title,
+    required String message,
+    required String confirmText,
+    required Color confirmColor,
+    required IconData icon,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: confirmColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 32, color: confirmColor),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.kanit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.kanit(
+                  fontSize: 14,
+                  color: const Color(0xFF64748B),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(color: Colors.black.withOpacity(0.1)),
+                      ),
+                      child: Text(
+                        'ยกเลิก',
+                        style: GoogleFonts.kanit(
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: confirmColor,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        confirmText,
+                        style: GoogleFonts.kanit(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _deleteDevice(String deviceId) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -221,6 +350,119 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}:00";
       });
     }
+  }
+
+  void _showDaysPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'แจ้งเตือนล่วงหน้า',
+              style: GoogleFonts.kanit(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'เลือกจำนวนวันที่คุณต้องการรับการแจ้งเตือนก่อนวันจริง',
+              style: GoogleFonts.kanit(
+                fontSize: 13,
+                color: const Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.4,
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: 7,
+                itemBuilder: (context, index) {
+                  final val = index + 1;
+                  final isSelected = _defaultRemindDaysBefore == val;
+                  return InkWell(
+                    onTap: () {
+                      setState(() => _defaultRemindDaysBefore = val);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 4,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF27AE60).withOpacity(0.05)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF27AE60).withOpacity(0.3)
+                              : Colors.transparent,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '$val วันก่อนหน้า',
+                            style: GoogleFonts.kanit(
+                              fontSize: 15,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? const Color(0xFF27AE60)
+                                  : const Color(0xFF1A1A1A),
+                            ),
+                          ),
+                          if (isSelected)
+                            const Icon(
+                              Icons.check_circle,
+                              color: Color(0xFF27AE60),
+                              size: 20,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -302,12 +544,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-            onPressed: widget.onBack,
-          ),
+          // IconButton removed as requested
         ],
       ),
     );
@@ -509,29 +746,25 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
           style: GoogleFonts.kanit(fontSize: 12, color: Colors.black45),
         ),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.black.withOpacity(0.05)),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: _defaultRemindDaysBefore,
-              isExpanded: true,
-              items: List.generate(7, (index) => index + 1).map((val) {
-                return DropdownMenuItem<int>(
-                  value: val,
-                  child: Text(
-                    '$val วันก่อนหน้า',
-                    style: GoogleFonts.kanit(fontSize: 14),
-                  ),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) setState(() => _defaultRemindDaysBefore = val);
-              },
+        InkWell(
+          onTap: _showDaysPicker,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.black.withOpacity(0.05)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '$_defaultRemindDaysBefore วันก่อนหน้า',
+                  style: GoogleFonts.kanit(fontSize: 14),
+                ),
+                const Icon(Icons.arrow_drop_down, color: Colors.black45),
+              ],
             ),
           ),
         ),
@@ -714,7 +947,18 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () => _loadSettings(),
+            onPressed: () async {
+              final confirmed = await _showConfirmDialog(
+                title: 'รีเซ็ตข้อมูล',
+                message: 'คุณต้องการย้อนกลับไปใช้ค่าเดิมที่บันทึกไว้ใช่หรือไม่? ข้อมูลที่คุณแก้ไขจะหายไป',
+                confirmText: 'รีเซ็ต',
+                confirmColor: const Color(0xFF64748B),
+                icon: Icons.refresh_rounded,
+              );
+              if (confirmed == true) {
+                _loadSettings();
+              }
+            },
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
