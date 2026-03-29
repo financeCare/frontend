@@ -724,7 +724,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
   Widget _buildQuickMenu() {
     final menus = [
       {
-        'icon': Icons.add_business_outlined,
+        'icon': Icons.add_card_outlined,
         'label': 'สร้างหนี้',
         'color': const Color(0xFFFFEDEC),
         'iconColor': const Color(0xFFF44336),
@@ -891,7 +891,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                           const Icon(Icons.auto_awesome, size: 16, color: Color(0xFF2D955F)),
                           const SizedBox(width: 8),
                           Text(
-                            'แนะนำอาชีพอัตโนมัติ',
+                            'แนะนำอาชีพ',
                             style: GoogleFonts.kanit(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,

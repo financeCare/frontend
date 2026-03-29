@@ -70,13 +70,8 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
     final amountStr = widget.ocrData!['amount']?.replaceAll(',', '') ?? '0.00';
     _amountController.text = amountStr;
     
-    // ใช้ description จาก OCR ถ้ามี ถ้าไม่มีให้ใช้รูปแบบ "โอนให้: [ชื่อผู้รับ]"
-    final ocrDesc = widget.ocrData!['description'];
-    if (ocrDesc != null && ocrDesc.isNotEmpty) {
-      _descController.text = ocrDesc;
-    } else {
-      _descController.text = 'โอนให้: ${widget.ocrData!['receiver'] ?? '-'}';
-    }
+    // รายละเอียด/คำอธิบาย ให้เว้นว่างไว้ให้ User กรอกเองตามต้องการ
+    _descController.text = "";
     
     _receiverController.text = widget.ocrData!['receiver'] ?? '';
     

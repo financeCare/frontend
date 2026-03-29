@@ -65,7 +65,7 @@ class _OCRScreenState extends State<OCRScreen> {
       if (result != null) {
         if (!mounted) return;
         setState(() {
-          _ocrResult = "สแกนสำเร็จจากระบบ Python OCR";
+          // _ocrResult = "สแกนสำเร็จจากระบบ Python OCR"; // Removed as requested
           
           // แปลง TransactionResponse เป็น Map<String, String> สำหรับส่งต่อให้ AddTransactionScreen
           _structuredData = {
@@ -76,7 +76,7 @@ class _OCRScreenState extends State<OCRScreen> {
             "date": result.transactionDate.toIso8601String(),
             "category_id": result.category.categoryId.toString(),
             "category_name": result.category.categoryName,
-            "description": result.description,
+            "description": "", 
             "image_path": result.imagePath ?? "",
             "slip_id": result.slipId?.toString() ?? "",
           };
@@ -306,7 +306,7 @@ class _OCRScreenState extends State<OCRScreen> {
                                 const CircularProgressIndicator(color: Color(0xFF2D955F)),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'กำลังใช้ AI วิเคราะห์สลิป...',
+                                  'กำลังวิเคราะห์ข้อมูล...',
                                   style: GoogleFonts.kanit(color: const Color(0xFF64748B)),
                                 )
                               ],
@@ -323,25 +323,11 @@ class _OCRScreenState extends State<OCRScreen> {
                     
                     const SizedBox(height: 16),
               
-              // Raw Data (Optional/Expandable)
-              if (_ocrResult.isNotEmpty && !_isLoading)
-                 Theme(
-                   data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                   child: ExpansionTile(
-                    title: Text('ดูข้อความดิบ (Raw Text)', style: GoogleFonts.kanit(fontSize: 12, color: Colors.black38)),
-                    children: [
-                       Padding(
-                         padding: const EdgeInsets.all(16.0),
-                         child: Text(_ocrResult, style: GoogleFonts.kanit(fontSize: 12, color: Colors.black45)),
-                       )
-                    ],
-                                   ),
-                 ),
 
               const SizedBox(height: 16),
               
                     // Actions
-                    if (_ocrResult.isNotEmpty && !_isLoading)
+                    if (_structuredData.isNotEmpty && !_isLoading)
                       Column(
                         children: [
                           Row(
