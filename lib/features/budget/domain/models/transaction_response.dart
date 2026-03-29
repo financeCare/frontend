@@ -11,6 +11,8 @@ class TransactionResponse {
   final String? imagePath;
   final int? slipId;
 
+  final bool autoCreated;
+
   TransactionResponse({
     required this.transactionId,
     required this.amount,
@@ -21,25 +23,34 @@ class TransactionResponse {
     this.receiverName,
     this.imagePath,
     this.slipId,
+    this.autoCreated = false,
   });
 
   factory TransactionResponse.fromJson(Map<String, dynamic> json) {
+    // Handle nested 'slip' key if returned from backend Map<String, Object>
+    final Map<String, dynamic> data = json.containsKey('slip') 
+        ? json['slip'] as Map<String, dynamic> 
+        : json;
+    
+    final bool auto = json['autoCreated'] as bool? ?? data['autoCreated'] as bool? ?? false;
+
     return TransactionResponse(
-      transactionId: (json['transactionId'] ?? json['id'] ?? '').toString(),
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
-      transactionDate: _normalizeDate(json['transactionDate'] != null 
-          ? DateTime.parse(json['transactionDate'])
-          : (json['transferDate'] != null 
-              ? DateTime.parse(json['transferDate']) 
+      transactionId: (data['transactionId'] ?? data['id'] ?? '').toString(),
+      amount: (data['amount'] as num?)?.toDouble() ?? 0.0,
+      transactionDate: _normalizeDate(data['transactionDate'] != null 
+          ? DateTime.parse(data['transactionDate'])
+          : (data['transferDate'] != null 
+              ? DateTime.parse(data['transferDate']) 
               : DateTime.now())),
-      description: json['description'] as String? ?? '',
+      description: data['description'] as String? ?? '',
       category: Categories.fromJson(
-        (json['categoryDTO'] ?? json['category']) as Map<String, dynamic>? ?? {},
+        (data['categoryDTO'] ?? data['category']) as Map<String, dynamic>? ?? {},
       ),
-      senderBank: json['senderBank'] as String?,
-      receiverName: json['receiverName'] as String?,
-      imagePath: json['imagePath'] as String?,
-      slipId: json['slipId'] as int?,
+      senderBank: data['senderBank'] as String?,
+      receiverName: data['receiverName'] as String?,
+      imagePath: data['imagePath'] as String?,
+      slipId: data['slipId'] as int?,
+      autoCreated: auto,
     );
   }
 

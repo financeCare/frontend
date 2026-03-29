@@ -121,12 +121,32 @@ class NotificationService {
       onTap(refType: refType, refId: refId);
     });
   }
+  Future<void> showLocalNotification({
+    required String title,
+    required String body,
+    String? refType,
+    String? refId,
+  }) async {
+    const android = AndroidNotificationDetails(
+      'slip_detection_channel',
+      'Slip Detection',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const details = NotificationDetails(android: android);
+    final payload = '${refType ?? ''}|${refId ?? ''}';
+    final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    await _local.show(id, title, body, details, payload: payload);
+  }
 
   Future<void> _showLocal({
     required String title,
     required String body,
     required String? refType,
     required String? refId,
+    int? id,
   }) async {
     const android = AndroidNotificationDetails(
       'default_channel',
@@ -138,9 +158,9 @@ class NotificationService {
     const details = NotificationDetails(android: android);
 
     final payload = '${refType ?? ''}|${refId ?? ''}';
-    final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final notificationId = id ?? (DateTime.now().millisecondsSinceEpoch ~/ 1000);
 
-    await _local.show(id, title, body, details, payload: payload);
+    await _local.show(notificationId, title, body, details, payload: payload);
   }
 
   Future<String> _getOrCreateDeviceKey() async {

@@ -373,6 +373,36 @@ class _OCRScreenState extends State<OCRScreen> {
                           Row(
                             children: [
                               Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/pay_debt',
+                                      arguments: {
+                                        'slipId': int.tryParse(_structuredData['slip_id'] ?? ''),
+                                      },
+                                    );
+                                  },
+                                  icon: const Icon(Icons.payment, size: 24),
+                                  label: Text('ชำระหนี้ด้วยสลิปนี้', style: GoogleFonts.kanit(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF3B82F6),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 18),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    elevation: 4,
+                                    shadowColor: const Color(0x663B82F6),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
                                 child: TextButton.icon(
                                   onPressed: () => _copyToClipboard(context),
                                   icon: const Icon(Icons.copy_all_rounded, size: 18),
