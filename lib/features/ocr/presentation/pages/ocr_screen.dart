@@ -65,11 +65,10 @@ class _OCRScreenState extends State<OCRScreen> {
         setState(() {
           _ocrResult = "สแกนสำเร็จจากระบบ Python OCR";
           
-          // แปลง TransactionResponse เป็น Map<String, String> สำหรับส่งต่อให้ AddTransactionScreen
           _structuredData = {
             "amount": result.amount.toString(),
             "receiver": result.receiverName ?? "ไม่พบข้อมูล",
-            "sender": "-", // Backend ไม่ได้ส่ง sender name มาตรงๆ ใน TransactionResponse แต่ส่ง senderBank
+            "sender": "-", 
             "sender_bank": result.senderBank ?? "ไม่พบข้อมูล",
             "date": result.transactionDate.toIso8601String(),
             "category_id": result.category.categoryId.toString(),
@@ -99,8 +98,6 @@ class _OCRScreenState extends State<OCRScreen> {
       }
     }
   }
-
-// ปิดใช้งาน parsing แบบเก่า เนื่องจากใช้ Backend OCR แล้ว
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +203,7 @@ class _OCRScreenState extends State<OCRScreen> {
                     ),
                     const SizedBox(height: 16),
                     
-                    // Image Preview Area (Show Full Image)
+                    // Image Preview Area
                     GestureDetector(
                       onTap: () => _showPickImageOptions(),
                       child: Container(
@@ -230,8 +227,8 @@ class _OCRScreenState extends State<OCRScreen> {
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE8F5E9),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFE8F5E9),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
@@ -301,10 +298,6 @@ class _OCRScreenState extends State<OCRScreen> {
                               children: [
                                 const CircularProgressIndicator(color: Color(0xFF2D955F)),
                                 const SizedBox(height: 16),
-                                Text(
-                                  'กำลังใช้ AI วิเคราะห์สลิป...',
-                                  style: GoogleFonts.kanit(color: const Color(0xFF64748B)),
-                                )
                               ],
                             )
                           : _structuredData.isEmpty
@@ -316,28 +309,10 @@ class _OCRScreenState extends State<OCRScreen> {
                                 )
                               : _buildResultTable(),
                     ),
-                    
-                    const SizedBox(height: 16),
-              
-              // Raw Data (Optional/Expandable)
-              if (_ocrResult.isNotEmpty && !_isLoading)
-                 Theme(
-                   data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                   child: ExpansionTile(
-                    title: Text('ดูข้อความดิบ (Raw Text)', style: GoogleFonts.kanit(fontSize: 12, color: Colors.black38)),
-                    children: [
-                       Padding(
-                         padding: const EdgeInsets.all(16.0),
-                         child: Text(_ocrResult, style: GoogleFonts.kanit(fontSize: 12, color: Colors.black45)),
-                       )
-                    ],
-                                   ),
-                 ),
-
-              const SizedBox(height: 16),
-              
+                
                     // Actions
-                    if (_ocrResult.isNotEmpty && !_isLoading)
+                    if (_ocrResult.isNotEmpty && !_isLoading) ...[
+                      const SizedBox(height: 24),
                       Column(
                         children: [
                           Row(
@@ -371,12 +346,27 @@ class _OCRScreenState extends State<OCRScreen> {
                           Row(
                             children: [
                               Expanded(
-                                child: TextButton.icon(
-                                  onPressed: () => _copyToClipboard(context),
-                                  icon: const Icon(Icons.copy_all_rounded, size: 18),
-                                  label: Text('คัดลอกข้อมูล', style: GoogleFonts.kanit(fontSize: 14)),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: const Color(0xFF64748B),
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/pay_debt',
+                                      arguments: {
+                                        'slipId': int.tryParse(_structuredData['slip_id'] ?? ''),
+                                      },
+                                    );
+                                  },
+                                  icon: const Icon(Icons.payment, size: 24),
+                                  label: Text('ชำระหนี้ด้วยสลิปนี้', style: GoogleFonts.kanit(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF3B82F6),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 18),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    elevation: 4,
+                                    shadowColor: const Color(0x663B82F6),
                                   ),
                                 ),
                               ),
@@ -410,6 +400,7 @@ class _OCRScreenState extends State<OCRScreen> {
                           ),
                         ],
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -448,14 +439,6 @@ class _OCRScreenState extends State<OCRScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  void _copyToClipboard(BuildContext context) {
-    // In a real app we'd use Clipboard.setData
-    // For now just show a Snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('คัดลอกข้อความแล้ว')),
     );
   }
 

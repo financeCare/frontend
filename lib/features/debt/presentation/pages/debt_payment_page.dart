@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/services/debt_service.dart';
 import '../../domain/models/debt_response.dart';
 
 class DebtPaymentPage extends StatefulWidget {
-  const DebtPaymentPage({super.key});
+  final int? slipId;
+  final DebtResponse? initialDebt;
+  const DebtPaymentPage({super.key, this.slipId, this.initialDebt});
 
   @override
   State<DebtPaymentPage> createState() => _DebtPaymentPageState();
@@ -34,7 +37,17 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
       if (!mounted) return;
       setState(() {
         _activeDebts = responses.where((d) => d.isActive).toList();
-        if (_activeDebts.isNotEmpty) {
+        
+        if (widget.initialDebt != null) {
+          // Find the initial debt in the list to ensure we use the fresh data from getAllDebt
+          try {
+            _selectedDebt = _activeDebts.firstWhere(
+              (d) => d.debtId == widget.initialDebt!.debtId
+            );
+          } catch (_) {
+            _selectedDebt = _activeDebts.isNotEmpty ? _activeDebts.first : null;
+          }
+        } else if (_activeDebts.isNotEmpty) {
           _selectedDebt = _activeDebts.first;
         }
         _isLoading = false;
@@ -73,12 +86,15 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
     setState(() => _isSubmitting = true);
     try {
       final paidAt = DateFormat('yyyy-MM-dd').format(_selectedDate);
-      await _debtService.payDebt(_selectedDebt!.debtId, amount, paidAt);
+      await _debtService.payDebt(
+        _selectedDebt!.debtId, 
+        amount, 
+        paidAt, 
+        slipId: widget.slipId
+      );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('ชำระหนี้สำเร็จ')));
+      _showCustomSuccessSnackBar('บันทึกการชำระหนี้เรียบร้อยแล้ว');
       Navigator.pop(context, true);
     } catch (e) {
       debugPrint("Error paying debt: $e");
@@ -94,9 +110,74 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
     }
   }
 
+  void _showCustomSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        duration: const Duration(seconds: 2),
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D955F),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'สำเร็จ!',
+                      style: GoogleFonts.kanit(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      message,
+                      style: GoogleFonts.kanit(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _onShortcutPressed(double amount) {
     setState(() {
-      _amountController.text = NumberFormat('#,###.00').format(amount);
+      _amountController.text = amount.toStringAsFixed(2);
     });
   }
 
@@ -478,6 +559,9 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
               style: GoogleFonts.kanit(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,

@@ -253,7 +253,7 @@ class DebtService {
     }
   }
 
-  Future<void> payDebt(String debtId, double amount, String paidAt) async {
+  Future<void> payDebt(String debtId, double amount, String paidAt, {int? slipId}) async {
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.post(
       Uri.parse('$baseUrl/api/debts/pays'),
@@ -265,6 +265,7 @@ class DebtService {
         'debtId': debtId,
         'paymentAmount': amount,
         'paymentDate': paidAt,
+        if (slipId != null) 'paymentSlipId': slipId,
       }),
     );
     AppLog.d("payDebt: ${response.statusCode}");
