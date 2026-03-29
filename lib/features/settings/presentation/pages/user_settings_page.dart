@@ -294,25 +294,12 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
   }
 
   Future<void> _deleteDevice(String deviceId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('ลบอุปกรณ์', style: GoogleFonts.kanit()),
-        content: Text(
-          'คุณแน่ใจหรือไม่ว่าต้องการลบอุปกรณ์นี้?',
-          style: GoogleFonts.kanit(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('ยกเลิก'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('ลบ', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+    final confirmed = await _showConfirmDialog(
+      title: 'ลบอุปกรณ์',
+      message: 'คุณแน่ใจหรือไม่ว่าต้องการลบอุปกรณ์นี้?\nหากลบแล้วอุปกรณ์นี้จะถูกออกจากระบบทันที',
+      confirmText: 'ลบอุปกรณ์',
+      confirmColor: const Color(0xFFEB5757),
+      icon: Icons.delete_outline_rounded,
     );
 
     if (confirmed == true) {

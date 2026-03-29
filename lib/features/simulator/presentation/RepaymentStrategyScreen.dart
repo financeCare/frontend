@@ -696,8 +696,8 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
     if (lowerName.contains('snowball')) return Icons.track_changes_outlined;
     if (lowerName.contains('avalanche')) return Icons.trending_down_outlined;
     if (lowerName.contains('minimum')) return Icons.vertical_align_bottom_outlined;
-    if (lowerName.contains('optimal')) return Icons.auto_awesome_outlined;
-    return Icons.stars_outlined;
+    if (lowerName.contains('optimal')) return Icons.lightbulb_outline;
+    return Icons.layers_outlined;
   }
 
   String? _getStrategyBadge(String name) {

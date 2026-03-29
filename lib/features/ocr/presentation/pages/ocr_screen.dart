@@ -174,8 +174,6 @@ class _OCRScreenState extends State<OCRScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'สแกนสลิปโอนเงินของคุณเพื่อแยกชื่อและจำนวนเงินโดยอัตโนมัติ',

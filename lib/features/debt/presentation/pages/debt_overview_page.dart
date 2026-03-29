@@ -399,7 +399,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                         ] else if (monthlyStatus != null && monthlyStatus.remainingAmount <= 0) ...[
                           const TextSpan(text: '\n'),
                           TextSpan(
-                            text: 'ชำระของเดือนนี้ครบถ้วนแล้ว ✨',
+                            text: 'ชำระของเดือนนี้ครบถ้วนแล้ว',
                             style: GoogleFonts.kanit(fontWeight: FontWeight.bold, color: const Color(0xFF4CAF50)),
                           ),
                         ],
@@ -615,10 +615,8 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.auto_awesome, size: 16, color: Color(0xFF2D955F)),
-                          const SizedBox(width: 8),
                           Text(
-                            'แนะนำอาชีพอัตโนมัติ',
+                            'แนะนำอาชีพ',
                             style: GoogleFonts.kanit(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,

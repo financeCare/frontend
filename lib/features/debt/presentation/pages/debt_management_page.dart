@@ -209,9 +209,10 @@ class _AddDebtPageState extends State<AddDebtPage> {
         filteredDebtTypeList = debtTypeList;
         debtType = debtTypeList.map((e) => e.debtTypeName).toList();
         repaymentType = repaymentTypeList.map((e) => e.typeName).toList();
-        if (debtTypeList.isNotEmpty)
+        if (debtTypeList.isNotEmpty && selectedDebtTypeId == 0) {
           selectedDebtTypeId = debtTypeList[0].debtTypeId;
-        if (repaymentTypeList.isNotEmpty) {
+        }
+        if (repaymentTypeList.isNotEmpty && selectedRepaymentTypeId == 0) {
           selectedRepaymentTypeId = repaymentTypeList[0].typeId;
         }
       });
