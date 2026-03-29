@@ -50,7 +50,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       debugPrint("Logout failed: $e");
     }
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/');
+      Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (route) => false);
     }
   }
 

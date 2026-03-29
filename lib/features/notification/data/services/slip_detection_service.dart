@@ -104,6 +104,16 @@ class SlipDetectionService {
     final file = File(filePath);
     if (!await file.exists()) return;
 
+    // Check if already processed in this scan or previous ones
+    final prefs = await SharedPreferences.getInstance();
+    final lastScanStr = prefs.getString('last_slip_scan_paths') ?? '[]';
+    final List<String> processedPaths = List<String>.from(jsonDecode(lastScanStr));
+    
+    if (processedPaths.contains(filePath)) {
+      // already processed, skip
+      return;
+    }
+
     // Filter by extension
     final ext = p.extension(filePath).toLowerCase();
     if (ext != '.jpg' && ext != '.jpeg' && ext != '.png') return;
@@ -116,6 +126,13 @@ class SlipDetectionService {
 
     print('SlipDetectionService: Detect new slip image: $filePath');
     
+    // บันทึกลง processedPaths ทันทีเพื่อกันการทำงานซ้ำซ้อนจาก Race Condition
+    processedPaths.add(filePath);
+    final listToSave = processedPaths.length > 100 
+        ? processedPaths.sublist(processedPaths.length - 100)
+        : processedPaths;
+    await prefs.setString('last_slip_scan_paths', jsonEncode(listToSave));
+
     // ส่งไปยัง Backend API (ซึ่งจะส่งต่อให้ Python OCR อีกที)
     await _uploadToOcr(file);
   }
