@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'features/notification/data/services/push_service.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,13 +11,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'features/notification/data/services/slip_detection_service.dart';
 import 'dart:io';
 
-// 🚨 (1) เพิ่มการ Import ไฟล์ที่สร้างโดย FlutterFire CLI
+
 import 'firebase_options.dart';
 
-// <<<< เพิ่มการ Import AuthManager ที่นี่ >>>>
+
 import 'features/auth/presentation/auth_manager.dart';
 
-// Screens
+
 import 'features/auth/presentation/welcome_page.dart';
 import 'features/budget/presentation/pages/expense_entry_screen.dart';
 import 'features/simulator/presentation/RepaymentStrategyScreen.dart';
@@ -38,7 +37,6 @@ import 'features/budget/presentation/pages/transaction_add_screen.dart';
 // 🚨 ฟังก์ชัน main() ต้องเป็น async และรวมการเริ่มต้น (Initialization) ของทั้งสองบริการ
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
 
   try {
     if (kIsWeb) {
@@ -60,7 +58,9 @@ Future<void> main() async {
   await LineSDK.instance.setup('2008279064');
   await PushService().init();
 
-  // REMOVED: Jailbreak/Security check as requested
+  if (!kIsWeb && Platform.isAndroid) {
+    await SlipDetectionService().init();
+  }
 
   runApp(const MyApp());
 }
@@ -100,28 +100,14 @@ class _MyAppState extends State<MyApp> {
       },
     );
 
-    // ถ้ามี token (login แล้ว) -> ส่ง token ขึ้น backend
-    final accessToken = AuthManager.token;
-    if (accessToken != null && accessToken.isNotEmpty) {
-      try {
-        print('!!! Booting notification registration...');
-        await _notificationService.registerTokenToBackend(
-          accessToken: accessToken,
-        );
-      } catch (e) {
-        print('!!! Notification boot failed (Silent): $e');
-        // ไม่ต้อง throw ต่อเพื่อให้แอปเปิดหน้าหลักได้ปกติแม้ระบบแจ้งเตือนจะขัดข้อง
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     // !!! DEBUG: Temporarily forcing WelcomePage so you can see the redesign
-    // final initialScreen = AuthManager.token != null
-    //    ? const HomePage()
-    //    : const WelcomePage();
-    const initialScreen = WelcomePage();
+    final initialScreen = AuthManager.isLoggedIn
+        ? const HomePage()
+        : const WelcomePage();
 
     return MaterialApp(
       navigatorKey: _navKey,

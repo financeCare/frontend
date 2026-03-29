@@ -7,6 +7,10 @@ class TransactionDetail {
   final double amount;
   final DateTime transactionDate;
   final String description;
+  final String? senderBank;
+  final String? receiverName;
+  final String? imagePath;
+  final int? slipId;
 
   TransactionDetail({
     required this.transactionId,
@@ -15,6 +19,10 @@ class TransactionDetail {
     required this.amount,
     required this.transactionDate,
     required this.description,
+    this.senderBank,
+    this.receiverName,
+    this.imagePath,
+    this.slipId,
   });
 
   factory TransactionDetail.fromJson(Map<String, dynamic> json) {
@@ -25,6 +33,10 @@ class TransactionDetail {
       amount: (json['amount'] as num).toDouble(),
       transactionDate: DateTime.parse(json['transactionDate'] as String),
       description: json['description'] as String? ?? '',
+      senderBank: json['senderBank'] as String?,
+      receiverName: json['receiverName'] as String?,
+      imagePath: json['imagePath'] as String?,
+      slipId: json['slipId'] as int?,
     );
   }
 }

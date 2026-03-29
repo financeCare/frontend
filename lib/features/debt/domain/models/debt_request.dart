@@ -1,7 +1,10 @@
 import 'interest_calculation_type.dart';
+import 'interest_interval.dart';
+import 'payment_interval.dart';
 
 class DebtRequest {
   final double principalAmount;
+  final double? principalOutstanding;
   final double interestRate;
   final int repaymentTypeId;
   final DateTime startDate;
@@ -18,6 +21,11 @@ class DebtRequest {
   final bool isDefaulted;
   final bool isInformal;
   final InterestCalculationType interestCalculationType;
+  final InterestInterval interestInterval;
+  final PaymentInterval paymentInterval;
+  final double initialInterestRemaining;
+  final double initialLateFeeRemaining;
+  final double initialPenaltyRemaining;
 
   DebtRequest({
     required this.principalAmount,
@@ -37,6 +45,12 @@ class DebtRequest {
     this.isDefaulted = false,
     this.isInformal = false,
     this.interestCalculationType = InterestCalculationType.THIRTY_360,
+    this.interestInterval = InterestInterval.YEARLY,
+    this.paymentInterval = PaymentInterval.MONTHLY,
+    this.principalOutstanding,
+    this.initialInterestRemaining = 0.0,
+    this.initialLateFeeRemaining = 0.0,
+    this.initialPenaltyRemaining = 0.0,
   });
 
   factory DebtRequest.fromJson(Map<String, dynamic> json) {
@@ -58,6 +72,12 @@ class DebtRequest {
       isDefaulted: json['isDefaulted'] as bool? ?? false,
       isInformal: json['isInformal'] as bool? ?? false,
       interestCalculationType: InterestCalculationType.fromString(json['interestCalculationType'] as String? ?? ''),
+      interestInterval: InterestInterval.fromString(json['interestInterval'] as String?),
+      paymentInterval: PaymentInterval.fromString(json['paymentInterval'] as String?),
+      principalOutstanding: (json['principalOutstanding'] as num?)?.toDouble(),
+      initialInterestRemaining: (json['initialInterestRemaining'] as num?)?.toDouble() ?? 0.0,
+      initialLateFeeRemaining: (json['initialLateFeeRemaining'] as num?)?.toDouble() ?? 0.0,
+      initialPenaltyRemaining: (json['initialPenaltyRemaining'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -80,6 +100,12 @@ class DebtRequest {
       'isDefaulted': isDefaulted,
       'isInformal': isInformal,
       'interestCalculationType': interestCalculationType.name,
+      'interestInterval': interestInterval.name,
+      'paymentInterval': paymentInterval.name,
+      'initialInterestRemaining': initialInterestRemaining,
+      'initialLateFeeRemaining': initialLateFeeRemaining,
+      'initialPenaltyRemaining': initialPenaltyRemaining,
+      if (principalOutstanding != null) 'principalOutstanding': principalOutstanding,
     };
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_application_1/core/utils/app_logger.dart';
 
 class NotificationApi {
   final String baseUrl;
@@ -13,9 +14,8 @@ class NotificationApi {
     required String platform,
     required String deviceName,
   }) async {
-    final url = Uri.parse('$baseUrl/api/notifications/devices');
+    final url = Uri.parse('$baseUrl/api/notifications/devices/register');
 
-    print('!!! Noti API: URL => $url');
     final res = await http.post(
       url,
       headers: {
@@ -23,14 +23,14 @@ class NotificationApi {
         'Authorization': 'Bearer $accessToken',
       },
       body: jsonEncode({
-        'deviceKey': deviceKey, // ✅ แนะนำให้ backend รับด้วย
+        'deviceKey': deviceKey,
         'fcmToken': fcmToken,
         'platform': platform,
         'deviceName': deviceName,
       }),
     );
 
-    print('!!! Noti API: Status => ${res.statusCode}');
+    AppLog.d('upsertDevice: ${res.statusCode}');
     if (res.statusCode != 200 && res.statusCode != 201) {
       throw Exception('Register device failed: ${res.statusCode}');
     }

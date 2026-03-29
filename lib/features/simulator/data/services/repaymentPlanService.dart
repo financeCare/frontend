@@ -124,7 +124,7 @@ class RepaymentPlanService {
 
   Future<Map<String, dynamic>> simulatePlan() async {
     final token = await AccesstokenService().getAccessToken();
-    final url = Uri.parse("$baseUrl/api/repayment-plans/simulate");
+    final url = Uri.parse("$baseUrl/api/repayment-plans");
 
     debugPrint("====== SIMULATE PLAN ======");
     debugPrint("URL => $url");

@@ -24,7 +24,7 @@ class BudgetService {
     print("budget body : ${response.body}");
     if (response.statusCode == 200) {
       if (response.body.isEmpty) return [];
-      final List<dynamic> jsonList = json.decode(response.body);
+      final List<dynamic> jsonList = json.decode(utf8.decode(response.bodyBytes));
       return jsonList.map((json) => BudgetResponse.fromJson(json)).toList();
     } else if (response.statusCode == 401) {
       throw Exception('Authorization failed (401). Please log in again.');
@@ -36,7 +36,7 @@ class BudgetService {
       String errorMessage =
           'Failed to load budget (Status ${response.statusCode})';
       try {
-        final errorBody = json.decode(response.body);
+        final errorBody = json.decode(utf8.decode(response.bodyBytes));
         errorMessage = errorBody['message'] ?? errorMessage;
       } catch (_) {}
       throw Exception(errorMessage);
@@ -56,7 +56,7 @@ class BudgetService {
     print("budget body : ${response.body}");
     if (response.statusCode == 200) {
       if (response.body.isEmpty) return [];
-      final List<dynamic> jsonList = json.decode(response.body);
+      final List<dynamic> jsonList = json.decode(utf8.decode(response.bodyBytes));
       print(jsonList.map((json) => BudgetOverview.fromJson(json)).toList());
       return jsonList.map((json) => BudgetOverview.fromJson(json)).toList();
     } else if (response.statusCode == 401) {
@@ -69,7 +69,7 @@ class BudgetService {
       String errorMessage =
           'Failed to load budget (Status ${response.statusCode})';
       try {
-        final errorBody = json.decode(response.body);
+        final errorBody = json.decode(utf8.decode(response.bodyBytes));
         errorMessage = errorBody['message'] ?? errorMessage;
       } catch (_) {}
       throw Exception(errorMessage);
@@ -101,7 +101,7 @@ class BudgetService {
       String errorMessage =
           'Failed to update budget (Status ${response.statusCode})';
       try {
-        final errorBody = json.decode(response.body);
+        final errorBody = json.decode(utf8.decode(response.bodyBytes));
         errorMessage = errorBody['message'] ?? errorMessage;
       } catch (_) {}
       throw Exception(errorMessage);
@@ -121,7 +121,7 @@ class BudgetService {
     print("transactions-overview body : ${response.body}");
     if (response.statusCode == 200) {
       if (response.body.isEmpty) return [];
-      final List<dynamic> jsonList = json.decode(response.body);
+      final List<dynamic> jsonList = json.decode(utf8.decode(response.bodyBytes));
       return jsonList.map((json) => BudgetOverview.fromJson(json)).toList();
     } else if (response.statusCode == 401) {
       throw Exception('Authorization failed (401). Please log in again.');

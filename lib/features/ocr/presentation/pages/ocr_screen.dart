@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../data/services/azure_vision_service.dart';
+import 'package:intl/intl.dart';
+import '../../../notification/data/services/slip_detection_service.dart';
+import '../../../budget/domain/models/transaction_response.dart';
 
 class OCRScreen extends StatefulWidget {
   const OCRScreen({super.key});
@@ -16,7 +18,7 @@ class _OCRScreenState extends State<OCRScreen> {
   String _ocrResult = "";
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
-  final AzureVisionService _visionService = AzureVisionService();
+  final SlipDetectionService _slipService = SlipDetectionService();
 
   Future<void> _pickImage(ImageSource source) async {
     final XFile? pickedFile = await _picker.pickImage(source: source);
@@ -56,27 +58,41 @@ class _OCRScreenState extends State<OCRScreen> {
       _structuredData = {};
     });
 
-    final result = await _visionService.analyzeImage(_image!);
+    try {
+      final TransactionResponse? result = await _slipService.processManualSlip(_image!);
 
-    if (result != null && !result.startsWith("ERROR_")) {
+      if (result != null) {
+        setState(() {
+          _ocrResult = "สแกนสำเร็จจากระบบ Python OCR";
+          
+          // แปลง TransactionResponse เป็น Map<String, String> สำหรับส่งต่อให้ AddTransactionScreen
+          _structuredData = {
+            "amount": result.amount.toString(),
+            "receiver": result.receiverName ?? "ไม่พบข้อมูล",
+            "sender": "-", // Backend ไม่ได้ส่ง sender name มาตรงๆ ใน TransactionResponse แต่ส่ง senderBank
+            "sender_bank": result.senderBank ?? "ไม่พบข้อมูล",
+            "date": result.transactionDate.toIso8601String(),
+            "category_id": result.category.categoryId.toString(),
+            "category_name": result.category.categoryName,
+            "description": result.description,
+            "image_path": result.imagePath ?? "",
+            "slip_id": result.slipId?.toString() ?? "",
+          };
+          _isLoading = false;
+        });
+      } else {
+        throw Exception("ไม่สามารถประมวลผลสลิปได้");
+      }
+    } catch (e) {
       setState(() {
-        _ocrResult = result;
-        _structuredData = _parseOCRText(result);
-        _isLoading = false;
-      });
-    } else {
-      setState(() {
-        _ocrResult = result ?? "เกิดข้อผิดพลาดในการอ่านข้อความ";
-        if (result != null && result.startsWith("ERROR_")) {
-          _ocrResult = result.split(": ").last; // Extract human-readable error part
-        }
+        _ocrResult = "เกิดข้อผิดพลาด: $e";
         _structuredData = {};
         _isLoading = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_ocrResult),
+            content: Text("เกิดข้อผิดพลาดในการสแกน: $e"),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -84,134 +100,7 @@ class _OCRScreenState extends State<OCRScreen> {
     }
   }
 
-  Map<String, String> _parseOCRText(String text) {
-    Map<String, String> data = {
-      "sender": "-",
-      "receiver": "-",
-      "date": "-",
-      "amount": "-",
-    };
-
-    final lines = text.split('\n');
-    final bankNames = [
-      "กสิกร", "Kasikorn", "Krungsri", "ttb", "กรุงเทพ", "Bangkok Bank", 
-      "กรุงไทย", "Krungthai", "ไทยพาณิชย์", "SCB", "ออมสิน", "GSB", 
-      "PromptPay", "พรอ้มเพย", "ธนาคาร"
-    ];
-    final months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-    
-    List<String> potentialNames = [];
-    String? firstMoneyPattern;
-    
-    for (int i = 0; i < lines.length; i++) {
-      String line = lines[i].trim();
-      if (line.isEmpty) continue;
-
-      // 1. Date Detection (Improved multi-line merging)
-      if (data["date"] == "-") {
-        bool hasMonth = months.any((m) => line.contains(m));
-        bool hasYear = RegExp(r'25\d{2}|20\d{2}').hasMatch(line);
-        bool hasTime = RegExp(r'\d{1,2}:\d{2}').hasMatch(line);
-        
-        if (hasMonth && (hasYear || hasTime)) {
-          String dateValue = line;
-          if (!hasTime && i + 1 < lines.length && RegExp(r'\d{1,2}:\d{2}').hasMatch(lines[i + 1])) {
-             dateValue += " " + lines[i+1].trim();
-          }
-          data["date"] = dateValue;
-        }
-      }
-
-      // 2. Amount Detection
-      final amountMatch = RegExp(r'(\d{1,3}(,\d{3})*(\.\d{2}))').firstMatch(line);
-      if (amountMatch != null) {
-        String matchValue = amountMatch.group(0)!;
-        firstMoneyPattern ??= matchValue;
-        
-        if (data["amount"] == "-") {
-          bool hasAmountContext = line.contains('บาท') || line.contains('THB') || line.contains('จำนวน');
-          int startIdx = (i - 10 < 0) ? 0 : i - 10;
-          if (!hasAmountContext) {
-            hasAmountContext = lines.sublist(startIdx, i + 1).any((l) => l.contains('จำนวนเงิน') || l.contains('Amount'));
-          }
-          if (hasAmountContext) {
-            data["amount"] = matchValue;
-          }
-        }
-      }
-
-      // 3. Collect "Name-like" lines (Universal Extraction)
-      // Criteria: 2+ words, no digits, not a bank name, not a status line
-      bool isBank = bankNames.any((b) => line.contains(b));
-      bool hasDigits = RegExp(r'\d').hasMatch(line);
-      bool isStatus = line.contains("โอนเงินสำเร็จ") || line.contains("รายการสำเร็จ");
-      List<String> words = line.split(RegExp(r'\s+')).where((w) => w.length > 1).toList();
-      
-      if (!isBank && !hasDigits && !isStatus && words.length >= 2 && line.length > 5) {
-        if (!potentialNames.contains(line)) {
-          potentialNames.add(line);
-        }
-      }
-
-      // 4. Keyword-based matching (High priority)
-      String lowerLine = line.toLowerCase();
-      if (lowerLine.contains("จาก") || lowerLine.contains("from")) {
-        _extractNameAfterKeyword(line, i, lines, (name) => data["sender"] = name);
-      }
-      if (lowerLine.contains("ไปยัง") || lowerLine.contains("to") || lowerLine.contains("โอนให้")) {
-        _extractNameAfterKeyword(line, i, lines, (name) => data["receiver"] = name);
-      }
-    }
-
-    // Assign names if keywords failed
-    if (data["sender"] == "-" && potentialNames.isNotEmpty) {
-      data["sender"] = potentialNames[0];
-    }
-    if (data["receiver"] == "-" && potentialNames.length > 1) {
-      // Receiver is usually the last person named in the main flow
-      data["receiver"] = potentialNames.last;
-    }
-
-    // Final fallback for amount
-    if (data["amount"] == "-" && firstMoneyPattern != null) {
-      data["amount"] = firstMoneyPattern;
-    }
-
-    // Amount Validation: Ensure it's not basically empty or invalid format
-    if (data["amount"] != "-") {
-      String cleanAmount = data["amount"]!.replaceAll(',', '').trim();
-      double? parsedAmount = double.tryParse(cleanAmount);
-      if (parsedAmount == null || parsedAmount <= 0) {
-        data["amount"] = "-"; // Fallback to invalid
-      }
-    }
-
-    // Default to 'ไม่พบข้อมูล' instead of '-' for better UI
-    data.forEach((key, value) {
-      if (value == "-") data[key] = "ไม่พบข้อมูล";
-    });
-
-    return data;
-  }
-
-  void _extractNameAfterKeyword(String line, int index, List<String> lines, Function(String) assign) {
-    // Try next line first (most common)
-    if (index + 1 < lines.length) {
-      String nextLine = lines[index + 1].trim();
-      if (nextLine.isNotEmpty && nextLine.split(" ").length >= 2 && !RegExp(r'\d').hasMatch(nextLine)) {
-        assign(nextLine);
-        return;
-      }
-    }
-    // Try same line
-    String remaining = "";
-    if (line.contains("จาก")) remaining = line.split("จาก").last.trim();
-    else if (line.contains("ไปยัง")) remaining = line.split("ไปยัง").last.trim();
-    
-    if (remaining.split(" ").length >= 2 && !RegExp(r'\d').hasMatch(remaining)) {
-      assign(remaining);
-    }
-  }
+// ปิดใช้งาน parsing แบบเก่า เนื่องจากใช้ Backend OCR แล้ว
 
   @override
   Widget build(BuildContext context) {
@@ -585,10 +474,16 @@ class _OCRScreenState extends State<OCRScreen> {
         ),
       ),
       children: [
-        _buildDataRow("ชื่อคนโอน", _structuredData["sender"]!),
-        _buildDataRow("คนรับเงิน", _structuredData["receiver"]!),
-        _buildDataRow("วันที่โอน", _structuredData["date"]!),
-        _buildDataRow("จำนวนเงิน", "${_structuredData["amount"]!} บาท"),
+        _buildDataRow("คนรับเงิน", _structuredData["receiver"] ?? "ไม่พบข้อมูล"),
+        _buildDataRow("ธนาคารต้นทาง", _structuredData["sender_bank"] ?? "ไม่พบข้อมูล"),
+        _buildDataRow("จำนวนเงิน", "${_structuredData["amount"] ?? "0.00"} บาท"),
+        _buildDataRow(
+          "วันที่", 
+          _structuredData["date"] != null 
+              ? DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(_structuredData["date"]!))
+              : "ไม่ระบุ"
+        ),
+        _buildDataRow("หมวดหมู่", _structuredData["category_name"] ?? "ไม่ระบุ"),
       ],
     );
   }

@@ -9,12 +9,16 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../../core/config/config.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../../../features/auth/data/services/access_token_service.dart';
 import '../../domain/models/debt_request.dart';
+import '../../domain/models/monthly_debt_status.dart';
+
 
 class DebtService {
   final String url = '$baseUrl/api/debts';
   final storage = FlutterSecureStorage();
+
   Future<List<DebtTypeResponse>> getDebtType() async {
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.get(
@@ -24,8 +28,7 @@ class DebtService {
         'Content-Type': 'application/json',
       },
     );
-    print("transaction status code : ${response.statusCode}");
-    print("transaction body : ${response.body}");
+    AppLog.d("getDebtType: ${response.statusCode}");
     if (response.statusCode == 200) {
       if (response.body.isEmpty) return [];
       final List<dynamic> jsonList = json.decode(response.body);
@@ -56,8 +59,7 @@ class DebtService {
         'Content-Type': 'application/json',
       },
     );
-    print("transaction status code : ${response.statusCode}");
-    print("transaction body : ${response.body}");
+    AppLog.d("getRepaymentType: ${response.statusCode}");
     if (response.statusCode == 200) {
       if (response.body.isEmpty) return [];
       final List<dynamic> jsonList = json.decode(response.body);
@@ -84,7 +86,7 @@ class DebtService {
   Future<int> mapNameToRepaymentId(String name) async {
     List<RepaymentTypeResponse> repaymentTypeList = await getRepaymentType();
     for (RepaymentTypeResponse repaymentType in repaymentTypeList) {
-      if (repaymentType == name) {
+      if (repaymentType.typeName == name) {
         return repaymentType.typeId;
       }
     }
@@ -93,9 +95,9 @@ class DebtService {
 
   Future<int> mapNameToDebtTypeId(String name) async {
     List<DebtTypeResponse> debtTypeResponseList = await getDebtType();
-    for (DebtTypeResponse repaymentType in debtTypeResponseList) {
-      if (repaymentType == name) {
-        return repaymentType.debtTypeId;
+    for (DebtTypeResponse debtType in debtTypeResponseList) {
+      if (debtType.debtTypeName == name) {
+        return debtType.debtTypeId;
       }
     }
     return 0;
@@ -103,7 +105,6 @@ class DebtService {
 
   Future<List<DebtResponse>> getAllDebt() async {
     String? accessToken = await AccesstokenService().getAccessToken();
-    print("AccessToken in debt service: $accessToken");
     final response = await http.get(
       Uri.parse('$baseUrl/api/debts'),
       headers: {
@@ -111,8 +112,7 @@ class DebtService {
         'Content-Type': 'application/json',
       },
     );
-    print("Debt status code : ${response.statusCode}");
-    print("Debt body : ${response.body}");
+    AppLog.d("getAllDebt: ${response.statusCode}");
     if (response.statusCode == 200) {
       if (response.body.isEmpty) return [];
       final List<dynamic> jsonList = json.decode(response.body);
@@ -125,7 +125,7 @@ class DebtService {
       );
     } else {
       String errorMessage =
-          'Failed to load transactions (Status ${response.statusCode})';
+          'Failed to load debts (Status ${response.statusCode})';
       try {
         final errorBody = json.decode(response.body);
         errorMessage = errorBody['message'] ?? errorMessage;
@@ -143,9 +143,7 @@ class DebtService {
         'Content-Type': 'application/json',
       },
     );
-    print("Debt status code : ${response.statusCode}");
-    print("Debt body : ${response.body}");
-
+    AppLog.d("getDebtDetail: ${response.statusCode}");
     if (response.statusCode == 200) {
       if (response.body.isEmpty) {
         throw Exception('Debt not found or empty response');
@@ -171,7 +169,6 @@ class DebtService {
 
   Future<void> deleteDebt(String debtId) async {
     String? accessToken = await AccesstokenService().getAccessToken();
-    print(debtId);
     final response = await http.delete(
       Uri.parse('$baseUrl/api/debts/$debtId'),
       headers: {
@@ -179,8 +176,7 @@ class DebtService {
         'Content-Type': 'application/json',
       },
     );
-    print("Debt status code : ${response.statusCode}");
-    print("Debt body : ${response.body}");
+    AppLog.d("deleteDebt: ${response.statusCode}");
     if (response.statusCode == 200) {
     } else if (response.statusCode == 401) {
       throw Exception('Authorization failed (401). Please log in again.');
@@ -190,7 +186,7 @@ class DebtService {
       );
     } else {
       String errorMessage =
-          'Failed to load transactions (Status ${response.statusCode})';
+          'Failed to delete debt (Status ${response.statusCode})';
       try {
         final errorBody = json.decode(response.body);
         errorMessage = errorBody['message'] ?? errorMessage;
@@ -200,7 +196,6 @@ class DebtService {
   }
 
   Future<void> createDebt(DebtRequest debtRequest) async {
-    print("Creating debt : ${debtRequest.dueDay}");
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.post(
       Uri.parse("$url"),
@@ -210,12 +205,8 @@ class DebtService {
       },
       body: jsonEncode(debtRequest.toJson()),
     );
-
-    print("transaction status code : ${response.statusCode}");
-    print("transaction body : ${response.body}");
-
+    AppLog.d("createDebt: ${response.statusCode}");
     if (response.statusCode == 200 || response.statusCode == 201) {
-      print("Transaction created successfully.");
     } else if (response.statusCode == 401) {
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
@@ -224,7 +215,7 @@ class DebtService {
       );
     } else {
       String errorMessage =
-          'Failed to create transaction (Status ${response.statusCode})';
+          'Failed to create debt (Status ${response.statusCode})';
       try {
         final errorBody = json.decode(response.body);
         errorMessage = errorBody['message'] ?? errorMessage;
@@ -234,28 +225,17 @@ class DebtService {
   }
 
   Future<void> updateDebt(String id, DebtRequest debtRequest) async {
-    print("Editing debt id: $id");
-
-    String? accessToken = await AccesstokenService().getAccessToken();
-    print("AccessToken: $accessToken");
-
-    final body = debtRequest.toJson();
-    print("Request body: $body");
-
+    final accessToken = await AccesstokenService().getAccessToken();
     final response = await http.put(
-      Uri.parse('$baseUrl/api/debts/$id'), // <- ใช้ id ไม่ใช่ debtId
+      Uri.parse('$baseUrl/api/debts/$id'),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode(body),
+      body: jsonEncode(debtRequest.toJson()),
     );
-
-    print("transaction status code : ${response.statusCode}");
-    print("transaction body : ${response.body}");
-
+    AppLog.d("updateDebt: ${response.statusCode}");
     if (response.statusCode == 200 || response.statusCode == 201) {
-      print("Debt updated successfully.");
     } else if (response.statusCode == 401) {
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
@@ -281,14 +261,14 @@ class DebtService {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({'debtId': debtId, 'amount': amount, 'paidAt': paidAt}),
+      body: jsonEncode({
+        'debtId': debtId,
+        'paymentAmount': amount,
+        'paymentDate': paidAt,
+      }),
     );
-
-    print("Pay debt status code : ${response.statusCode}");
-    print("Pay debt body : ${response.body}");
-
+    AppLog.d("payDebt: ${response.statusCode}");
     if (response.statusCode == 200 || response.statusCode == 201) {
-      print("Debt paid successfully.");
     } else if (response.statusCode == 401) {
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
@@ -303,6 +283,35 @@ class DebtService {
         errorMessage = errorBody['message'] ?? errorMessage;
       } catch (_) {}
       throw Exception(errorMessage);
+    }
+  }
+
+  Future<MonthlyDebtStatus> getMonthlyDebtStatus() async {
+    String? accessToken = await AccesstokenService().getAccessToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/debts/monthly-status'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+    AppLog.d("getMonthlyDebtStatus: ${response.statusCode}");
+    if (response.body.isEmpty) {
+      return MonthlyDebtStatus(
+        totalAmount: 0,
+        paidAmount: 0,
+        remainingAmount: 0,
+        requiredMinPayment: 0,
+        isBudgetInsufficient: false,
+      );
+    } else {
+      return MonthlyDebtStatus(
+        totalAmount: 0,
+        paidAmount: 0,
+        remainingAmount: 0,
+        requiredMinPayment: 0,
+        isBudgetInsufficient: false,
+      );
     }
   }
 }

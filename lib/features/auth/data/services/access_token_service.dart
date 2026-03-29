@@ -6,7 +6,7 @@ import '../../../../core/config/config.dart'; // ไฟล์ config.dart ที
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 class AccesstokenService {
-  // Hardware-backed encryption enabled for extra security
+  // HIGH SECURITY: Enable hardware-backed encryption
   static const _androidOptions = AndroidOptions(
     encryptedSharedPreferences: true,
   );
@@ -19,8 +19,15 @@ class AccesstokenService {
 
   Future<String?> getAccessToken() async {
     try {
-      String? accessToken = await storage.read(key: "accessToken");
-      print("access token found");
+      String? accessToken;
+      try {
+        accessToken = await storage.read(key: "accessToken");
+      } catch (e) {
+        // FAIL-SAFE: If Keystore is corrupted, wipe data instead of crashing
+        debugPrint("!!! SECURE STORAGE CORRUPTED: $e !!!");
+        await storage.deleteAll();
+        return null;
+      }
 
       if (accessToken == null) {
         debugPrint("No accessToken found in storage");
@@ -35,7 +42,6 @@ class AccesstokenService {
         return null;
       }
 
-      debugPrint('isTokenExpired : $isTokenExpired');
       if (isTokenExpired) {
         String? refreshToken = await storage.read(key: "refreshToken");
 

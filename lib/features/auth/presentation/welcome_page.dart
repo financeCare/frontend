@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:ui';
-import 'package:firebase_messaging/firebase_messaging.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,8 +11,7 @@ import 'auth_manager.dart';
 import 'auth_widget.dart';
 import '../../../core/config/config.dart' as Config;
 import '../data/services/access_token_service.dart';
-import '../data/services/device_service.dart';
-import '../../notification/data/services/notification_service.dart';
+
 
 final storage = AccesstokenService.sharedStorage;
 
@@ -79,10 +78,8 @@ class _WelcomePageState extends State<WelcomePage> {
           await AuthManager.saveToken(data['accessToken']);
           await storage.write(key: "refreshToken", value: data['refreshToken']);
           
-          // ✅ Register device after login
-          await NotificationService.instance.registerTokenToBackend(
-            accessToken: data['accessToken'],
-          );
+          // ✅ Register device after login - MOVED TO HomePage
+
 
           print('!!! Tokens saved successfully');
           success = true;
@@ -192,13 +189,7 @@ class _WelcomePageState extends State<WelcomePage> {
     } finally {
       setState(() => _isLoading = false);
       if (success && _isLoginMode) {
-        // ✅ Register device after login
-        final token = AuthManager.token;
-        if (token != null) {
-          await NotificationService.instance.registerTokenToBackend(
-            accessToken: token,
-          );
-        }
+        // ✅ Register device after login - MOVED TO HomePage
         _navigateToHome();
       }
       else if (!success && _isLoginMode)
