@@ -156,7 +156,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
     debtPenaltyTriggerCtrl.text = d.penaltyTriggerDays.toString();
     isDefaulted = d.isDefaulted;
     isInformal = d.isInformal;
-    interestCalculationType = d.interestCalculationType;
+    interestCalculationType = d.interestCalculationType ?? InterestCalculationType.THIRTY_360;
     interestInterval = d.interestInterval;
     paymentInterval = d.paymentInterval;
     initialInterestCtrl.text = _formatDouble(d.initialInterestRemaining);
@@ -1193,7 +1193,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
         ),
         const SizedBox(height: 16),
         _buildInputField(
-          "ยอดหนี้คงเหลือปัจจุบัน (เงินต้น)",
+          "ยอดหนี้คงเหลือปัจจุบัน",
           debtOutstandingCtrl,
           Icons.account_balance_wallet_outlined,
           "฿",

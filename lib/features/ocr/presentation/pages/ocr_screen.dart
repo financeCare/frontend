@@ -39,6 +39,7 @@ class _OCRScreenState extends State<OCRScreen> {
         return;
       }
 
+      if (!mounted) return;
       setState(() {
         _image = file;
         _ocrResult = "";
@@ -62,6 +63,7 @@ class _OCRScreenState extends State<OCRScreen> {
       final TransactionResponse? result = await _slipService.processManualSlip(_image!);
 
       if (result != null) {
+        if (!mounted) return;
         setState(() {
           _ocrResult = "สแกนสำเร็จจากระบบ Python OCR";
           
@@ -84,12 +86,12 @@ class _OCRScreenState extends State<OCRScreen> {
         throw Exception("ไม่สามารถประมวลผลสลิปได้");
       }
     } catch (e) {
-      setState(() {
-        _ocrResult = "เกิดข้อผิดพลาด: $e";
-        _structuredData = {};
-        _isLoading = false;
-      });
       if (mounted) {
+        setState(() {
+          _ocrResult = "เกิดข้อผิดพลาด: $e";
+          _structuredData = {};
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("เกิดข้อผิดพลาดในการสแกน: $e"),

@@ -5,7 +5,6 @@ import 'package:flutter_application_1/features/simulator/data/models/repayment_s
 import 'package:flutter_application_1/features/simulator/data/services/repaymentTypeService.dart';
 import 'DebtPriorityScreen.dart';
 
-
 class RepaymentStrategyScreen extends StatefulWidget {
   const RepaymentStrategyScreen({super.key});
 
@@ -18,6 +17,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
   final TextEditingController _budgetController = TextEditingController();
   String _selectedStrategy = "";
   double _monthlyBudget = 0.0;
+  double _actualMinPayment = 0.0;
   List<RepaymentStrategyResponse> _strategies = [];
   bool _isLoading = true;
 
@@ -37,6 +37,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
       setState(() {
         _strategies = overview.strategies;
         _monthlyBudget = overview.monthlyBudget;
+        _actualMinPayment = overview.actualMinPayment;
         if (_strategies.isNotEmpty) {
           _selectedStrategy = _strategies.first.strategyId;
           if (_monthlyBudget > 0) {
@@ -55,7 +56,9 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("ไม่สามารถดึงข้อมูลกลยุทธ์ได้ กรุณาลองใหม่อีกครั้ง")),
+          const SnackBar(
+            content: Text("ไม่สามารถดึงข้อมูลกลยุทธ์ได้ กรุณาลองใหม่อีกครั้ง"),
+          ),
         );
       }
     }
@@ -136,7 +139,6 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                     child: Text(
                       'ขั้นตอนที่ 1 จาก 3',
                       style: GoogleFonts.kanit(
-
                         fontSize: 11,
                         color: const Color(0xFF2D955F),
                         fontWeight: FontWeight.w500,
@@ -357,37 +359,82 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9).withOpacity(0.7),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.circle, size: 8, color: Color(0xFF2D955F)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      style: GoogleFonts.kanit(
-                        fontSize: 14,
-                        color: const Color(0xFF1B5E20),
+          const SizedBox(height: 12),
+          // Total Bank Minimum
+          if (_actualMinPayment > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3E0).withOpacity(0.7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.account_balance_outlined, size: 18, color: Color(0xFFE65100)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.kanit(
+                          fontSize: 14,
+                          color: const Color(0xFFBF360C),
+                        ),
+                        children: [
+                          const TextSpan(
+                            text: 'ยอดรวมขั้นต่ำตามเงื่อนไขธนาคาร: ',
+                          ),
+                          TextSpan(
+                            text: '฿${_actualMinPayment.toStringAsFixed(0)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
-                      children: [
-                        const TextSpan(
-                          text: 'งบประมาณรายเดือนขั้นต่ำที่ต้องใช้: ',
-                        ),
-                        TextSpan(
-                          text: '฿${_monthlyBudget.toStringAsFixed(0)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ),
+          const SizedBox(height: 12),
+          // Safe Minimum (Recommended)
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _budgetController.text = _monthlyBudget.toStringAsFixed(0);
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9).withOpacity(0.7),
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(color: const Color(0xFF2D955F).withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.shield_outlined, size: 18, color: Color(0xFF2D955F)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.kanit(
+                          fontSize: 14,
+                          color: const Color(0xFF1B5E20),
+                        ),
+                        children: [
+                          const TextSpan(
+                            text: 'งบประมาณรายเดือนแนะนำ: ',
+                          ),
+                          TextSpan(
+                            text: '฿${_monthlyBudget.toStringAsFixed(0)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.touch_app_outlined, size: 16, color: Color(0xFF2D955F)),
+                ],
+              ),
             ),
           ),
         ],
@@ -611,7 +658,9 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                       ),
                       const TextSpan(text: ' ด้วย '),
                       TextSpan(
-                        text: _translateStrategyName(selectedStrategyObj.strategyName),
+                        text: _translateStrategyName(
+                          selectedStrategyObj.strategyName,
+                        ),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -625,15 +674,44 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
               if (_selectedStrategy.isEmpty) return;
               final budget = double.tryParse(_budgetController.text) ?? 0.0;
 
-              if (budget < _monthlyBudget) {
+              if (budget < _actualMinPayment) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'งบประมาณต้องไม่น้อยกว่าค่าขั้นต่ำ (฿${_monthlyBudget.toInt()})',
+                      'งบประมาณต้องไม่น้อยกว่าค่าขั้นต่ำตามธนาคาร (฿${_actualMinPayment.toInt()})',
                     ),
+                    backgroundColor: Colors.redAccent,
                   ),
                 );
                 return;
+              }
+
+              if (budget < _monthlyBudget) {
+                final proceed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('ยืนยันงบประมาณ', style: GoogleFonts.kanit(fontWeight: FontWeight.bold)),
+                    content: Text(
+                      'งบประมาณที่คุณตั้ง (฿${budget.toInt()}) น้อยกว่างบประมาณที่ระบบแนะนำ (฿${_monthlyBudget.toInt()}) ซึ่งอาจทำให้หนี้ลดลงช้ากว่าที่ควร คุณยังต้องการดำเนินการต่อหรือไม่?',
+                      style: GoogleFonts.kanit(),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text('ยกเลิก', style: GoogleFonts.kanit()),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2D955F),
+                          foregroundColor: Colors.white,
+                        ),
+                        child: Text('ยืนยัน', style: GoogleFonts.kanit()),
+                      ),
+                    ],
+                  ),
+                );
+                if (proceed != true) return;
               }
 
               try {
@@ -650,15 +728,20 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                     builder: (_) => DebtPriorityScreen(
                       monthlyBudget: budget,
                       strategyId: _selectedStrategy,
-                      strategyName: _translateStrategyName(selectedStrategyObj.strategyName),
+                      strategyName: _translateStrategyName(
+                        selectedStrategyObj.strategyName,
+                      ),
                     ),
                   ),
                 );
-
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('ไม่สามารถสร้างแผนได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง')),
+                    const SnackBar(
+                      content: Text(
+                        'ไม่สามารถสร้างแผนได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง',
+                      ),
+                    ),
                   );
                 }
               }
@@ -695,7 +778,8 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
     final lowerName = name.toLowerCase();
     if (lowerName.contains('snowball')) return Icons.track_changes_outlined;
     if (lowerName.contains('avalanche')) return Icons.trending_down_outlined;
-    if (lowerName.contains('minimum')) return Icons.vertical_align_bottom_outlined;
+    if (lowerName.contains('minimum'))
+      return Icons.vertical_align_bottom_outlined;
     if (lowerName.contains('optimal')) return Icons.auto_awesome_outlined;
     return Icons.stars_outlined;
   }
