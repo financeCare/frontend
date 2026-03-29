@@ -110,6 +110,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
       ? const Color(0xFF2196F3)
       : const Color(0xFFEB5757);
 
+  final ScrollController _scrollController = ScrollController();
+  
   bool get isDebtFormValid {
     return debtNameCtrl.text.isNotEmpty &&
         selectedDebtTypeId != 0 &&
@@ -129,11 +131,45 @@ class _AddDebtPageState extends State<AddDebtPage> {
   @override
   void initState() {
     super.initState();
+    
+    // Initialize default values for new debt
+    if (widget.debtToEdit == null) {
+      final now = DateTime.now();
+      debtStartDateCtrl.text = now.toString().split(' ')[0];
+      debtEndDateCtrl.text = now.add(const Duration(days: 365)).toString().split(' ')[0];
+      debtDueDateCtrl.text = "1";
+    }
+
+    _scrollController.addListener(() {
+      // Logic if needed when scrolling
+    });
     loadDebtTypeAndRepaymentType();
     fetchDebt();
     if (widget.debtToEdit != null) {
       _fillEditData(widget.debtToEdit!);
     }
+  }
+
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    debtNameCtrl.dispose();
+    debtAmountCtrl.dispose();
+    debtOutstandingCtrl.dispose();
+    debtInterestCtrl.dispose();
+    debtStartDateCtrl.dispose();
+    debtEndDateCtrl.dispose();
+    debtMinpaymentCtrl.dispose();
+    debtDueDateCtrl.dispose();
+    searchDebtTypeCtrl.dispose();
+    debtPenaltyRateCtrl.dispose();
+    debtGracePeriodCtrl.dispose();
+    debtPenaltyTriggerCtrl.dispose();
+    initialInterestCtrl.dispose();
+    initialLateFeeCtrl.dispose();
+    initialPenaltyCtrl.dispose();
+    super.dispose();
   }
 
   String _formatDouble(double value) {
@@ -229,25 +265,62 @@ class _AddDebtPageState extends State<AddDebtPage> {
     });
   }
 
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
   void addDebt() async {
     setState(() {
       debtNameError = debtNameCtrl.text.isEmpty;
       debtAmountError = debtAmountCtrl.text.isEmpty;
       debtInterestError = debtInterestCtrl.text.isEmpty;
+      debtStartDateError = debtStartDateCtrl.text.isEmpty;
+      debtEndDateError = debtEndDateCtrl.text.isEmpty;
+      debtDueDateError = debtDueDateCtrl.text.isEmpty;
     });
 
-    if (debtNameError || debtAmountError || debtInterestError) return;
+    if (debtNameError || selectedDebtTypeId == 0 || selectedRepaymentTypeId == 0) {
+      setState(() => _currentStep = 1);
+      _scrollToTop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอกข้อมูลในหน้าแรกให้ครบถ้วน')),
+      );
+      return;
+    }
+
+    if (debtAmountError || debtInterestError) {
+      setState(() => _currentStep = 2);
+      _scrollToTop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอกเงินต้นและดอกเบี้ยให้ครบถ้วน')),
+      );
+      return;
+    }
+
+    if (debtStartDateError || debtEndDateError || debtDueDateError) {
+      _scrollToTop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณาเลือกข้อมูลกำหนดเวลาให้ครบถ้วน')),
+      );
+      return;
+    }
 
     final double? amount = double.tryParse(debtAmountCtrl.text);
     final double? interest = double.tryParse(debtInterestCtrl.text);
 
     if (amount == null || amount <= 0) {
+      _scrollToTop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('กรุณากรอกจำนวนเงินให้ถูกต้อง')),
       );
       return;
     }
     if (interest == null || interest < 0 || interest > 100) {
+      _scrollToTop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('อัตราดอกเบี้ยต้องอยู่ระหว่าง 0-100%')),
       );
@@ -289,18 +362,14 @@ class _AddDebtPageState extends State<AddDebtPage> {
       principalAmount: amount,
       principalOutstanding: double.tryParse(debtOutstandingCtrl.text) ?? amount,
       interestRate: interest,
-      startDate: debtStartDateCtrl.text.isNotEmpty
-          ? DateTime.parse(debtStartDateCtrl.text)
-          : DateTime.now(),
-      endDate: debtEndDateCtrl.text.isNotEmpty
-          ? DateTime.parse(debtEndDateCtrl.text)
-          : DateTime.now().add(const Duration(days: 365)),
+      startDate: startDate,
+      endDate: endDate,
       priority: 0,
       debtTypeId: selectedDebtTypeId,
       repaymentTypeId: selectedRepaymentTypeId,
       isActive: true,
-      minPayment: double.tryParse(debtMinpaymentCtrl.text) ?? 0,
-      dueDay: int.tryParse(debtDueDateCtrl.text) ?? 1,
+      minPayment: minPayment,
+      dueDay: dueDay,
       penaltyAnnualRate: double.tryParse(debtPenaltyRateCtrl.text) ?? 0.0,
       gracePeriodDays: int.tryParse(debtGracePeriodCtrl.text) ?? 0,
       penaltyTriggerDays: int.tryParse(debtPenaltyTriggerCtrl.text) ?? 0,
@@ -342,7 +411,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
             duration: const Duration(seconds: 3),
           ),
         );
-        Navigator.pop(context, true); // Go back to overview
+        Navigator.pop(context, true); 
       }
     } catch (e) {
       if (mounted) {
@@ -350,7 +419,10 @@ class _AddDebtPageState extends State<AddDebtPage> {
           Navigator.of(context).pushReplacementNamed('/');
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('ไม่สามารถบันทึกรายการได้: ${e.toString().replaceAll('Exception: ', '')}')),
+            SnackBar(
+              content: Text('ไม่สามารถบันทึกรายการได้: ${e.toString().replaceAll('Exception: ', '')}'),
+              backgroundColor: Colors.redAccent,
+            ),
           );
         }
       }
@@ -685,6 +757,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
                     child: SingleChildScrollView(
+                      controller: _scrollController,
                       padding: const EdgeInsets.all(24),
                       child: AbsorbPointer(
                         absorbing: widget.isViewOnly,
@@ -1207,8 +1280,11 @@ class _AddDebtPageState extends State<AddDebtPage> {
           "ดอกเบี้ยค้างชำระยกมา (ถ้ามี)",
           initialInterestCtrl,
           Icons.percent,
-          "฿",
+          "%",
           hintText: "ยอดดอกเบี้ยที่ค้างอยู่เดิม",
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+          ],
         ),
         const SizedBox(height: 16),
         _buildInputField(
@@ -1217,6 +1293,9 @@ class _AddDebtPageState extends State<AddDebtPage> {
           Icons.warning_amber_rounded,
           "฿",
           hintText: "ยอดค่าปรับที่ค้างอยู่เดิม",
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+          ],
         ),
         const SizedBox(height: 16),
         Text("ประเภทการคำนวณดอกเบี้ย", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
@@ -1799,27 +1878,46 @@ class _AddDebtPageState extends State<AddDebtPage> {
                 onPressed: () {
                   if (widget.isViewOnly) {
                     setState(() {
-                      if (_currentStep < 3) {
-                        _currentStep++;
-                      }
+                      if (_currentStep < 3) _currentStep++;
                     });
                     return;
                   }
+
                   setState(() {
                     if (_currentStep == 1) {
                       debtNameError = debtNameCtrl.text.isEmpty;
-                      if (!debtNameError) _currentStep++;
+                      bool typeError = selectedDebtTypeId == 0;
+                      bool repaymentError = selectedRepaymentTypeId == 0;
+
+                      if (debtNameError || typeError || repaymentError) {
+                        _scrollToTop();
+                        if (typeError || repaymentError) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('กรุณาเลือกประเภทหนี้และรูปแบบการชำระ')),
+                          );
+                        }
+                      } else {
+                        _currentStep++;
+                        _scrollToTop();
+                      }
                     } else if (_currentStep == 2) {
                       debtAmountError = debtAmountCtrl.text.isEmpty;
                       debtInterestError = debtInterestCtrl.text.isEmpty;
-                      if (!debtAmountError && !debtInterestError) _currentStep++;
+
+                      if (debtAmountError || debtInterestError) {
+                        _scrollToTop();
+                      } else {
+                        _currentStep++;
+                        _scrollToTop();
+                      }
                     } else if (_currentStep == 3) {
                       debtStartDateError = debtStartDateCtrl.text.isEmpty;
                       debtEndDateError = debtEndDateCtrl.text.isEmpty;
                       debtDueDateError = debtDueDateCtrl.text.isEmpty;
-                      if (!debtStartDateError &&
-                          !debtEndDateError &&
-                          !debtDueDateError) {
+
+                      if (debtStartDateError || debtEndDateError || debtDueDateError) {
+                        _scrollToTop();
+                      } else {
                         addDebt();
                       }
                     }
