@@ -6,6 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/services/debt_service.dart';
 import '../../domain/models/debt_response.dart';
 import '../../domain/models/monthly_debt_status.dart';
+import '../../domain/models/debt_transaction_response.dart';
+import '../../../auth/data/services/access_token_service.dart';
+import '../../../../core/config/config.dart';
 
 class DebtOverviewPage extends StatefulWidget {
   final int unreadCount;
@@ -44,6 +47,226 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
+  }
+
+  void _showSlipImage(int slipId) async {
+    final token = await AccesstokenService().getAccessToken();
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                '$baseUrl/api/slips/$slipId/image',
+                headers: {'Authorization': 'Bearer $token'},
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    padding: const EdgeInsets.all(50),
+                    color: Colors.white,
+                    child: const CircularProgressIndicator(),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => Container(
+                  padding: const EdgeInsets.all(50),
+                  color: Colors.white,
+                  child: Column(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                      const SizedBox(height: 10),
+                      Text('ไม่สามารถโหลดรูปภาพได้', style: GoogleFonts.kanit()),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTransactionHistory(DebtResponse debt) async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'ประวัติการชำระ: ${debt.debtName}',
+                        style: GoogleFonts.kanit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF0F172A),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: FutureBuilder<List<DebtTransactionResponse>>(
+                  future: _debtService.getDebtHistory(debt.debtId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text('เกิดข้อผิดพลาด: ${snapshot.error}'));
+                    }
+                    final txns = snapshot.data ?? [];
+                    if (txns.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'ยังไม่มีประวัติการชำระ',
+                          style: GoogleFonts.kanit(color: Colors.grey),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      controller: controller,
+                      padding: const EdgeInsets.all(24),
+                      itemCount: txns.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final txn = txns[index];
+                        final isPayment = txn.txnType.contains('PAYMENT') || txn.txnType == 'PAYMENT';
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.02),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: isPayment 
+                                    ? const Color(0xFFE8F5E9) 
+                                    : const Color(0xFFFFF3E0),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  isPayment ? Icons.arrow_downward : Icons.receipt_long,
+                                  color: isPayment ? const Color(0xFF2D955F) : const Color(0xFFF57C00),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      txn.description,
+                                      style: GoogleFonts.kanit(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                        color: const Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      DateFormat('dd MMM yyyy', 'th').format(txn.txnDate),
+                                      style: GoogleFonts.kanit(
+                                        fontSize: 13,
+                                        color: const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '${isPayment ? "-" : ""}${NumberFormat('#,##0.00').format(txn.amount)} ฿',
+                                    style: GoogleFonts.kanit(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: isPayment 
+                                        ? const Color(0xFF2D955F) 
+                                        : const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  if (txn.slipId != null) 
+                                    TextButton.icon(
+                                      onPressed: () => _showSlipImage(txn.slipId!),
+                                      icon: const Icon(Icons.image_outlined, size: 14),
+                                      label: Text('ดูสลิป', style: GoogleFonts.kanit(fontSize: 12)),
+                                      style: TextButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        foregroundColor: const Color(0xFF2D955F),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteDebt(DebtResponse debt) async {
@@ -459,7 +682,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
   Widget _buildQuickMenu() {
     final menus = [
       {
-        'icon': Icons.post_add_rounded,
+        'icon': Icons.add_business_outlined,
         'label': 'สร้างหนี้',
         'color': const Color(0xFFFFEDEC),
         'iconColor': const Color(0xFFF44336),
@@ -764,13 +987,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => Navigator.pushNamed(
-              context,
-              '/add_debt',
-              arguments: {'debt': debt, 'isViewOnly': true},
-            ).then((value) {
-              if (value == true) _loadData();
-            }),
+            onTap: () => _showTransactionHistory(debt),
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -1011,6 +1228,28 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon( // Changed to ElevatedButton for prominence
+                      onPressed: () => Navigator.pushNamed(
+                        context, 
+                        '/pay_debt', 
+                        arguments: {'initialDebt': debt}
+                      ).then((value) {
+                        if (value == true) _loadData();
+                      }),
+                      icon: const Icon(Icons.payments_outlined, size: 18),
+                      label: Text('ชำระเงิน', style: GoogleFonts.kanit(fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0F172A),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                    ),
                   ),
                 ],
               ),

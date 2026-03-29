@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'notification_service.dart';
 
 class SlipDetectionService {
   static const _channel = MethodChannel('com.example.financeCare/slip_detector');
@@ -90,6 +91,8 @@ class SlipDetectionService {
               ? processedPaths.sublist(processedPaths.length - 100)
               : processedPaths;
           await prefs.setString('last_slip_scan_paths', jsonEncode(listToSave));
+        } else {
+          print('SlipDetectionService: No new images to process (all ${filePaths.length} were already processed or skipped)');
         }
       }
     } catch (e) {
@@ -107,7 +110,7 @@ class SlipDetectionService {
 
     // Filter: Only process if it looks like a bank slip
     if (!isLikelyBankSlip(filePath)) {
-      print('SlipDetectionService: Ignored non-slip image: $filePath');
+      print('SlipDetectionService: Skipped (Not a likely bank slip): $filePath');
       return;
     }
 
@@ -140,7 +143,12 @@ class SlipDetectionService {
       'pay',
       'payment',
       'line',
-      'gallery'
+      'gallery',
+      'dcim',
+      'camera',
+      'telegram',
+      'messenger',
+      'download'
     ];
 
     // Check if path contains any of the keywords or screenshots folder
@@ -159,7 +167,21 @@ class SlipDetectionService {
 
   Future<void> _uploadToOcr(File file) async {
     try {
-      await processManualSlip(file);
+      final tx = await processManualSlip(file);
+      if (tx != null) {
+        final title = tx.autoCreated ? 'บันทึกรายการสำเร็จอัตโนมัติ' : 'ตรวจพบสลิปการโอนเงิน';
+        final body = tx.autoCreated 
+            ? 'บันทึกรายการจ่ายเงินไปยัง ${tx.receiverName} จำนวน ${tx.amount} บาท เรียบร้อยแล้ว'
+            : 'พบรายการโอนเงินไปยัง ${tx.receiverName} จำนวน ${tx.amount} บาท แตะเพื่อตรวจสอบ';
+
+        // แจ้งเตือนผู้ใช้เมื่อตรวจพบสลิปสำเร็จ
+        await NotificationService.instance.showLocalNotification(
+          title: title,
+          body: body,
+          refType: tx.category.type == 'Expense' ? 'BUDGET' : 'DEBT',
+          refId: tx.transactionId,
+        );
+      }
     } catch (e) {
       print('SlipDetectionService: Error in _uploadToOcr: $e');
     }
@@ -192,11 +214,8 @@ class SlipDetectionService {
         final List<dynamic> jsonList = jsonDecode(response.body);
         if (jsonList.isNotEmpty) {
           final Map<String, dynamic> firstItem = jsonList.first;
-          final Map<String, dynamic> dataToParse = firstItem.containsKey('slip') 
-              ? firstItem['slip'] as Map<String, dynamic>
-              : firstItem;
-          final tx = TransactionResponse.fromJson(dataToParse);
-          print('SlipDetectionService: OCR Success for ${tx.receiverName}, amount: ${tx.amount}');
+          final tx = TransactionResponse.fromJson(firstItem);
+          print('SlipDetectionService: OCR Success for ${tx.receiverName}, amount: ${tx.amount}, autoCreated: ${tx.autoCreated}');
           return tx;
         }
       } else {

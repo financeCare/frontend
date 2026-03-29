@@ -12,6 +12,7 @@ import '../../../../core/config/config.dart';
 import '../../../../features/auth/data/services/access_token_service.dart';
 import '../../domain/models/debt_request.dart';
 import '../../domain/models/monthly_debt_status.dart';
+import '../../domain/models/debt_transaction_response.dart';
 
 
 class DebtService {
@@ -271,7 +272,7 @@ class DebtService {
     }
   }
 
-  Future<void> payDebt(String debtId, double amount, String paidAt) async {
+  Future<void> payDebt(String debtId, double amount, String paidAt, {int? slipId}) async {
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.post(
       Uri.parse('$baseUrl/api/debts/pays'),
@@ -283,6 +284,7 @@ class DebtService {
         'debtId': debtId,
         'paymentAmount': amount,
         'paymentDate': paidAt,
+        'slipId': slipId,
       }),
     );
 
@@ -305,6 +307,25 @@ class DebtService {
         errorMessage = errorBody['message'] ?? errorMessage;
       } catch (_) {}
       throw Exception(errorMessage);
+    }
+  }
+
+  Future<List<DebtTransactionResponse>> getDebtHistory(String debtId) async {
+    String? accessToken = await AccesstokenService().getAccessToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/debts/$debtId/history'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      if (response.body.isEmpty) return [];
+      final List<dynamic> jsonList = json.decode(response.body);
+      return jsonList.map((json) => DebtTransactionResponse.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load debt history (Status ${response.statusCode})');
     }
   }
 
