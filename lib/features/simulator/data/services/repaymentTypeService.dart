@@ -8,10 +8,12 @@ import '../../../../core/config/config.dart' as Config;
 import '../../../../features/auth/data/services/access_token_service.dart';
 
 class RepaymentStrategiesOverview {
+  final double actualMinPayment;
   final double monthlyBudget;
   final List<RepaymentStrategyResponse> strategies;
 
   RepaymentStrategiesOverview({
+    required this.actualMinPayment,
     required this.monthlyBudget,
     required this.strategies,
   });
@@ -40,6 +42,8 @@ class RepaymentStrategyService {
       try {
         final Map<String, dynamic> data = jsonDecode(response.body);
         final List strategiesJson = data['repaymentStrategyList'] ?? [];
+        final double actualMin =
+            (data['actualMinPayment'] as num?)?.toDouble() ?? 0.0;
         final double budget =
             (data['monthlyBudget'] as num?)?.toDouble() ?? 0.0;
 
@@ -50,9 +54,10 @@ class RepaymentStrategyService {
             )
             .toList();
 
-        debugPrint("Parsed ${strategies.length} strategies, budget: $budget");
+        debugPrint("Parsed ${strategies.length} strategies, actualMin: $actualMin, budget: $budget");
 
         return RepaymentStrategiesOverview(
+          actualMinPayment: actualMin,
           monthlyBudget: budget,
           strategies: strategies,
         );

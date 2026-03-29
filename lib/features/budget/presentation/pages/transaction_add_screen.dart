@@ -133,16 +133,22 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
               final ocrCategoryId = int.tryParse(widget.ocrData!['category_id']!);
               _selectedCategory = _allCategories.firstWhere(
                 (c) => c.categoryId == ocrCategoryId,
-                orElse: () => _allCategories.first,
+                orElse: () {
+                  // If category ID from OCR not found, try to find by name or use first Expense
+                  return _allCategories.firstWhere(
+                    (c) => c.type.toLowerCase() == 'expense',
+                    orElse: () => _allCategories.first,
+                  );
+                },
               );
             } else {
               // Default to first Expense category if available
               _selectedCategory = _allCategories.firstWhere(
-                (c) => c.type == 'Expense',
+                (c) => c.type.toLowerCase() == 'expense',
                 orElse: () => _allCategories.first,
               );
             }
-            _isIncome = _selectedCategory?.type == 'Income';
+            _isIncome = _selectedCategory?.type.toLowerCase() == 'income';
           }
           _isLoading = false;
         });
@@ -610,13 +616,17 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
   Widget _buildCategoryGrid() {
     final filteredCategories = _allCategories.where((c) {
       if (_isIncome) {
-        return c.categoryName.toLowerCase() == 'extra income';
+        return c.type.toLowerCase() == 'income';
       } else {
-        return c.type == 'Expense';
+        return c.type.toLowerCase() == 'expense';
       }
     }).toList();
 
-    if (filteredCategories.isEmpty) {
+    // Fallback: If no categories match the current filter (Income/Expense), 
+    // but the list is not empty overall, show all categories so the user isn't stuck.
+    final finalDisplayCategories = filteredCategories.isNotEmpty ? filteredCategories : _allCategories;
+
+    if (finalDisplayCategories.isEmpty) {
       return Center(
         child: Text(
           'ไม่มีหมวดหมู่ที่เหมาะสม',
@@ -634,9 +644,9 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
         mainAxisSpacing: 12,
         mainAxisExtent: 100,
       ),
-      itemCount: filteredCategories.length,
+      itemCount: finalDisplayCategories.length,
       itemBuilder: (context, index) {
-        final cat = filteredCategories[index];
+        final cat = finalDisplayCategories[index];
         bool isSelected = _selectedCategory?.categoryId == cat.categoryId;
         
         return GestureDetector(

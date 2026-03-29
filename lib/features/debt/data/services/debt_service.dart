@@ -12,6 +12,7 @@ import '../../../../core/config/config.dart';
 import '../../../../features/auth/data/services/access_token_service.dart';
 import '../../domain/models/debt_request.dart';
 import '../../domain/models/monthly_debt_status.dart';
+import '../../domain/models/debt_transaction_response.dart';
 
 
 class DebtService {
@@ -271,7 +272,7 @@ class DebtService {
     }
   }
 
-  Future<void> payDebt(String debtId, double amount, String paidAt) async {
+  Future<void> payDebt(String debtId, double amount, String paidAt, {int? slipId}) async {
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.post(
       Uri.parse('$baseUrl/api/debts/pays'),
@@ -283,6 +284,7 @@ class DebtService {
         'debtId': debtId,
         'paymentAmount': amount,
         'paymentDate': paidAt,
+        'slipId': slipId,
       }),
     );
 
@@ -308,6 +310,25 @@ class DebtService {
     }
   }
 
+  Future<List<DebtTransactionResponse>> getDebtHistory(String debtId) async {
+    String? accessToken = await AccesstokenService().getAccessToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/debts/$debtId/history'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      if (response.body.isEmpty) return [];
+      final List<dynamic> jsonList = json.decode(response.body);
+      return jsonList.map((json) => DebtTransactionResponse.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load debt history (Status ${response.statusCode})');
+    }
+  }
+
   Future<MonthlyDebtStatus> getMonthlyDebtStatus() async {
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.get(
@@ -321,22 +342,13 @@ class DebtService {
     print("Monthly Debt Status code : ${response.statusCode}");
     print("Monthly Debt Status body : ${response.body}");
 
-    if (response.body.isEmpty) {
-      return MonthlyDebtStatus(
-        totalAmount: 0,
-        paidAmount: 0,
-        remainingAmount: 0,
-        requiredMinPayment: 0,
-        isBudgetInsufficient: false,
-      );
+    if (response.statusCode == 200) {
+      if (response.body.isEmpty) return MonthlyDebtStatus(totalAmount: 0, paidAmount: 0, remainingAmount: 0, actualMinPayment: 0, requiredMinPayment: 0, isBudgetInsufficient: false);
+      final Map<String, dynamic> jsonMap = json.decode(response.body);
+      return MonthlyDebtStatus.fromJson(jsonMap);
     } else {
-      return MonthlyDebtStatus(
-      totalAmount: 0,
-      paidAmount: 0,
-      remainingAmount: 0,
-      requiredMinPayment:  0,
-      isBudgetInsufficient: false,
-    );
+      // คืนค่าว่างถ้าไม่พบแผนการจ่ายเงินหรือเกิดข้อผิดพลาด
+      return MonthlyDebtStatus(totalAmount: 0, paidAmount: 0, remainingAmount: 0, actualMinPayment: 0, requiredMinPayment: 0, isBudgetInsufficient: false);
     }
   }
 }

@@ -5,7 +5,9 @@ import '../../data/services/debt_service.dart';
 import '../../domain/models/debt_response.dart';
 
 class DebtPaymentPage extends StatefulWidget {
-  const DebtPaymentPage({super.key});
+  final int? slipId;
+  final DebtResponse? initialDebt;
+  const DebtPaymentPage({super.key, this.slipId, this.initialDebt});
 
   @override
   State<DebtPaymentPage> createState() => _DebtPaymentPageState();
@@ -34,7 +36,17 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
       if (!mounted) return;
       setState(() {
         _activeDebts = responses.where((d) => d.isActive).toList();
-        if (_activeDebts.isNotEmpty) {
+        
+        if (widget.initialDebt != null) {
+          // Find the initial debt in the list to ensure we use the fresh data from getAllDebt
+          try {
+            _selectedDebt = _activeDebts.firstWhere(
+              (d) => d.debtId == widget.initialDebt!.debtId
+            );
+          } catch (_) {
+            _selectedDebt = _activeDebts.isNotEmpty ? _activeDebts.first : null;
+          }
+        } else if (_activeDebts.isNotEmpty) {
           _selectedDebt = _activeDebts.first;
         }
         _isLoading = false;
@@ -73,7 +85,12 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
     setState(() => _isSubmitting = true);
     try {
       final paidAt = DateFormat('yyyy-MM-dd').format(_selectedDate);
-      await _debtService.payDebt(_selectedDebt!.debtId, amount, paidAt);
+      await _debtService.payDebt(
+        _selectedDebt!.debtId, 
+        amount, 
+        paidAt, 
+        slipId: widget.slipId
+      );
 
       if (!mounted) return;
       ScaffoldMessenger.of(

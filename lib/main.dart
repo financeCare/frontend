@@ -104,7 +104,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    // !!! DEBUG: Temporarily forcing WelcomePage so you can see the redesign
+    // Check login state directly in home
     final initialScreen = AuthManager.isLoggedIn
         ? const HomePage()
         : const WelcomePage();
@@ -131,6 +131,7 @@ class _MyAppState extends State<MyApp> {
       ),
       home: initialScreen, 
       routes: {
+        '/welcome': (context) => const WelcomePage(),
         '/home': (context) => const HomePage(),
         '/expense_entry': (context) => const ExpenseEntryScreen(),
         '/simulator': (context) => const RepaymentStrategyScreen(),
@@ -146,7 +147,20 @@ class _MyAppState extends State<MyApp> {
             return AddDebtPage(debtToEdit: args as DebtResponse?);
           }
         },
-        '/pay_debt': (context) => const DebtPaymentPage(),
+        '/pay_debt': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is Map<String, dynamic>) {
+            return DebtPaymentPage(
+              slipId: args['slipId'] as int?,
+              initialDebt: args['initialDebt'] as DebtResponse?,
+            );
+          } else if (args is int) {
+            return DebtPaymentPage(slipId: args);
+          } else if (args is DebtResponse) {
+            return DebtPaymentPage(initialDebt: args);
+          }
+          return const DebtPaymentPage();
+        },
         '/job_suggestion': (context) => const JobSuggestionPage(),
         '/transactions': (context) => const TransactionListScreen(),
         '/add-transaction': (context) {

@@ -39,6 +39,7 @@ class _OCRScreenState extends State<OCRScreen> {
         return;
       }
 
+      if (!mounted) return;
       setState(() {
         _image = file;
         _ocrResult = "";
@@ -62,6 +63,7 @@ class _OCRScreenState extends State<OCRScreen> {
       final TransactionResponse? result = await _slipService.processManualSlip(_image!);
 
       if (result != null) {
+        if (!mounted) return;
         setState(() {
           _ocrResult = "สแกนสำเร็จจากระบบ Python OCR";
           
@@ -84,12 +86,12 @@ class _OCRScreenState extends State<OCRScreen> {
         throw Exception("ไม่สามารถประมวลผลสลิปได้");
       }
     } catch (e) {
-      setState(() {
-        _ocrResult = "เกิดข้อผิดพลาด: $e";
-        _structuredData = {};
-        _isLoading = false;
-      });
       if (mounted) {
+        setState(() {
+          _ocrResult = "เกิดข้อผิดพลาด: $e";
+          _structuredData = {};
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("เกิดข้อผิดพลาดในการสแกน: $e"),
@@ -364,6 +366,36 @@ class _OCRScreenState extends State<OCRScreen> {
                                     ),
                                     elevation: 4,
                                     shadowColor: const Color(0x662D955F),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/pay_debt',
+                                      arguments: {
+                                        'slipId': int.tryParse(_structuredData['slip_id'] ?? ''),
+                                      },
+                                    );
+                                  },
+                                  icon: const Icon(Icons.payment, size: 24),
+                                  label: Text('ชำระหนี้ด้วยสลิปนี้', style: GoogleFonts.kanit(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF3B82F6),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 18),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    elevation: 4,
+                                    shadowColor: const Color(0x663B82F6),
                                   ),
                                 ),
                               ),
