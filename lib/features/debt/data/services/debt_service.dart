@@ -322,12 +322,12 @@ class DebtService {
     print("Monthly Debt Status body : ${response.body}");
 
     if (response.statusCode == 200) {
-      if (response.body.isEmpty) return MonthlyDebtStatus(totalAmount: 0, paidAmount: 0, remainingAmount: 0);
+      if (response.body.isEmpty) return MonthlyDebtStatus(totalAmount: 0, paidAmount: 0, remainingAmount: 0, requiredMinPayment: 0, isBudgetInsufficient: false);
       final Map<String, dynamic> jsonMap = json.decode(response.body);
       return MonthlyDebtStatus.fromJson(jsonMap);
     } else {
       // คืนค่าว่างถ้าไม่พบแผนการจ่ายเงินหรือเกิดข้อผิดพลาด
-      return MonthlyDebtStatus(totalAmount: 0, paidAmount: 0, remainingAmount: 0);
+      return MonthlyDebtStatus(totalAmount: 0, paidAmount: 0, remainingAmount: 0, requiredMinPayment: 0, isBudgetInsufficient: false);
     }
   }
 }

@@ -381,7 +381,11 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                 Expanded(
                   child: RichText(
                     text: TextSpan(
-                      style: GoogleFonts.kanit(color: Colors.white, fontSize: 13),
+                      style: GoogleFonts.kanit(
+                        color: Colors.white,
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
                       children: [
                         const TextSpan(text: 'ยอดจ่ายขั้นต่ำรวม: '),
                         TextSpan(
@@ -400,7 +404,11 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                           const TextSpan(text: '\n'),
                           TextSpan(
                             text: 'ชำระของเดือนนี้ครบถ้วนแล้ว ✨',
-                            style: GoogleFonts.kanit(fontWeight: FontWeight.bold, color: const Color(0xFF4CAF50)),
+                            style: GoogleFonts.kanit(
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              fontSize: 18,
+                            ),
                           ),
                         ],
                       ],
@@ -451,7 +459,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
   Widget _buildQuickMenu() {
     final menus = [
       {
-        'icon': Icons.add_business_outlined,
+        'icon': Icons.post_add_rounded,
         'label': 'สร้างหนี้',
         'color': const Color(0xFFFFEDEC),
         'iconColor': const Color(0xFFF44336),
