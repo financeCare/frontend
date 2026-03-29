@@ -18,7 +18,7 @@ class AzureVisionService {
       final response = await http.post(
         Uri.parse(url),
         headers: {
-          'Ocp-Apim-Subscription-Key': key,
+          'Ocp-Apim-Subscriptiogit merge release3n-Key': key,
           'Content-Type': 'application/octet-stream',
         },
         body: bytes,
