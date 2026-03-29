@@ -1,10 +1,10 @@
-import 'package:flutter_application_1/features/debt/domain/models/debt_type_response.dart';
-import 'package:flutter_application_1/features/debt/domain/models/debt_dto.dart';
-import 'package:flutter_application_1/features/debt/domain/models/debt_request.dart';
-import 'package:flutter_application_1/features/debt/domain/models/debt_response.dart';
-import 'package:flutter_application_1/features/debt/domain/models/repayment_type_response.dart';
-import 'package:flutter_application_1/features/budget/data/services/category_service.dart';
-import 'package:flutter_application_1/features/debt/data/services/debt_service.dart';
+import 'package:finance_care/features/debt/domain/models/debt_type_response.dart';
+import 'package:finance_care/features/debt/domain/models/debt_dto.dart';
+import 'package:finance_care/features/debt/domain/models/debt_request.dart';
+import 'package:finance_care/features/debt/domain/models/debt_response.dart';
+import 'package:finance_care/features/debt/domain/models/repayment_type_response.dart';
+import 'package:finance_care/features/budget/data/services/category_service.dart';
+import 'package:finance_care/features/debt/data/services/debt_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_application_1/features/auth/data/services/device_service.dart';
+import 'package:finance_care/features/auth/data/services/device_service.dart';
 import '../../../../core/config/config.dart' as Config;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;

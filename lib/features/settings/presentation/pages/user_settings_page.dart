@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/features/auth/data/services/device_service.dart';
-import 'package:flutter_application_1/features/settings/data/models/user_setting_response.dart';
-import 'package:flutter_application_1/features/settings/data/services/user_setting_service.dart';
+import 'package:finance_care/features/auth/data/services/device_service.dart';
+import 'package:finance_care/features/settings/data/models/user_setting_response.dart';
+import 'package:finance_care/features/settings/data/services/user_setting_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 

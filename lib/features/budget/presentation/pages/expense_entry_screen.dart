@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_application_1/features/budget/data/services/budget_service.dart';
-import 'package:flutter_application_1/features/budget/data/services/transaction_service.dart';
+import 'package:finance_care/features/budget/data/services/budget_service.dart';
+import 'package:finance_care/features/budget/data/services/transaction_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../domain/models/budget_overview.dart';

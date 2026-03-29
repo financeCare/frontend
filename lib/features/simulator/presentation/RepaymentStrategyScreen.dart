@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_application_1/features/simulator/data/models/repayment_strategy_response.dart';
-import 'package:flutter_application_1/features/simulator/data/services/repaymentTypeService.dart';
+import 'package:finance_care/features/simulator/data/models/repayment_strategy_response.dart';
+import 'package:finance_care/features/simulator/data/services/repaymentTypeService.dart';
 import 'DebtPriorityScreen.dart';
 
 

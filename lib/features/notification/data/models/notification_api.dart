@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/core/utils/app_logger.dart';
+import 'package:finance_care/core/utils/app_logger.dart';
 
 class NotificationApi {
   final String baseUrl;

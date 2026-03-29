@@ -31,6 +31,8 @@ import 'core/config/config.dart' as Config;
 import 'features/auth/data/services/access_token_service.dart';
 import 'features/budget/presentation/pages/transaction_list_screen.dart';
 import 'features/budget/presentation/pages/transaction_add_screen.dart';
+import 'features/ocr/presentation/pages/ocr_screen.dart';
+
 
 // final storage = FlutterSecureStorage(); // Removed in favor of AccesstokenService.sharedStorage
 
@@ -167,6 +169,7 @@ class _MyAppState extends State<MyApp> {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, String>?;
           return TransactionAddScreen(ocrData: args);
         },
+        '/ocr': (context) => const OCRScreen(),
       },
     );
   }

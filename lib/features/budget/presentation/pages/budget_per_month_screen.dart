@@ -4,21 +4,21 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import 'package:flutter_application_1/features/budget/domain/models/transaction_request.dart';
-import 'package:flutter_application_1/features/budget/domain/models/transaction_response.dart';
-import 'package:flutter_application_1/features/budget/data/services/transaction_service.dart';
-import 'package:flutter_application_1/features/budget/domain/models/budget_overview.dart';
-import 'package:flutter_application_1/features/budget/data/services/budget_service.dart';
-import 'package:flutter_application_1/features/budget/data/services/category_service.dart';
-import 'package:flutter_application_1/features/budget/domain/models/category.dart';
-import 'package:flutter_application_1/features/budget/presentation/pages/category_transactions_screen.dart';
-import 'package:flutter_application_1/features/budget/presentation/widgets/expandable_fab.dart';
-import 'package:flutter_application_1/features/budget/presentation/pages/receiver_mapping_screen.dart';
-import 'package:flutter_application_1/features/budget/data/services/receiver_mapping_service.dart';
-import 'package:flutter_application_1/features/budget/domain/models/mapping_request.dart';
-import 'package:flutter_application_1/features/budget/domain/models/receiver_mapping.dart';
-import 'package:flutter_application_1/features/debt/data/services/debt_service.dart';
-import 'package:flutter_application_1/features/debt/domain/models/monthly_debt_status.dart';
+import 'package:finance_care/features/budget/domain/models/transaction_request.dart';
+import 'package:finance_care/features/budget/domain/models/transaction_response.dart';
+import 'package:finance_care/features/budget/data/services/transaction_service.dart';
+import 'package:finance_care/features/budget/domain/models/budget_overview.dart';
+import 'package:finance_care/features/budget/data/services/budget_service.dart';
+import 'package:finance_care/features/budget/data/services/category_service.dart';
+import 'package:finance_care/features/budget/domain/models/category.dart';
+import 'package:finance_care/features/budget/presentation/pages/category_transactions_screen.dart';
+import 'package:finance_care/features/budget/presentation/widgets/expandable_fab.dart';
+import 'package:finance_care/features/budget/presentation/pages/receiver_mapping_screen.dart';
+import 'package:finance_care/features/budget/data/services/receiver_mapping_service.dart';
+import 'package:finance_care/features/budget/domain/models/mapping_request.dart';
+import 'package:finance_care/features/budget/domain/models/receiver_mapping.dart';
+import 'package:finance_care/features/debt/data/services/debt_service.dart';
+import 'package:finance_care/features/debt/domain/models/monthly_debt_status.dart';
 
 
 class BudgetPerMonthScreen extends StatefulWidget {

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/core/config/config.dart' as Config;
-import 'package:flutter_application_1/features/auth/data/services/access_token_service.dart';
-import 'package:flutter_application_1/features/notification/presentation/notification_manager.dart';
+import 'package:finance_care/core/config/config.dart' as Config;
+import 'package:finance_care/features/auth/data/services/access_token_service.dart';
+import 'package:finance_care/features/notification/presentation/notification_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../settings/presentation/pages/user_settings_page.dart';
 
