@@ -786,8 +786,6 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
 
   String? _getStrategyBadge(String name) {
     final lowerName = name.toLowerCase();
-    if (lowerName.contains('snowball')) return "ยอดนิยม";
-    if (lowerName.contains('avalanche')) return "แนะนำ";
     if (lowerName.contains('optimal')) return "คุ้มสุด";
     return null;
   }
