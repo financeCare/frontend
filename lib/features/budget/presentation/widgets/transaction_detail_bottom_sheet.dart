@@ -29,7 +29,9 @@ class TransactionDetailBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isIncome = transaction.category.type.toLowerCase() == 'income';
     final currencyFormat = NumberFormat.currency(symbol: '฿', decimalDigits: 2);
-    final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
+    final String formattedDate = (transaction.transactionDate.hour == 0 && transaction.transactionDate.minute == 0)
+        ? DateFormat('dd MMM yyyy').format(transaction.transactionDate)
+        : DateFormat('dd MMM yyyy, HH:mm').format(transaction.transactionDate);
 
     return Container(
       decoration: const BoxDecoration(
@@ -107,7 +109,7 @@ class TransactionDetailBottomSheet extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
-                _buildDetailRow('Date & Time', dateFormat.format(transaction.transactionDate)),
+                _buildDetailRow('Date & Time', formattedDate),
                 _buildDetailRow('Sender Bank', transaction.senderBank ?? '-'),
                 _buildDetailRow('Receiver', transaction.receiverName ?? '-'),
                 _buildDetailRow('Ref ID', transaction.transactionId),
@@ -115,37 +117,7 @@ class TransactionDetailBottomSheet extends StatelessWidget {
                 
                 const SizedBox(height: 16),
                 
-                // Slip Image
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Slip Image',
-                    style: GoogleFonts.kanit(
-                      fontSize: 14,
-                      color: Colors.black45,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (transaction.imagePath != null && transaction.imagePath!.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[200]!),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Image.network(
-                        transaction.imagePath!,
-                        width: double.infinity,
-                        height: 200,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage('Failed to load image'),
-                      ),
-                    ),
-                  )
-                else
-                  _buildPlaceholderImage('No slip attached'),
+
               ],
             ),
           ),

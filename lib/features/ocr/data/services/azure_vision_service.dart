@@ -2,21 +2,28 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 import 'package:http/http.dart' as http;
+import 'package:finance_care/core/utils/app_logger.dart';
 
 class AzureVisionService {
-  final String endpoint = "https://vision-api-app.cognitiveservices.azure.com/";
-  final String key = "E7nG31gyrAlsm7Z2kFum6ccey2g7H81RjMYDjYzw3nRwgtVfKS0bJQQJ99CCACqBBLyXJ3w3AAAFACOGS57l";
+  static const String _endpoint = String.fromEnvironment(
+    'AZURE_ENDPOINT',
+    defaultValue: 'https://vision-api-app.cognitiveservices.azure.com/',
+  );
+  static const String _key = String.fromEnvironment(
+    'AZURE_KEY',
+    defaultValue: '',
+  );
   final String apiVersion = "2024-02-01";
 
   Future<String?> analyzeImage(File imageFile) async {
-    final String url = "$endpoint/computervision/imageanalysis:analyze?api-version=$apiVersion&features=read";
+    final String url = "$_endpoint/computervision/imageanalysis:analyze?api-version=$apiVersion&features=read";
 
     try {
       final bytes = await imageFile.readAsBytes();
       final response = await http.post(
         Uri.parse(url),
         headers: {
-          'Ocp-Apim-Subscription-Key': key,
+          'Ocp-Apim-Subscription-Key': _key,
           'Content-Type': 'application/octet-stream',
         },
         body: bytes,
@@ -26,17 +33,17 @@ class AzureVisionService {
         final data = json.decode(response.body);
         return _extractText(data);
       } else {
-        print("Error analyzing image: HTTP ${response.statusCode} - ${response.body}");
+        AppLog.e("Error analyzing image: HTTP ${response.statusCode}");
         return "ERROR_API: ไม่สามารถวิเคราะห์ภาพได้ (HTTP ${response.statusCode})";
       }
     } on SocketException catch (_) {
-      print("Network Error: No internet connection");
+      AppLog.e("Network Error: No internet connection");
       return "ERROR_NETWORK: ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ Azure ได้ กรุณาตรวจสอบอินเทอร์เน็ต";
     } on TimeoutException catch (_) {
-      print("Timeout Error: Request took too long");
+      AppLog.e("Timeout Error: Request took too long");
       return "ERROR_TIMEOUT: หมดเวลาการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง";
     } catch (e) {
-      print("Exception analyzing image: $e");
+      AppLog.e("Exception analyzing image", e);
       return "ERROR_UNKNOWN: เกิดข้อผิดพลาดที่ไม่รู้จัก ($e)";
     }
   }

@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../features/auth/presentation/auth_manager.dart';
 import '../../features/budget/domain/models/budget_summary.dart';
 import '../../core/config/config.dart' as Config;
+import '../../core/utils/app_logger.dart';
 
 class ApiService {
   static final String _baseUrl = '${Config.baseUrl}/api';
@@ -20,7 +21,7 @@ class ApiService {
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     } else {
-      print('Warning: API call made without an Authorization Token.');
+      AppLog.d('Warning: API call made without an Authorization Token.');
     }
 
     return headers;

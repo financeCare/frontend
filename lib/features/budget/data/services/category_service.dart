@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:flutter_application_1/features/budget/domain/models/budgetDto.dart';
-import 'package:flutter_application_1/features/debt/domain/models/debt_dto.dart';
+import 'package:finance_care/features/budget/domain/models/budgetDto.dart';
+import 'package:finance_care/features/debt/domain/models/debt_dto.dart';
 
 import '../../domain/models/category.dart';
 import 'budget_service.dart';

@@ -6,9 +6,9 @@ import '../../../../core/config/config.dart'; // ไฟล์ config.dart ที
 import 'package:jwt_decoder/jwt_decoder.dart';
 
 class AccesstokenService {
-  // TEMPORARY FIX: Disable encryption to bypass potential Keystore corruption
+  // HIGH SECURITY: Enable hardware-backed encryption
   static const _androidOptions = AndroidOptions(
-    encryptedSharedPreferences: false, // Changed from true to false
+    encryptedSharedPreferences: true,
   );
 
   static const _storage = FlutterSecureStorage(aOptions: _androidOptions);
@@ -19,7 +19,15 @@ class AccesstokenService {
 
   Future<String?> getAccessToken() async {
     try {
-      String? accessToken = await storage.read(key: "accessToken");
+      String? accessToken;
+      try {
+        accessToken = await storage.read(key: "accessToken");
+      } catch (e) {
+        // FAIL-SAFE: If Keystore is corrupted, wipe data instead of crashing
+        debugPrint("!!! SECURE STORAGE CORRUPTED: $e !!!");
+        await storage.deleteAll();
+        return null;
+      }
 
       if (accessToken == null) {
         debugPrint("No accessToken found in storage");

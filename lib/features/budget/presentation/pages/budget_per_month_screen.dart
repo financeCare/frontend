@@ -4,21 +4,21 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import 'package:flutter_application_1/features/budget/domain/models/transaction_request.dart';
-import 'package:flutter_application_1/features/budget/domain/models/transaction_response.dart';
-import 'package:flutter_application_1/features/budget/data/services/transaction_service.dart';
-import 'package:flutter_application_1/features/budget/domain/models/budget_overview.dart';
-import 'package:flutter_application_1/features/budget/data/services/budget_service.dart';
-import 'package:flutter_application_1/features/budget/data/services/category_service.dart';
-import 'package:flutter_application_1/features/budget/domain/models/category.dart';
-import 'package:flutter_application_1/features/budget/presentation/pages/category_transactions_screen.dart';
-import 'package:flutter_application_1/features/budget/presentation/widgets/expandable_fab.dart';
-import 'package:flutter_application_1/features/budget/presentation/pages/receiver_mapping_screen.dart';
-import 'package:flutter_application_1/features/budget/data/services/receiver_mapping_service.dart';
-import 'package:flutter_application_1/features/budget/domain/models/mapping_request.dart';
-import 'package:flutter_application_1/features/budget/domain/models/receiver_mapping.dart';
-import 'package:flutter_application_1/features/debt/data/services/debt_service.dart';
-import 'package:flutter_application_1/features/debt/domain/models/monthly_debt_status.dart';
+import 'package:finance_care/features/budget/domain/models/transaction_request.dart';
+import 'package:finance_care/features/budget/domain/models/transaction_response.dart';
+import 'package:finance_care/features/budget/data/services/transaction_service.dart';
+import 'package:finance_care/features/budget/domain/models/budget_overview.dart';
+import 'package:finance_care/features/budget/data/services/budget_service.dart';
+import 'package:finance_care/features/budget/data/services/category_service.dart';
+import 'package:finance_care/features/budget/domain/models/category.dart';
+import 'package:finance_care/features/budget/presentation/pages/category_transactions_screen.dart';
+import 'package:finance_care/features/budget/presentation/widgets/expandable_fab.dart';
+import 'package:finance_care/features/budget/presentation/pages/receiver_mapping_screen.dart';
+import 'package:finance_care/features/budget/data/services/receiver_mapping_service.dart';
+import 'package:finance_care/features/budget/domain/models/mapping_request.dart';
+import 'package:finance_care/features/budget/domain/models/receiver_mapping.dart';
+import 'package:finance_care/features/debt/data/services/debt_service.dart';
+import 'package:finance_care/features/debt/domain/models/monthly_debt_status.dart';
 
 
 class BudgetPerMonthScreen extends StatefulWidget {
@@ -335,6 +335,8 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                 itemBuilder: (context, index) {
                   final cat = filteredCategories[index];
                   final isSelected = currentSelected?.categoryId == cat.categoryId;
+                  final catColor = _getCategoryColor(cat.categoryName);
+                  
                   return InkWell(
                     onTap: () {
                       onSelect(cat);
@@ -344,17 +346,17 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF2D955F).withOpacity(0.05) : Colors.transparent,
+                        color: isSelected ? catColor.withOpacity(0.05) : Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected ? const Color(0xFF2D955F).withOpacity(0.3) : Colors.transparent,
+                          color: isSelected ? catColor.withOpacity(0.3) : Colors.transparent,
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             _getCategoryIcon(cat.categoryName),
-                            color: isSelected ? const Color(0xFF2D955F) : Colors.black45,
+                            color: isSelected ? catColor : Colors.black45,
                             size: 24,
                           ),
                           const SizedBox(width: 16),
@@ -363,12 +365,12 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                             style: GoogleFonts.kanit(
                               fontSize: 16,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? const Color(0xFF2D955F) : const Color(0xFF1A1A1A),
+                              color: isSelected ? catColor : const Color(0xFF1A1A1A),
                             ),
                           ),
                           const Spacer(),
                           if (isSelected)
-                            const Icon(Icons.check_circle, color: Color(0xFF2D955F), size: 20),
+                            Icon(Icons.check_circle, color: catColor, size: 20),
                         ],
                       ),
                     ),
@@ -384,24 +386,65 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
 
   Future<void> _saveTransaction(TransactionRequest request) async {
     try {
+      // 1. Create the transaction first
       await TransactionService().createTransaction(request);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-       ).showSnackBar(const SnackBar(content: Text('บันทึกรายการสำเร็จ')));
-      
-      // Auto-save Receiver Mapping
-      if (request.receiverName != null && request.receiverName!.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                child: const Icon(Icons.check_circle, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('สำเร็จ!', style: GoogleFonts.kanit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text('บันทึกรายการเรียบร้อยแล้ว', style: GoogleFonts.kanit(fontSize: 14, color: Colors.white70)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF2D955F),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          margin: const EdgeInsets.all(16),
+          elevation: 6,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      // 2. Auto-save Receiver Mapping AFTER transaction succeeds
+      if (request.receiverName != null && request.receiverName!.trim().isNotEmpty) {
+        final rName = request.receiverName!.trim();
         try {
-          await ReceiverMappingService().saveMapping(
-            MappingRequest(
-              receiverName: request.receiverName!,
-              categoryId: request.categoryId,
-            ),
-          );
-          print("Auto-mapping saved for: ${request.receiverName}");
+          final existing = _receiverMappings.where((m) => m.receiverName.toLowerCase() == rName.toLowerCase()).toList();
+          
+          if (existing.isNotEmpty) {
+            final oldMapping = existing.first;
+            if (oldMapping.category.categoryId != request.categoryId) {
+              try {
+                await ReceiverMappingService().deleteMapping(oldMapping.id);
+              } catch (_) {}
+              
+              await ReceiverMappingService().saveMapping(
+                MappingRequest(receiverName: rName, categoryId: request.categoryId),
+              );
+              print("Auto-mapping updated for: $rName");
+            }
+          } else {
+            await ReceiverMappingService().saveMapping(
+              MappingRequest(receiverName: rName, categoryId: request.categoryId),
+            );
+            print("Auto-mapping saved for: $rName");
+          }
         } catch (e) {
-          // Mapping might already exist, we can ignore or log it
           print("Note: Auto-mapping skipped or failed: $e");
         }
       }
@@ -409,9 +452,39 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       _loadBudgetData();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('ไม่สามารถบันทึกรายการรายรับรายจ่ายได้ กรุณาลองใหม่อีกครั้ง')));
+      String errorMsg = e.toString().contains('Exception:') 
+          ? e.toString().split('Exception: ').last 
+          : e.toString();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                child: const Icon(Icons.error_outline, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('เกิดข้อผิดพลาด!', style: GoogleFonts.kanit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text(errorMsg, style: GoogleFonts.kanit(fontSize: 14, color: Colors.white70)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFFEB5757),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          margin: const EdgeInsets.all(16),
+          elevation: 6,
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
@@ -421,7 +494,8 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
     final TextEditingController amountCtrl = TextEditingController();
     final TextEditingController descCtrl = TextEditingController();
     final TextEditingController receiverCtrl = TextEditingController(); 
-    DateTime selectedDate = DateTime.now();
+    DateTime now = DateTime.now();
+    DateTime selectedDate = DateTime(now.year, now.month, now.day);
     
     // ตั้งค่าเริ่มต้น
     String transactionType = 'Expense'; // 'Expense' หรือ 'Income'
@@ -437,6 +511,10 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
           if (selectedCategory == null || !filteredCategories.any((c) => c.categoryId == selectedCategory!.categoryId)) {
             selectedCategory = filteredCategories.isNotEmpty ? filteredCategories.first : null;
           }
+
+          final themeColor = selectedCategory != null
+              ? _getCategoryColor(selectedCategory!.categoryName)
+              : (transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F));
 
           return Dialog(
             shape: RoundedRectangleBorder(
@@ -615,8 +693,6 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                         );
                       },
                       optionsViewBuilder: (context, onSelected, options) {
-                        final themeColor = transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F);
-                        
                         return Align(
                           alignment: Alignment.topLeft,
                           child: Material(
@@ -752,14 +828,14 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          border: Border.all(color: (transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F)).withOpacity(0.3)),
+                          border: Border.all(color: themeColor.withOpacity(0.3)),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           children: [
                             Icon(
                               selectedCategory != null ? _getCategoryIcon(selectedCategory!.categoryName) : Icons.category_outlined,
-                              color: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F),
+                              color: themeColor,
                             ),
                             const SizedBox(width: 12),
                             Text(
@@ -794,18 +870,18 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                     decoration: InputDecoration(
                       hintText: '0.00',
                       hintStyle: GoogleFonts.kanit(color: Colors.black26),
-                      prefixIcon: Icon(Icons.attach_money, color: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F)),
+                      prefixIcon: Icon(Icons.attach_money, color: themeColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: (transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F)).withOpacity(0.3)),
+                        borderSide: BorderSide(color: themeColor.withOpacity(0.3)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: (transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F)).withOpacity(0.3)),
+                        borderSide: BorderSide(color: themeColor.withOpacity(0.3)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F), width: 2),
+                        borderSide: BorderSide(color: themeColor, width: 2),
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
@@ -833,7 +909,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                           return Theme(
                             data: Theme.of(context).copyWith(
                               colorScheme: ColorScheme.light(
-                                primary: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F),
+                                primary: themeColor,
                                 onPrimary: Colors.white,
                                 onSurface: Colors.black87,
                               ),
@@ -849,12 +925,12 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
-                        border: Border.all(color: (transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F)).withOpacity(0.3)),
+                        border: Border.all(color: themeColor.withOpacity(0.3)),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today_outlined, color: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F), size: 20),
+                          Icon(Icons.calendar_today_outlined, color: themeColor, size: 20),
                           const SizedBox(width: 12),
                           Text(
                             DateFormat('dd MMM yyyy').format(selectedDate),
@@ -936,7 +1012,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: transactionType == 'Expense' ? const Color(0xFFEB5757) : const Color(0xFF2D955F),
+                            backgroundColor: themeColor,
                             foregroundColor: Colors.white,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1588,7 +1664,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
             size: const Size(110, 110),
             painter: DonutChartPainter(
               segments: segments,
-              totalSpent: chartTotal,
+              totalSpent: totalLimit > chartTotal ? totalLimit : (chartTotal > 0 ? chartTotal : 1),
               backgroundColor: const Color(0xFFF1F3F4),
               strokeWidth: 12,
             ),

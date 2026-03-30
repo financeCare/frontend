@@ -60,9 +60,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       // Search Filter
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
-        final desc = tx.description.toLowerCase();
         final cat = tx.category.categoryName.toLowerCase();
-        if (!desc.contains(query) && !cat.contains(query)) return false;
+        final receiver = (tx.receiverName ?? '').toLowerCase();
+        if (!cat.contains(query) && !receiver.contains(query)) return false;
       }
 
       // Type Filter
