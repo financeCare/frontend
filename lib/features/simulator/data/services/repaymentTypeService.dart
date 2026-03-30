@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'package:flutter_application_1/features/simulator/data/models/repayment_strategy_response.dart';
-import 'package:flutter_application_1/features/simulator/data/models/repayment_simulation_model.dart';
-import 'package:flutter_application_1/features/simulator/data/models/debt_priority_model.dart';
+import 'package:finance_care/features/simulator/data/models/repayment_strategy_response.dart';
+import 'package:finance_care/features/simulator/data/models/repayment_simulation_model.dart';
+import 'package:finance_care/features/simulator/data/models/debt_priority_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../../../../core/config/config.dart' as Config;

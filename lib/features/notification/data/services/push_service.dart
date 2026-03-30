@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_application_1/features/auth/data/services/device_service.dart';
+import 'package:finance_care/features/auth/data/services/device_service.dart';
 import '../../../../core/config/config.dart' as Config;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../../../../features/auth/data/services/access_token_service.dart';
+import '../../../../core/utils/app_logger.dart';
 
 class PushService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -86,9 +87,7 @@ class PushService {
     );
 
     if (res.statusCode != 200) {
-      // log ไว้ debug
-      // ignore: avoid_print
-      print("Register device failed: ${res.statusCode} ${res.body}");
+      AppLog.e('Register device failed: ${res.statusCode}');
     }
   }
 }

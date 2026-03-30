@@ -105,16 +105,13 @@ class _CategoryTransactionsScreenState
                 const SizedBox(height: 4),
               ],
               Text(
-                DateFormat('dd MMM yyyy, HH:mm').format(tx.transactionDate),
+                (tx.transactionDate.hour == 0 && tx.transactionDate.minute == 0)
+                    ? DateFormat('dd MMM yyyy').format(tx.transactionDate)
+                    : DateFormat('dd MMM yyyy, HH:mm').format(tx.transactionDate),
                 style: GoogleFonts.kanit(fontSize: 14, color: Colors.black45),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              Text(
-                'การกระทำนี้ไม่สามารถย้อนกลับได้',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.kanit(fontSize: 13, color: Colors.black38),
-              ),
               const SizedBox(height: 32),
               Row(
                 children: [
@@ -322,8 +319,9 @@ class _CategoryTransactionsScreenState
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            DateFormat('dd MMM yyyy, HH:mm')
-                                .format(tx.transactionDate),
+                            (tx.transactionDate.hour == 0 && tx.transactionDate.minute == 0)
+                                ? DateFormat('dd MMM yyyy').format(tx.transactionDate)
+                                : DateFormat('dd MMM yyyy, HH:mm').format(tx.transactionDate),
                             style: GoogleFonts.kanit(
                                 fontSize: 12, color: Colors.black45),
                           ),

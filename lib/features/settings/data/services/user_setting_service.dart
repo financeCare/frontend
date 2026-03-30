@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/config/config.dart' as Config;
-import 'package:flutter_application_1/features/auth/data/services/access_token_service.dart';
-import 'package:flutter_application_1/features/auth/data/services/device_service.dart';
-import 'package:flutter_application_1/features/settings/data/models/user_setting_response.dart';
+import 'package:finance_care/features/auth/data/services/access_token_service.dart';
+import 'package:finance_care/features/auth/data/services/device_service.dart';
+import 'package:finance_care/features/settings/data/models/user_setting_response.dart';
 
 class UserSettingService {
   Future<UserSettingOverview> fetchUserSettings() async {

@@ -11,13 +11,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'features/notification/data/services/slip_detection_service.dart';
 import 'dart:io';
 
-// 🚨 (1) เพิ่มการ Import ไฟล์ที่สร้างโดย FlutterFire CLI
+
 import 'firebase_options.dart';
 
-// <<<< เพิ่มการ Import AuthManager ที่นี่ >>>>
+
 import 'features/auth/presentation/auth_manager.dart';
 
-// Screens
+
 import 'features/auth/presentation/welcome_page.dart';
 import 'features/budget/presentation/pages/expense_entry_screen.dart';
 import 'features/simulator/presentation/RepaymentStrategyScreen.dart';
@@ -31,6 +31,8 @@ import 'core/config/config.dart' as Config;
 import 'features/auth/data/services/access_token_service.dart';
 import 'features/budget/presentation/pages/transaction_list_screen.dart';
 import 'features/budget/presentation/pages/transaction_add_screen.dart';
+import 'features/ocr/presentation/pages/ocr_screen.dart';
+
 
 // final storage = FlutterSecureStorage(); // Removed in favor of AccesstokenService.sharedStorage
 
@@ -104,7 +106,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    // Check login state directly in home
+    // !!! DEBUG: Temporarily forcing WelcomePage so you can see the redesign
     final initialScreen = AuthManager.isLoggedIn
         ? const HomePage()
         : const WelcomePage();
@@ -167,6 +169,7 @@ class _MyAppState extends State<MyApp> {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, String>?;
           return TransactionAddScreen(ocrData: args);
         },
+        '/ocr': (context) => const OCRScreen(),
       },
     );
   }

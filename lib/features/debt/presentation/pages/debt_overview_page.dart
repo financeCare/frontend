@@ -6,9 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/services/debt_service.dart';
 import '../../domain/models/debt_response.dart';
 import '../../domain/models/monthly_debt_status.dart';
-import '../../domain/models/debt_transaction_response.dart';
-import '../../../auth/data/services/access_token_service.dart';
-import '../../../../core/config/config.dart';
 
 class DebtOverviewPage extends StatefulWidget {
   final int unreadCount;
@@ -47,268 +44,6 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
-  }
-
-  void _showSlipImage(int slipId) async {
-    final token = await AccesstokenService().getAccessToken();
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                '$baseUrl/api/slips/$slipId/image',
-                headers: {'Authorization': 'Bearer $token'},
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    padding: const EdgeInsets.all(50),
-                    color: Colors.white,
-                    child: const CircularProgressIndicator(),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) => Container(
-                  padding: const EdgeInsets.all(50),
-                  color: Colors.white,
-                  child: Column(
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 40),
-                      const SizedBox(height: 10),
-                      Text('ไม่สามารถโหลดรูปภาพได้', style: GoogleFonts.kanit()),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showTransactionHistory(DebtResponse debt) async {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, controller) => Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'ประวัติการชำระ: ${debt.debtName}',
-                        style: GoogleFonts.kanit(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF0F172A),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: FutureBuilder<List<DebtTransactionResponse>>(
-                  future: _debtService.getDebtHistory(debt.debtId),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return Center(child: Text('เกิดข้อผิดพลาด: ${snapshot.error}'));
-                    }
-                    final txns = snapshot.data ?? [];
-                    final groupedTxns = _groupTransactions(txns);
-
-                    if (groupedTxns.isEmpty) {
-                      return Center(
-                        child: Text(
-                          'ยังไม่มีประวัติการชำระ',
-                          style: GoogleFonts.kanit(color: Colors.grey),
-                        ),
-                      );
-                    }
-                    return ListView.separated(
-                      controller: controller,
-                      padding: const EdgeInsets.all(24),
-                      itemCount: groupedTxns.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final txn = groupedTxns[index];
-                        final isPayment = txn.txnType.contains('PAYMENT') || txn.txnType == 'PAYMENT';
-                        
-                        Widget? breakdownWidget;
-                        if (txn.subTransactions.length > 1) {
-                          breakdownWidget = Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 4,
-                                children: txn.subTransactions.map((sub) {
-                                  String label = sub.txnType == 'PRINCIPAL_PAYMENT' ? 'เงินต้น' : 
-                                               sub.txnType == 'INTEREST_PAYMENT' ? 'ดอกเบี้ย' : 
-                                               sub.txnType == 'LATE_FEE_PAYMENT' ? 'ค่าธรรมเนียม' : sub.description;
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      '$label: ฿${NumberFormat('#,##0').format(sub.amount)}',
-                                      style: GoogleFonts.kanit(fontSize: 11, color: Colors.grey.shade700),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          );
-                        }
-
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.02),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: isPayment 
-                                        ? const Color(0xFFE8F5E9) 
-                                        : const Color(0xFFFFF3E0),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      isPayment ? Icons.arrow_downward : Icons.receipt_long,
-                                      color: isPayment ? const Color(0xFF2D955F) : const Color(0xFFF57C00),
-                                      size: 20,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          txn.displayTitle,
-                                          style: GoogleFonts.kanit(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 15,
-                                            color: const Color(0xFF0F172A),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          DateFormat('dd MMM yyyy', 'th').format(txn.txnDate),
-                                          style: GoogleFonts.kanit(
-                                            fontSize: 13,
-                                            color: const Color(0xFF64748B),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        '${isPayment ? "-" : ""}${NumberFormat('#,##0.00').format(txn.amount)} ฿',
-                                        style: GoogleFonts.kanit(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: isPayment 
-                                            ? const Color(0xFF2D955F) 
-                                            : const Color(0xFF0F172A),
-                                        ),
-                                      ),
-                                      if (txn.slipId != null) 
-                                        GestureDetector(
-                                          onTap: () => _showSlipImage(txn.slipId!),
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(top: 4),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Icon(Icons.image_outlined, size: 14, color: Color(0xFF2D955F)),
-                                                const SizedBox(width: 4),
-                                                Text('ดูสลิป', style: GoogleFonts.kanit(fontSize: 12, color: const Color(0xFF2D955F))),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              if (breakdownWidget != null) breakdownWidget,
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> _deleteDebt(DebtResponse debt) async {
@@ -494,7 +229,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                         activeCount: activeDebts.length,
                         totalCount: _debtResponses.length,
                         avgInterest: avgInterest,
-                        minPayment: _monthlyStatus?.actualMinPayment ?? totalMinPayment,
+                        minPayment: totalMinPayment,
                         monthlyStatus: _monthlyStatus,
                       ),
                       if (_monthlyStatus != null && _monthlyStatus!.isBudgetInsufficient) ...[
@@ -646,11 +381,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                 Expanded(
                   child: RichText(
                     text: TextSpan(
-                      style: GoogleFonts.kanit(
-                        color: Colors.white,
-                        fontSize: 15,
-                        height: 1.4,
-                      ),
+                      style: GoogleFonts.kanit(color: Colors.white, fontSize: 13),
                       children: [
                         const TextSpan(text: 'ยอดจ่ายขั้นต่ำรวม: '),
                         TextSpan(
@@ -668,12 +399,8 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                         ] else if (monthlyStatus != null && monthlyStatus.remainingAmount <= 0) ...[
                           const TextSpan(text: '\n'),
                           TextSpan(
-                            text: 'ชำระของเดือนนี้ครบถ้วนแล้ว ✨',
-                            style: GoogleFonts.kanit(
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              fontSize: 18,
-                            ),
+                            text: 'ชำระของเดือนนี้ครบถ้วนแล้ว',
+                            style: GoogleFonts.kanit(fontWeight: FontWeight.bold, color: const Color(0xFF4CAF50)),
                           ),
                         ],
                       ],
@@ -724,7 +451,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
   Widget _buildQuickMenu() {
     final menus = [
       {
-        'icon': Icons.add_card_outlined,
+        'icon': Icons.add_business_outlined,
         'label': 'สร้างหนี้',
         'color': const Color(0xFFFFEDEC),
         'iconColor': const Color(0xFFF44336),
@@ -888,8 +615,6 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.auto_awesome, size: 16, color: Color(0xFF2D955F)),
-                          const SizedBox(width: 8),
                           Text(
                             'แนะนำอาชีพ',
                             style: GoogleFonts.kanit(
@@ -1029,7 +754,13 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => _showTransactionHistory(debt),
+            onTap: () => Navigator.pushNamed(
+              context,
+              '/add_debt',
+              arguments: {'debt': debt, 'isViewOnly': true},
+            ).then((value) {
+              if (value == true) _loadData();
+            }),
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -1270,28 +1001,6 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon( // Changed to ElevatedButton for prominence
-                      onPressed: () => Navigator.pushNamed(
-                        context, 
-                        '/pay_debt', 
-                        arguments: {'initialDebt': debt}
-                      ).then((value) {
-                        if (value == true) _loadData();
-                      }),
-                      icon: const Icon(Icons.payments_outlined, size: 18),
-                      label: Text('ชำระเงิน', style: GoogleFonts.kanit(fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0F172A),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -1614,90 +1323,4 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
       ),
     );
   }
-
-  List<_GroupedTransaction> _groupTransactions(List<DebtTransactionResponse> txns) {
-    if (txns.isEmpty) return [];
-
-    final Map<String, List<DebtTransactionResponse>> groups = {};
-
-    for (var txn in txns) {
-      // จัดกลุ่มตามวันที่ และ slipId (ถ้ามี)
-      final dateStr = DateFormat('yyyy-MM-dd').format(txn.txnDate);
-      final key = txn.slipId != null ? '$dateStr-${txn.slipId}' : dateStr;
-      
-      if (!groups.containsKey(key)) {
-        groups[key] = [];
-      }
-      groups[key]!.add(txn);
-    }
-
-    final List<_GroupedTransaction> result = [];
-
-    groups.forEach((key, items) {
-      // ค้นหารายการหลัก (PAYMENT) ถ้าไม่มีให้ใช้รายการแรก
-      final hasPayment = items.any((t) => t.txnType == 'PAYMENT');
-      DebtTransactionResponse mainPayment = hasPayment
-        ? items.firstWhere((t) => t.txnType == 'PAYMENT')
-        : items.first;
-
-      // ตรวจสอบว่าเป็นกลุ่มของการชำระเงินหรือไม่
-      bool representsPayment = items.any((t) => t.txnType.contains('PAYMENT') || t.txnType == 'PAYMENT');
-      
-      String title = mainPayment.description;
-      if (representsPayment && items.length > 1) {
-        title = "ชำระหนี้";
-      }
-
-      // คำนวณยอดรวม (ถ้ามี PAYMENT ใช้ยอดจาก PAYMENT ถ้าไม่มีให้รวมยอด TYPE *_PAYMENT ทั้งหมด)
-      double totalAmount = 0.0;
-      if (hasPayment) {
-        totalAmount = items.firstWhere((t) => t.txnType == 'PAYMENT').amount;
-      } else {
-        totalAmount = items.where((t) => t.txnType.contains('PAYMENT')).fold(0.0, (sum, t) => sum + t.amount);
-      }
-
-      // ถ้าไม่มีการชำระเงินเลย (เช่นเป็นแค่ CHARGE) ให้ใช้ยอดของรายการหลัก
-      if (totalAmount == 0 && items.isNotEmpty) {
-        totalAmount = mainPayment.amount;
-      }
-
-      // เรียงลำดับรายการย่อย (เงินต้นก่อน แล้วตามด้วยดอกเบี้ย)
-      items.sort((a, b) {
-        if (a.txnType == 'PRINCIPAL_PAYMENT') return -1;
-        if (b.txnType == 'PRINCIPAL_PAYMENT') return 1;
-        return 0;
-      });
-
-      result.add(_GroupedTransaction(
-        txnDate: mainPayment.txnDate,
-        txnType: mainPayment.txnType,
-        amount: totalAmount,
-        displayTitle: title,
-        slipId: mainPayment.slipId,
-        subTransactions: items.length > 1 ? items : [],
-      ));
-    });
-
-    // เรียงตามวันที่ล่าสุดขึ้นก่อน
-    result.sort((a, b) => b.txnDate.compareTo(a.txnDate));
-    return result;
-  }
-}
-
-class _GroupedTransaction {
-  final DateTime txnDate;
-  final String txnType;
-  final double amount;
-  final String displayTitle;
-  final int? slipId;
-  final List<DebtTransactionResponse> subTransactions;
-
-  _GroupedTransaction({
-    required this.txnDate,
-    required this.txnType,
-    required this.amount,
-    required this.displayTitle,
-    this.slipId,
-    required this.subTransactions,
-  });
 }

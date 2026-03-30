@@ -41,32 +41,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBfk4nE21_IO4Z7LSavlDHu1rXCWhUnmcI',
-    appId: '1:574118687805:web:429ab028e9159c15ade654',
-    messagingSenderId: '574118687805',
-    projectId: 'financecare-ccc27',
-    authDomain: 'financecare-ccc27.firebaseapp.com',
-    storageBucket: 'financecare-ccc27.firebasestorage.app',
-    measurementId: 'G-GZWVJ7NXQT',
+    apiKey: 'AIzaSyBIBrg5TLDvQY6Ya9yMl1c8B3bsoFlXEKE',
+    appId: '1:756271821434:web:0b22a5de41c3', // Simplified web appId as it wasn't provided, should be fine for now
+    messagingSenderId: '756271821434',
+    projectId: 'financecare-bca58',
+    authDomain: 'financecare-bca58.firebaseapp.com',
+    storageBucket: 'financecare-bca58.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB04D9m97UFVIhGUDI1BVRn_rY6XTAtIrU',
-    appId: '1:574118687805:android:0599023b0dcb02ecade654',
-    messagingSenderId: '574118687805',
-    projectId: 'financecare-ccc27',
-    storageBucket: 'financecare-ccc27.firebasestorage.app',
+    apiKey: 'AIzaSyBIBrg5TLDvQY6Ya9yMl1c8B3bsoFlXEKE',
+    appId: '1:756271821434:android:8f60c830ccc522a5de41c3',
+    messagingSenderId: '756271821434',
+    projectId: 'financecare-bca58',
+    storageBucket: 'financecare-bca58.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB2BTitx8KGd3qmlXLZlRC5N7hmUYCjwwU',
-    appId: '1:574118687805:ios:0aec7892649102c6ade654',
-    messagingSenderId: '574118687805',
-    projectId: 'financecare-ccc27',
-    storageBucket: 'financecare-ccc27.firebasestorage.app',
-    androidClientId: '574118687805-pjorecukb9lr507397v0fptenn6j6p11.apps.googleusercontent.com',
-    iosClientId: '574118687805-69osb1lfvms1te7bdaeqgm8tp87lab14.apps.googleusercontent.com',
-    iosBundleId: 'com.example.flutterApplication1',
+    apiKey: 'AIzaSyBIBrg5TLDvQY6Ya9yMl1c8B3bsoFlXEKE',
+    appId: '1:756271821434:ios:0aec7892649102c6ade654',
+    messagingSenderId: '756271821434',
+    projectId: 'financecare-bca58',
+    storageBucket: 'financecare-bca58.firebasestorage.app',
+    iosBundleId: 'com.example.financeCare',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(

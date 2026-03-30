@@ -455,6 +455,23 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
             ),
           ),
         ),
+        const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D955F),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(color: const Color(0xFF2D955F).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: InkWell(
+            onTap: () {
+              // Future: Manual mapping dialog
+            },
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        ),
       ],
     );
   }

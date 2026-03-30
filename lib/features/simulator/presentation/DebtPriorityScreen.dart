@@ -388,8 +388,6 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
           ),
           child: Row(
             children: [
-              const Icon(Icons.auto_awesome, size: 14, color: Color(0xFF2D955F)),
-              const SizedBox(width: 4),
               Text(
                 widget.strategyName,
                 style: GoogleFonts.kanit(

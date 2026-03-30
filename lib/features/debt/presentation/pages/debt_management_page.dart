@@ -1,10 +1,10 @@
-import 'package:flutter_application_1/features/debt/domain/models/debt_type_response.dart';
-import 'package:flutter_application_1/features/debt/domain/models/debt_dto.dart';
-import 'package:flutter_application_1/features/debt/domain/models/debt_request.dart';
-import 'package:flutter_application_1/features/debt/domain/models/debt_response.dart';
-import 'package:flutter_application_1/features/debt/domain/models/repayment_type_response.dart';
-import 'package:flutter_application_1/features/budget/data/services/category_service.dart';
-import 'package:flutter_application_1/features/debt/data/services/debt_service.dart';
+import 'package:finance_care/features/debt/domain/models/debt_type_response.dart';
+import 'package:finance_care/features/debt/domain/models/debt_dto.dart';
+import 'package:finance_care/features/debt/domain/models/debt_request.dart';
+import 'package:finance_care/features/debt/domain/models/debt_response.dart';
+import 'package:finance_care/features/debt/domain/models/repayment_type_response.dart';
+import 'package:finance_care/features/budget/data/services/category_service.dart';
+import 'package:finance_care/features/debt/data/services/debt_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -192,7 +192,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
     debtPenaltyTriggerCtrl.text = d.penaltyTriggerDays.toString();
     isDefaulted = d.isDefaulted;
     isInformal = d.isInformal;
-    interestCalculationType = d.interestCalculationType ?? InterestCalculationType.THIRTY_360;
+    interestCalculationType = d.interestCalculationType;
     interestInterval = d.interestInterval;
     paymentInterval = d.paymentInterval;
     initialInterestCtrl.text = _formatDouble(d.initialInterestRemaining);
@@ -209,9 +209,10 @@ class _AddDebtPageState extends State<AddDebtPage> {
         filteredDebtTypeList = debtTypeList;
         debtType = debtTypeList.map((e) => e.debtTypeName).toList();
         repaymentType = repaymentTypeList.map((e) => e.typeName).toList();
-        if (debtTypeList.isNotEmpty)
+        if (debtTypeList.isNotEmpty && selectedDebtTypeId == 0) {
           selectedDebtTypeId = debtTypeList[0].debtTypeId;
-        if (repaymentTypeList.isNotEmpty) {
+        }
+        if (repaymentTypeList.isNotEmpty && selectedRepaymentTypeId == 0) {
           selectedRepaymentTypeId = repaymentTypeList[0].typeId;
         }
       });
@@ -1266,7 +1267,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
         ),
         const SizedBox(height: 16),
         _buildInputField(
-          "ยอดหนี้คงเหลือปัจจุบัน",
+          "ยอดหนี้คงเหลือปัจจุบัน (เงินต้น)",
           debtOutstandingCtrl,
           Icons.account_balance_wallet_outlined,
           "฿",
@@ -1301,9 +1302,17 @@ class _AddDebtPageState extends State<AddDebtPage> {
         Text("ประเภทการคำนวณดอกเบี้ย", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         DropdownButtonFormField<InterestCalculationType>(
+          isExpanded: true,
           value: interestCalculationType,
           items: interestCalcTypes
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.label, style: GoogleFonts.kanit())))
+              .map((t) => DropdownMenuItem(
+                    value: t,
+                    child: Text(
+                      t.label,
+                      style: GoogleFonts.kanit(),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ))
               .toList(),
           onChanged: (v) => setState(() => interestCalculationType = v!),
           decoration: InputDecoration(
@@ -1325,9 +1334,17 @@ class _AddDebtPageState extends State<AddDebtPage> {
         Text("รอบการคิดดอกเบี้ย", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         DropdownButtonFormField<InterestInterval>(
+          isExpanded: true,
           value: interestInterval,
           items: InterestInterval.values
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.label, style: GoogleFonts.kanit())))
+              .map((t) => DropdownMenuItem(
+                    value: t,
+                    child: Text(
+                      t.label,
+                      style: GoogleFonts.kanit(),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ))
               .toList(),
           onChanged: (v) => setState(() => interestInterval = v!),
           decoration: InputDecoration(
@@ -1549,9 +1566,17 @@ class _AddDebtPageState extends State<AddDebtPage> {
         Text("รอบการชำระเงิน", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         DropdownButtonFormField<PaymentInterval>(
+          isExpanded: true,
           value: paymentInterval,
           items: PaymentInterval.values
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.label, style: GoogleFonts.kanit())))
+              .map((t) => DropdownMenuItem(
+                    value: t,
+                    child: Text(
+                      t.label,
+                      style: GoogleFonts.kanit(),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ))
               .toList(),
           onChanged: (v) => setState(() => paymentInterval = v!),
           decoration: InputDecoration(

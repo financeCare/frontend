@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../domain/models/transaction_response.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -70,8 +71,11 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
     final amountStr = widget.ocrData!['amount']?.replaceAll(',', '') ?? '0.00';
     _amountController.text = amountStr;
     
-    // รายละเอียด/คำอธิบาย ให้เว้นว่างไว้ให้ User กรอกเองตามต้องการ
-    _descController.text = "";
+    // ใช้ description จาก OCR ถ้ามี
+    final ocrDesc = widget.ocrData!['description'];
+    if (ocrDesc != null && ocrDesc.isNotEmpty) {
+      _descController.text = ocrDesc;
+    }
     
     _receiverController.text = widget.ocrData!['receiver'] ?? '';
     
@@ -128,22 +132,16 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
               final ocrCategoryId = int.tryParse(widget.ocrData!['category_id']!);
               _selectedCategory = _allCategories.firstWhere(
                 (c) => c.categoryId == ocrCategoryId,
-                orElse: () {
-                  // If category ID from OCR not found, try to find by name or use first Expense
-                  return _allCategories.firstWhere(
-                    (c) => c.type.toLowerCase() == 'expense',
-                    orElse: () => _allCategories.first,
-                  );
-                },
+                orElse: () => _allCategories.first,
               );
             } else {
               // Default to first Expense category if available
               _selectedCategory = _allCategories.firstWhere(
-                (c) => c.type.toLowerCase() == 'expense',
+                (c) => c.type == 'Expense',
                 orElse: () => _allCategories.first,
               );
             }
-            _isIncome = _selectedCategory?.type.toLowerCase() == 'income';
+            _isIncome = _selectedCategory?.type == 'Income';
           }
           _isLoading = false;
         });
@@ -206,9 +204,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
       }
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(widget.transactionToEdit != null ? 'แก้ไขรายการสำเร็จ' : 'บันทึกรายการสำเร็จ')),
-        );
+        _showCustomSuccessSnackBar(widget.transactionToEdit != null ? 'แก้ไขรายการเรียบร้อยแล้ว' : 'บันทึกรายการเรียบร้อยแล้ว');
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -223,6 +219,72 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
       }
     }
   }
+
+  void _showCustomSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        duration: const Duration(seconds: 2),
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D955F),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'สำเร็จ!',
+                      style: GoogleFonts.kanit(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      message,
+                      style: GoogleFonts.kanit(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -331,7 +393,10 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
           TextField(
             controller: _amountController,
             textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+            ],
             style: GoogleFonts.kanit(
               fontSize: 48,
               fontWeight: FontWeight.bold,
@@ -611,17 +676,13 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
   Widget _buildCategoryGrid() {
     final filteredCategories = _allCategories.where((c) {
       if (_isIncome) {
-        return c.type.toLowerCase() == 'income';
+        return c.categoryName.toLowerCase() == 'extra income';
       } else {
-        return c.type.toLowerCase() == 'expense';
+        return c.type == 'Expense';
       }
     }).toList();
 
-    // Fallback: If no categories match the current filter (Income/Expense), 
-    // but the list is not empty overall, show all categories so the user isn't stuck.
-    final finalDisplayCategories = filteredCategories.isNotEmpty ? filteredCategories : _allCategories;
-
-    if (finalDisplayCategories.isEmpty) {
+    if (filteredCategories.isEmpty) {
       return Center(
         child: Text(
           'ไม่มีหมวดหมู่ที่เหมาะสม',
@@ -639,9 +700,9 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
         mainAxisSpacing: 12,
         mainAxisExtent: 100,
       ),
-      itemCount: finalDisplayCategories.length,
+      itemCount: filteredCategories.length,
       itemBuilder: (context, index) {
-        final cat = finalDisplayCategories[index];
+        final cat = filteredCategories[index];
         bool isSelected = _selectedCategory?.categoryId == cat.categoryId;
         
         return GestureDetector(

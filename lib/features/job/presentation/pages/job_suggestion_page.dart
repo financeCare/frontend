@@ -125,7 +125,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'ระบบจะแนะนำงานที่เหมาะสมและสามารถสร้างรายได้เสริมให้คุณนำมาอ้างอิงในการวางแผนได้',
+                          'เราช่วยคัดสรรอาชีพเสริมที่เหมาะกับคุณ เพื่อเพิ่มรายได้และปลดหนี้ได้รวดเร็วยิ่งขึ้น',
                           style: GoogleFonts.kanit(
                             color: Colors.white,
                             fontSize: 12,

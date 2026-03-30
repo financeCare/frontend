@@ -9,7 +9,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'notification_service.dart';
+import '../../../../core/utils/app_logger.dart';
 
 class SlipDetectionService {
   static const _channel = MethodChannel('com.example.financeCare/slip_detector');
@@ -25,11 +25,10 @@ class SlipDetectionService {
     // ตรวจสอบเเละขอ Permission ก่อนเริ่มทำงาน
     final hasPermission = await requestPermissions();
     if (hasPermission) {
-      print('SlipDetectionService: Permission granted, starting scan...');
-      // เริ่มต้นสแกนย้อนหลัง 10 วันเมื่อเปิดแอป
+      AppLog.d('SlipDetectionService: Permission granted, starting scan...');
       scanPastImages(days: 10);
     } else {
-      print('SlipDetectionService: Permission denied, auto-scan will not work');
+      AppLog.d('SlipDetectionService: Permission denied, auto-scan will not work');
     }
   }
 
@@ -56,7 +55,7 @@ class SlipDetectionService {
         return status.isGranted;
       }
     } catch (e) {
-      print('SlipDetectionService: Error checking permissions: $e');
+      AppLog.e('SlipDetectionService: Error checking permissions', e);
       return false;
     }
   }
@@ -70,7 +69,7 @@ class SlipDetectionService {
       final List<dynamic>? filePaths = await _channel.invokeMethod('scanPastImages', {'days': days});
       
       if (filePaths != null && filePaths.isNotEmpty) {
-        print('SlipDetectionService: Found ${filePaths.length} images from last $days days');
+        AppLog.d('SlipDetectionService: Found ${filePaths.length} images from last $days days');
         
         final List<String> newPathsToProcess = [];
         for (final path in filePaths) {
@@ -80,7 +79,7 @@ class SlipDetectionService {
         }
 
         if (newPathsToProcess.isNotEmpty) {
-          print('SlipDetectionService: Processing ${newPathsToProcess.length} new images');
+          AppLog.d('SlipDetectionService: Processing ${newPathsToProcess.length} new images');
           for (final path in newPathsToProcess) {
             await _handleNewImage(path);
             processedPaths.add(path);
@@ -91,12 +90,10 @@ class SlipDetectionService {
               ? processedPaths.sublist(processedPaths.length - 100)
               : processedPaths;
           await prefs.setString('last_slip_scan_paths', jsonEncode(listToSave));
-        } else {
-          print('SlipDetectionService: No new images to process (all ${filePaths.length} were already processed or skipped)');
         }
       }
     } catch (e) {
-      print('SlipDetectionService: Error scanning past images: $e');
+      AppLog.e('SlipDetectionService: Error scanning past images', e);
     }
   }
 
@@ -104,35 +101,18 @@ class SlipDetectionService {
     final file = File(filePath);
     if (!await file.exists()) return;
 
-    // Check if already processed in this scan or previous ones
-    final prefs = await SharedPreferences.getInstance();
-    final lastScanStr = prefs.getString('last_slip_scan_paths') ?? '[]';
-    final List<String> processedPaths = List<String>.from(jsonDecode(lastScanStr));
-    
-    if (processedPaths.contains(filePath)) {
-      // already processed, skip
-      return;
-    }
-
     // Filter by extension
     final ext = p.extension(filePath).toLowerCase();
     if (ext != '.jpg' && ext != '.jpeg' && ext != '.png') return;
 
     // Filter: Only process if it looks like a bank slip
     if (!isLikelyBankSlip(filePath)) {
-      print('SlipDetectionService: Skipped (Not a likely bank slip): $filePath');
+      AppLog.d('SlipDetectionService: Ignored non-slip image');
       return;
     }
 
-    print('SlipDetectionService: Detect new slip image: $filePath');
+    AppLog.d('SlipDetectionService: Detect new slip image');
     
-    // บันทึกลง processedPaths ทันทีเพื่อกันการทำงานซ้ำซ้อนจาก Race Condition
-    processedPaths.add(filePath);
-    final listToSave = processedPaths.length > 100 
-        ? processedPaths.sublist(processedPaths.length - 100)
-        : processedPaths;
-    await prefs.setString('last_slip_scan_paths', jsonEncode(listToSave));
-
     // ส่งไปยัง Backend API (ซึ่งจะส่งต่อให้ Python OCR อีกที)
     await _uploadToOcr(file);
   }
@@ -160,12 +140,7 @@ class SlipDetectionService {
       'pay',
       'payment',
       'line',
-      'gallery',
-      'dcim',
-      'camera',
-      'telegram',
-      'messenger',
-      'download'
+      'gallery'
     ];
 
     // Check if path contains any of the keywords or screenshots folder
@@ -184,23 +159,9 @@ class SlipDetectionService {
 
   Future<void> _uploadToOcr(File file) async {
     try {
-      final tx = await processManualSlip(file);
-      if (tx != null) {
-        final title = tx.autoCreated ? 'บันทึกรายการสำเร็จอัตโนมัติ' : 'ตรวจพบสลิปการโอนเงิน';
-        final body = tx.autoCreated 
-            ? 'บันทึกรายการจ่ายเงินไปยัง ${tx.receiverName} จำนวน ${tx.amount} บาท เรียบร้อยแล้ว'
-            : 'พบรายการโอนเงินไปยัง ${tx.receiverName} จำนวน ${tx.amount} บาท แตะเพื่อตรวจสอบ';
-
-        // แจ้งเตือนผู้ใช้เมื่อตรวจพบสลิปสำเร็จ
-        await NotificationService.instance.showLocalNotification(
-          title: title,
-          body: body,
-          refType: tx.category.type == 'Expense' ? 'BUDGET' : 'DEBT',
-          refId: tx.transactionId,
-        );
-      }
+      await processManualSlip(file);
     } catch (e) {
-      print('SlipDetectionService: Error in _uploadToOcr: $e');
+      AppLog.e('SlipDetectionService: Error in _uploadToOcr', e);
     }
   }
 
@@ -223,7 +184,7 @@ class SlipDetectionService {
         ),
       );
 
-      print('SlipDetectionService: Uploading to $url');
+      AppLog.d('SlipDetectionService: Uploading slip...');
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       
@@ -231,16 +192,19 @@ class SlipDetectionService {
         final List<dynamic> jsonList = jsonDecode(response.body);
         if (jsonList.isNotEmpty) {
           final Map<String, dynamic> firstItem = jsonList.first;
-          final tx = TransactionResponse.fromJson(firstItem);
-          print('SlipDetectionService: OCR Success for ${tx.receiverName}, amount: ${tx.amount}, autoCreated: ${tx.autoCreated}');
+          final Map<String, dynamic> dataToParse = firstItem.containsKey('slip') 
+              ? firstItem['slip'] as Map<String, dynamic>
+              : firstItem;
+          final tx = TransactionResponse.fromJson(dataToParse);
+          AppLog.d('SlipDetectionService: OCR Success');
           return tx;
         }
       } else {
-        print('SlipDetectionService: OCR Upload Failed: ${response.statusCode} - ${response.body}');
+        AppLog.e('SlipDetectionService: OCR Upload Failed: ${response.statusCode}');
         throw Exception('OCR processing failed with status ${response.statusCode}');
       }
     } catch (e) {
-      print('SlipDetectionService: Error processing slip: $e');
+      AppLog.e('SlipDetectionService: Error processing slip', e);
       rethrow;
     }
     return null;
