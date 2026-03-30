@@ -1302,9 +1302,17 @@ class _AddDebtPageState extends State<AddDebtPage> {
         Text("ประเภทการคำนวณดอกเบี้ย", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         DropdownButtonFormField<InterestCalculationType>(
+          isExpanded: true,
           value: interestCalculationType,
           items: interestCalcTypes
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.label, style: GoogleFonts.kanit())))
+              .map((t) => DropdownMenuItem(
+                    value: t,
+                    child: Text(
+                      t.label,
+                      style: GoogleFonts.kanit(),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ))
               .toList(),
           onChanged: (v) => setState(() => interestCalculationType = v!),
           decoration: InputDecoration(
@@ -1326,9 +1334,17 @@ class _AddDebtPageState extends State<AddDebtPage> {
         Text("รอบการคิดดอกเบี้ย", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         DropdownButtonFormField<InterestInterval>(
+          isExpanded: true,
           value: interestInterval,
           items: InterestInterval.values
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.label, style: GoogleFonts.kanit())))
+              .map((t) => DropdownMenuItem(
+                    value: t,
+                    child: Text(
+                      t.label,
+                      style: GoogleFonts.kanit(),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ))
               .toList(),
           onChanged: (v) => setState(() => interestInterval = v!),
           decoration: InputDecoration(
@@ -1550,9 +1566,17 @@ class _AddDebtPageState extends State<AddDebtPage> {
         Text("รอบการชำระเงิน", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         DropdownButtonFormField<PaymentInterval>(
+          isExpanded: true,
           value: paymentInterval,
           items: PaymentInterval.values
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.label, style: GoogleFonts.kanit())))
+              .map((t) => DropdownMenuItem(
+                    value: t,
+                    child: Text(
+                      t.label,
+                      style: GoogleFonts.kanit(),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ))
               .toList(),
           onChanged: (v) => setState(() => paymentInterval = v!),
           decoration: InputDecoration(
