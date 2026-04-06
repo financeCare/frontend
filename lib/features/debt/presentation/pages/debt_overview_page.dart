@@ -1302,12 +1302,15 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.kanit(
-            fontSize: isBold ? 16 : 14,
-            color: color,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.kanit(
+              fontSize: isBold ? 16 : 14,
+              color: color,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+            ),
+            overflow: TextOverflow.visible,
           ),
         ),
         Text(

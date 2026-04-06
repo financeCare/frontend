@@ -1,41 +1,80 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../../../core/config/config.dart';
-import '../../../../core/services/location_service.dart';
+import '../../../../core/config/config.dart' as Config;
 import '../../../../features/auth/data/services/access_token_service.dart';
 import '../models/job_model.dart';
+import '../models/occupation_model.dart';
 
 class JobService {
-  final LocationService _locationService = LocationService();
+  Future<List<OccupationModel>> getRecommendedOccupations() async {
+    final url = Uri.parse("${Config.baseUrl}/api/jobs/occupations");
+    final token = await AccesstokenService().getAccessToken();
 
-  Future<List<JobModel>> getSuggestedJobs({String? keywords, String? location, double? extraIncomeNeeded}) async {
-    try {
-      String? province = location ?? await _locationService.getCurrentProvince();
-      String? accessToken = await AccesstokenService().getAccessToken();
+    final response = await http.get(
+      url,
+      headers: {"Authorization": "Bearer $token"},
+    );
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/jobs/suggest'),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'keywords': keywords ?? 'part-time',
-          'location': province ?? 'ประเทศไทย',
-          'extraIncomeNeeded': extraIncomeNeeded ?? 0.0,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((json) => JobModel.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to fetch jobs: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('JobService Error: $e');
-      // If error occurs, we can still show some static fallback or empty list
-      return [];
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => OccupationModel.fromJson(json)).toList();
+    } else {
+      throw Exception("Failed to load recommended occupations");
     }
+  }
+
+  Future<List<JobModel>> getSuggestedJobs({
+    String? keywords,
+    String? location,
+    String? currentProfession,
+    List<String>? skills,
+  }) async {
+    final token = await AccesstokenService().getAccessToken();
+    final url = Uri.parse("${Config.baseUrl}/api/jobs/suggest");
+
+    final Map<String, dynamic> body = {
+      "keywords": keywords ?? "part-time",
+      "location": location ?? "ประเทศไทย",
+      "currentProfession": currentProfession,
+      "skills": skills,
+    };
+
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => JobModel.fromJson(json)).toList();
+    } else {
+      throw Exception("Failed to load suggested jobs: ${response.statusCode}");
+    }
+  }
+
+  Future<void> trackApplication({
+    required String jobId,
+    required String jobTitle,
+    required String platform,
+  }) async {
+    final token = await AccesstokenService().getAccessToken();
+    final url = Uri.parse("${Config.baseUrl}/api/jobs/track-application");
+
+    await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode({
+        "jobId": jobId,
+        "jobTitle": jobTitle,
+        "platform": platform,
+      }),
+    );
   }
 }
