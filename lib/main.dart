@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'features/notification/data/services/push_service.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'features/notification/data/models/notification_api.dart';
 import 'features/notification/data/services/notification_service.dart';

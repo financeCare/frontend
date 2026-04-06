@@ -17,7 +17,18 @@ class JobModel {
     required this.requirement,
     required this.platformLinks,
     this.isRecommended = false,
-  }) : assert(title.isNotEmpty, 'Job title cannot be empty'),
-       assert(estimatedIncome.isNotEmpty, 'Estimated income must be provided'),
-       assert(platformLinks.isNotEmpty, 'At least one platform link must be provided');
+  });
+
+  factory JobModel.fromJson(Map<String, dynamic> json) {
+    return JobModel(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      type: json['type'] ?? '',
+      estimatedIncome: json['estimatedIncome'] ?? '',
+      description: json['description'] ?? '',
+      requirement: json['requirement'] ?? '',
+      platformLinks: Map<String, String>.from(json['platformLinks'] ?? {}),
+      isRecommended: json['isRecommended'] ?? false,
+    );
+  }
 }

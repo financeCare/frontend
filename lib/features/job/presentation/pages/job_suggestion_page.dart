@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/models/job_model.dart';
 import '../../data/services/job_service.dart';
 import '../widgets/job_card.dart';
+import '../../../../core/services/location_service.dart';
+import '../../../debt/data/services/debt_service.dart';
 
 class JobSuggestionPage extends StatefulWidget {
   const JobSuggestionPage({super.key});
@@ -13,28 +15,61 @@ class JobSuggestionPage extends StatefulWidget {
 
 class _JobSuggestionPageState extends State<JobSuggestionPage> {
   final JobService _jobService = JobService();
+  final DebtService _debtService = DebtService();
+  final LocationService _locationService = LocationService();
+  final TextEditingController _searchController = TextEditingController();
+  
   List<JobModel> _jobs = [];
   bool _isLoading = true;
+  String? _detectedProvince;
+  double _extraIncomeNeeded = 0;
   String _selectedFilter = 'ทั้งหมด';
 
   final List<String> _filters = [
     'ทั้งหมด',
     'แนะนำ',
     'Work from Home',
-    'หลังเลิกงาน',
-    'เสาร์-อาทิตย์'
+    'Freelance',
+    'Part-time'
   ];
 
   @override
   void initState() {
     super.initState();
-    _loadJobs();
+    _initializeData();
   }
 
-  Future<void> _loadJobs() async {
+  Future<void> _initializeData() async {
+    setState(() => _isLoading = true);
+    
+    // 1. Get current location
+    final province = await _locationService.getCurrentProvince();
+    
+    // 2. Get debt status for extra income needed
+    try {
+      final status = await _debtService.getMonthlyDebtStatus();
+      _extraIncomeNeeded = status.remainingAmount;
+    } catch (e) {
+      print('Error fetching debt status: $e');
+    }
+
+    if (mounted) {
+      setState(() {
+        _detectedProvince = province;
+      });
+    }
+
+    await _loadJobs();
+  }
+
+  Future<void> _loadJobs({String? keywords}) async {
     setState(() => _isLoading = true);
     try {
-      final jobs = await _jobService.getSuggestedJobs();
+      final jobs = await _jobService.getSuggestedJobs(
+        keywords: keywords ?? _searchController.text.trim(),
+        location: _detectedProvince,
+        extraIncomeNeeded: _extraIncomeNeeded,
+      );
       if (mounted) {
         setState(() {
           _jobs = jobs;
@@ -113,27 +148,84 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline, color: Colors.white, size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'เราช่วยคัดสรรอาชีพเสริมที่เหมาะกับคุณ เพื่อเพิ่มรายได้และปลดหนี้ได้รวดเร็วยิ่งขึ้น',
-                          style: GoogleFonts.kanit(
-                            color: Colors.white,
-                            fontSize: 12,
-                            height: 1.4,
-                          ),
+                // Location and Income Gap Info
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_on_outlined, color: Colors.white, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _detectedProvince ?? 'ระบุตำแหน่งไม่ได้',
+                                style: GoogleFonts.kanit(color: Colors.white, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.savings_outlined, color: Colors.white, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${_extraIncomeNeeded.toStringAsFixed(0)} ฿ ที่ต้องการเพิ่ม',
+                                style: GoogleFonts.kanit(color: Colors.white, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Search Bar
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onSubmitted: (value) => _loadJobs(keywords: value),
+                    decoration: InputDecoration(
+                      hintText: 'ค้นหางานตามคำสำคัญ (เช่น งานขับรถ, กราฟิก)',
+                      hintStyle: GoogleFonts.kanit(color: Colors.grey[400], fontSize: 14),
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFF2D955F)),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.send_rounded, color: Color(0xFF2D955F)),
+                        onPressed: () => _loadJobs(keywords: _searchController.text),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
                   ),
                 ),
               ],

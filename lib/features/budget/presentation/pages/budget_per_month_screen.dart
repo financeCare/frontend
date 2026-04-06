@@ -240,12 +240,14 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       final isIncome = tx.category.type == 'Income';
 
       if (d.month == currentMonth && d.year == currentYear) {
-        if (isIncome) curInc += tx.amount;
-        else if (isSaving) curSav += tx.amount;
+        if (isIncome) {
+          curInc += tx.amount;
+        } else if (isSaving) curSav += tx.amount;
         else curExp += tx.amount;
       } else if (d.month == prevMonth && d.year == prevYear) {
-        if (isIncome) preInc += tx.amount;
-        else if (isSaving) preSav += tx.amount;
+        if (isIncome) {
+          preInc += tx.amount;
+        } else if (isSaving) preSav += tx.amount;
         else preExp += tx.amount;
       }
     }
@@ -1654,7 +1656,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
     final double chartTotal = segments.fold(0, (sum, seg) => sum + seg.value);
     final double percent = totalLimit > 0 ? (totalSpent / totalLimit).clamp(0, 1) : 0;
 
-    return Container(
+    return SizedBox(
       width: 110,
       height: 110,
       child: Stack(

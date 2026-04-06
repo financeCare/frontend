@@ -39,8 +39,12 @@ class _OtpPageState extends State<OtpPage> {
 
   @override
   void dispose() {
-    for (var c in _otpControllers) c.dispose();
-    for (var f in _focusNodes) f.dispose();
+    for (var c in _otpControllers) {
+      c.dispose();
+    }
+    for (var f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -232,7 +236,7 @@ class _OtpPageState extends State<OtpPage> {
         ),
         if (_resendTimer > 0)
           Text(
-            "ส่งอีกครั้งใน ${_resendTimer} วินาที",
+            "ส่งอีกครั้งใน $_resendTimer วินาที",
             style: GoogleFonts.kanit(
               fontSize: 13,
               fontWeight: FontWeight.w600,

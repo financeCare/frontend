@@ -12,7 +12,7 @@ class PushService {
   final FlutterSecureStorage _storage = AccesstokenService.sharedStorage;
 
   // เปลี่ยนเป็นของคุณ
-  final String baseUrl = "${Config.baseUrl}";
+  final String baseUrl = Config.baseUrl;
 
   Future<void> init() async {
     try {

@@ -64,6 +64,8 @@ class DebtPayment {
   final double minPaid;
   final double extraPaid;
   final double afterBalance;
+  final bool isDefaulted;
+  final bool isNplRisk;
 
   DebtPayment({
     required this.debtId,
@@ -73,6 +75,8 @@ class DebtPayment {
     required this.minPaid,
     required this.extraPaid,
     required this.afterBalance,
+    this.isDefaulted = false,
+    this.isNplRisk = false,
   });
 
   factory DebtPayment.fromJson(Map<String, dynamic> json) {
@@ -84,6 +88,8 @@ class DebtPayment {
       minPaid: (json['minPaid'] as num?)?.toDouble() ?? 0.0,
       extraPaid: (json['extraPaid'] as num?)?.toDouble() ?? 0.0,
       afterBalance: (json['afterBalance'] as num?)?.toDouble() ?? 0.0,
+      isDefaulted: json['isDefaulted'] ?? false,
+      isNplRisk: json['isNplRisk'] ?? false,
     );
   }
 }

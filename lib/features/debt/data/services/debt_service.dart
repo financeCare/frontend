@@ -198,7 +198,7 @@ class DebtService {
   Future<void> createDebt(DebtRequest debtRequest) async {
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.post(
-      Uri.parse("$url"),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
@@ -288,24 +288,35 @@ class DebtService {
   }
 
   Future<MonthlyDebtStatus> getMonthlyDebtStatus() async {
-    String? accessToken = await AccesstokenService().getAccessToken();
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/debts/monthly-status'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-    );
-    AppLog.d("getMonthlyDebtStatus: ${response.statusCode}");
-    if (response.body.isEmpty) {
-      return MonthlyDebtStatus(
-        totalAmount: 0,
-        paidAmount: 0,
-        remainingAmount: 0,
-        requiredMinPayment: 0,
-        isBudgetInsufficient: false,
+    try {
+      String? accessToken = await AccesstokenService().getAccessToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/debts/monthly-status'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
       );
-    } else {
+      
+      AppLog.d("getMonthlyDebtStatus: ${response.statusCode}");
+      
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) {
+          return MonthlyDebtStatus(
+            totalAmount: 0,
+            paidAmount: 0,
+            remainingAmount: 0,
+            requiredMinPayment: 0,
+            isBudgetInsufficient: false,
+          );
+        }
+        final Map<String, dynamic> jsonMap = json.decode(response.body);
+        return MonthlyDebtStatus.fromJson(jsonMap);
+      } else {
+        throw Exception('Failed to load monthly status');
+      }
+    } catch (e) {
+      AppLog.e('getMonthlyDebtStatus Error: $e');
       return MonthlyDebtStatus(
         totalAmount: 0,
         paidAmount: 0,

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../data/models/repayment_simulation_model.dart';
+import '../data/models/debt_priority_model.dart';
 import '../data/services/repaymentTypeService.dart';
 
 class RepaymentSimulatorPage extends StatefulWidget {
@@ -22,7 +23,7 @@ class RepaymentSimulatorPage extends StatefulWidget {
 }
 
 class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
-  late Future<RepaymentSimulationResponse> _simulationFuture;
+  late Future<Map<String, dynamic>> _dataFuture;
   final Set<int> _expandedMonths = {};
   final NumberFormat _currencyFormat = NumberFormat.currency(
     symbol: '฿',
@@ -32,10 +33,27 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
   @override
   void initState() {
     super.initState();
-    _simulationFuture = RepaymentStrategyService().getSimulationResults(
+    _dataFuture = _loadInitialData();
+  }
+
+  Future<Map<String, dynamic>> _loadInitialData() async {
+    final service = RepaymentStrategyService();
+    final simulation = await service.getSimulationResults(
       widget.monthlyBudget,
       widget.strategy,
     );
+    
+    List<DebtPriorityResponse> priorities = [];
+    try {
+      priorities = await service.fetchDebtPriorities();
+    } catch (e) {
+      debugPrint("Error fetching priorities in simulator: $e");
+    }
+
+    return {
+      'simulation': simulation,
+      'priorities': priorities,
+    };
   }
 
   @override
@@ -111,8 +129,8 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
           ),
         ],
       ),
-      body: FutureBuilder<RepaymentSimulationResponse>(
-        future: _simulationFuture,
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -126,7 +144,20 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
             return const Center(child: Text('ไม่พบข้อมูล'));
           }
 
-          final data = snapshot.data!;
+          final data = snapshot.data!['simulation'] as RepaymentSimulationResponse;
+          final List<DebtPriorityResponse> priorities = snapshot.data!['priorities'] ?? [];
+          
+          // เรียงลำดับรายการหนี้ในแต่ละเดือนตาม priority
+          if (priorities.isNotEmpty) {
+            final priorityMap = {for (var p in priorities) p.debtId: p.priority};
+            for (var month in data.monthlyResults) {
+              month.debtPayments.sort((a, b) {
+                final pA = priorityMap[a.debtId] ?? 999;
+                final pB = priorityMap[b.debtId] ?? 999;
+                return pA.compareTo(pB);
+              });
+            }
+          }
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -792,13 +823,39 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                payment.debtName,
-                style: GoogleFonts.kanit(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
+                  if (payment.isDefaulted)
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'NPL',
+                        style: GoogleFonts.kanit(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red.shade700,
+                        ),
+                      ),
+                    ),
+                  if (!payment.isDefaulted && payment.isNplRisk)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 4.0),
+                      child: Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange),
+                    ),
+                  Expanded(
+                    child: Text(
+                      payment.debtName,
+                      style: GoogleFonts.kanit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: payment.isDefaulted ? Colors.red.shade700 : Colors.black,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
               Text(
                 _currencyFormat.format(payment.minPaid + payment.extraPaid),
                 style: GoogleFonts.outfit(
@@ -818,6 +875,14 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                 _buildSmallStat(
                   'Extra: ',
                   _currencyFormat.format(payment.extraPaid),
+                ),
+              if (payment.isDefaulted)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Text(
+                    '(ค้างชำระครบ 3 งวด)',
+                    style: GoogleFonts.kanit(fontSize: 10, color: Colors.red.shade400),
+                  ),
                 ),
               const Spacer(),
               _buildSmallStat(

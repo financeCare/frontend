@@ -43,6 +43,10 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>แอปพลิเคชันต้องการเข้าถึงตำแหน่งของคุณเพื่อระบุจังหวัดในการใช้งาน</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>แอปพลิเคชันต้องการเข้าถึงตำแหน่งของคุณเพื่อระบุจังหวัดในการใช้งาน</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>

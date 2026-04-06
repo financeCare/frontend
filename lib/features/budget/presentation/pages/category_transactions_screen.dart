@@ -263,7 +263,7 @@ class _CategoryTransactionsScreenState
                         ),
                       ),
                     ),
-                    ...items.map((tx) => _buildTransactionItem(tx)).toList(),
+                    ...items.map((tx) => _buildTransactionItem(tx)),
                   ],
                 );
               },

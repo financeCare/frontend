@@ -106,7 +106,7 @@ class TransactionService {
     String? accessToken = await AccesstokenService().getAccessToken();
 
     final response = await http.post(
-      Uri.parse("$_transactionsUrl"),
+      Uri.parse(_transactionsUrl),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',

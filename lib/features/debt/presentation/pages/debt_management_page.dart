@@ -255,6 +255,62 @@ class _AddDebtPageState extends State<AddDebtPage> {
         .toList();
   }
 
+  void _onDebtTypeSelected(DebtTypeResponse type) {
+    if (widget.isViewOnly) return;
+    
+    setState(() {
+      selectedDebtTypeId = type.debtTypeId;
+      final typeName = type.debtTypeName.toLowerCase();
+
+      // ตรวจสอบและตั้งค่าเริ่มต้นอัจฉริยะตามประเภทหนี้
+      if (typeName.contains('บัตรเครดิต') || typeName.contains('credit card')) {
+        selectedRepaymentTypeId = 7; // Revolving / Credit Line
+        interestCalculationType = InterestCalculationType.THIRTY_360;
+        interestInterval = InterestInterval.MONTHLY;
+        if (debtInterestCtrl.text.isEmpty || debtInterestCtrl.text == "0") {
+          debtInterestCtrl.text = "16.0"; // ตามเกณฑ์ ธปท. สำหรับบัตรเครดิต
+        }
+        debtPenaltyRateCtrl.text = "3.0"; // ดอกเบี้ยปรับสูงสุด 3%
+        isInformal = false;
+      } 
+      else if (typeName.contains('กู้ส่วนบุคคล') || typeName.contains('personal loan')) {
+        selectedRepaymentTypeId = 6; // Installment / EMI
+        interestCalculationType = InterestCalculationType.THIRTY_360;
+        interestInterval = InterestInterval.YEARLY;
+        if (debtInterestCtrl.text.isEmpty || debtInterestCtrl.text == "0") {
+          debtInterestCtrl.text = "25.0"; // เกณฑ์สูงสุดสินเชื่อส่วนบุคคล
+        }
+        isInformal = false;
+      }
+      else if (typeName.contains('รถยนต์') || typeName.contains('car loan')) {
+        selectedRepaymentTypeId = 6; // Installment
+        interestCalculationType = InterestCalculationType.FLAT_RATE;
+        interestInterval = InterestInterval.YEARLY;
+        isInformal = false;
+      }
+      else if (typeName.contains('ที่อยู่อาศัย') || typeName.contains('บ้าน') || typeName.contains('home')) {
+        selectedRepaymentTypeId = 6; // Installment
+        interestCalculationType = InterestCalculationType.THIRTY_360;
+        interestInterval = InterestInterval.YEARLY;
+        isInformal = false;
+      }
+      else if (typeName.contains('นอกระบบ') || typeName.contains('loan shark')) {
+        isInformal = true;
+        interestCalculationType = InterestCalculationType.DAILY_SIMPLE;
+        interestInterval = InterestInterval.DAILY;
+        selectedRepaymentTypeId = 7; // ส่วนใหญ่เป็น Revolving (จ่ายคืนเมื่อมี) หรือ Bullet
+      }
+      else if (typeName.contains('กยศ') || typeName.contains('student loan')) {
+        interestCalculationType = InterestCalculationType.THIRTY_360;
+        interestInterval = InterestInterval.YEARLY;
+        if (debtInterestCtrl.text.isEmpty || debtInterestCtrl.text == "0") {
+          debtInterestCtrl.text = "1.0"; // กยศ. ปกติดอกเบี้ย 1%
+        }
+        selectedRepaymentTypeId = 6;
+      }
+    });
+  }
+
   void filterDebtTypes(String query) {
     setState(() {
       filteredDebtTypeList = debtTypeList
@@ -495,7 +551,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                   decoration: const InputDecoration(labelText: "ชื่อหนี้"),
                 ),
                 DropdownButtonFormField<String>(
-                  value: tempDebtType,
+                  initialValue: tempDebtType,
                   items: debtType
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                       .toList(),
@@ -503,7 +559,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                   decoration: const InputDecoration(labelText: "ประเภทหนี้"),
                 ),
                 DropdownButtonFormField<String>(
-                  value: tempRepaymentType,
+                  initialValue: tempRepaymentType,
                   items: repaymentType
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                       .toList(),
@@ -512,7 +568,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                   decoration: const InputDecoration(labelText: "รูปแบบการชำระคืน"),
                 ),
                 DropdownButtonFormField<InterestCalculationType>(
-                  value: tempCalcType,
+                  initialValue: tempCalcType,
                   items: InterestCalculationType.values
                       .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
                       .toList(),
@@ -520,7 +576,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                   decoration: const InputDecoration(labelText: "ประเภทการคำนวณดอกเบี้ย"),
                 ),
                 DropdownButtonFormField<InterestInterval>(
-                  value: tempInterestInterval,
+                  initialValue: tempInterestInterval,
                   items: InterestInterval.values
                       .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
                       .toList(),
@@ -528,7 +584,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                   decoration: const InputDecoration(labelText: "รอบการคิดดอกเบี้ย"),
                 ),
                 DropdownButtonFormField<PaymentInterval>(
-                  value: tempPaymentInterval,
+                  initialValue: tempPaymentInterval,
                   items: PaymentInterval.values
                       .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
                       .toList(),
@@ -576,12 +632,13 @@ class _AddDebtPageState extends State<AddDebtPage> {
                       firstDate: start,
                       lastDate: DateTime(2100),
                     );
-                    if (p != null)
+                    if (p != null) {
                       setDialogState(
                         () => endDateCtrl.text = p.toIso8601String().split(
                           'T',
                         )[0],
                       );
+                    }
                   },
                 ),
                 TextField(
@@ -621,8 +678,9 @@ class _AddDebtPageState extends State<AddDebtPage> {
               onPressed: () async {
                 final dAmount = double.tryParse(amountCtrl.text);
                 final dInterest = double.tryParse(interestCtrl.text);
-                if (dAmount == null || dInterest == null)
+                if (dAmount == null || dInterest == null) {
                   return;
+                }
 
                 int typeId = debtTypeList
                     .firstWhere((e) => e.debtTypeName == tempDebtType)
@@ -1012,7 +1070,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
           final type = filteredDebtTypeList[index];
           final isSelected = selectedDebtTypeId == type.debtTypeId;
           return GestureDetector(
-            onTap: () => setState(() => selectedDebtTypeId = type.debtTypeId),
+            onTap: () => _onDebtTypeSelected(type),
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey.shade100, width: 0.5),
@@ -1082,8 +1140,9 @@ class _AddDebtPageState extends State<AddDebtPage> {
     if (name.contains('installment') || name.contains('ผ่อนสินค้า')) {
       return Icons.shopping_bag;
     }
-    if (name.contains('tax') || name.contains('ภาษี'))
+    if (name.contains('tax') || name.contains('ภาษี')) {
       return Icons.receipt_long;
+    }
     if (name.contains('loan shark') || name.contains('นอกระบบ')) {
       return Icons.warning_amber_rounded;
     }
@@ -1303,7 +1362,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
         const SizedBox(height: 8),
         DropdownButtonFormField<InterestCalculationType>(
           isExpanded: true,
-          value: interestCalculationType,
+          initialValue: interestCalculationType,
           items: interestCalcTypes
               .map((t) => DropdownMenuItem(
                     value: t,
@@ -1335,7 +1394,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
         const SizedBox(height: 8),
         DropdownButtonFormField<InterestInterval>(
           isExpanded: true,
-          value: interestInterval,
+          initialValue: interestInterval,
           items: InterestInterval.values
               .map((t) => DropdownMenuItem(
                     value: t,
@@ -1398,7 +1457,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
           title: Text("เป็นหนี้นอกระบบ", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
           subtitle: Text("หนี้ที่ไม่ได้อยู่ในระบบสถาบันการเงิน", style: GoogleFonts.kanit(fontSize: 12, color: Colors.grey)),
           value: isInformal,
-          activeColor: primaryColor,
+          activeThumbColor: primaryColor,
           contentPadding: EdgeInsets.zero,
           onChanged: (bool value) {
             setState(() {
@@ -1567,7 +1626,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
         const SizedBox(height: 8),
         DropdownButtonFormField<PaymentInterval>(
           isExpanded: true,
-          value: paymentInterval,
+          initialValue: paymentInterval,
           items: PaymentInterval.values
               .map((t) => DropdownMenuItem(
                     value: t,
@@ -1615,7 +1674,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
           title: Text("ผิดนัดชำระแล้ว", style: GoogleFonts.kanit(fontWeight: FontWeight.w600)),
           subtitle: Text("ทำเครื่องหมายหากถูกจัดเป็นหนี้เสียหรือผิดนัดชำระไปแล้ว", style: GoogleFonts.kanit(fontSize: 12, color: Colors.grey)),
           value: isDefaulted,
-          activeColor: primaryColor,
+          activeThumbColor: primaryColor,
           contentPadding: EdgeInsets.zero,
           onChanged: (bool value) {
             setState(() {

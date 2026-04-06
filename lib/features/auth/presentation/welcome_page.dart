@@ -667,13 +667,16 @@ class _WelcomePageState extends State<WelcomePage> {
           validator: (v) {
             if (v == null || v.isEmpty) return 'กรุณากรอกข้อมูล';
             if (label == 'อีเมล' &&
-                !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v))
+                !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v)) {
               return 'รูปแบบอีเมลไม่ถูกต้อง เช่น email@example.com';
-            if (label == 'รหัสผ่าน' && v.length < 8)
+            }
+            if (label == 'รหัสผ่าน' && v.length < 8) {
               return 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร';
+            }
             if (label == 'ยืนยันรหัสผ่าน' &&
-                v != _passwordController.text)
+                v != _passwordController.text) {
               return 'รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง';
+            }
             return null;
           },
         ),

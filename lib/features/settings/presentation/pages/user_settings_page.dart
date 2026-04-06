@@ -76,9 +76,10 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         _notificationsEnabled = data.userSetting.notificationsEnabled;
         _defaultNotifyTime = data.userSetting.defaultNotifyTime;
         _defaultRemindDaysBefore = data.userSetting.defaultRemindDaysBefore;
-        if (!_isLoading)
+        if (!_isLoading) {
           _isLoading =
               false; // Only set loading false if both done (or handle independently)
+        }
       });
     } catch (e) {
       debugPrint("Error loading user settings: $e");
@@ -686,7 +687,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               Switch(
                 value: _notificationsEnabled,
                 onChanged: (val) => setState(() => _notificationsEnabled = val),
-                activeColor: const Color(0xFF2ECC71),
+                activeThumbColor: const Color(0xFF2ECC71),
               ),
             ],
           ),
@@ -802,7 +803,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
           style: GoogleFonts.kanit(fontSize: 13, color: Colors.black45),
         ),
         const SizedBox(height: 16),
-        ...devices.map((device) => _buildDeviceItem(device)).toList(),
+        ...devices.map((device) => _buildDeviceItem(device)),
       ],
     );
   }
