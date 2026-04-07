@@ -134,24 +134,60 @@ class JobCard extends StatelessWidget {
                   const Icon(Icons.account_balance_wallet_outlined, size: 20, color: Color(0xFF166534)),
                   const SizedBox(width: 8),
                   Text(
-                    'รายได้ประมาณ: ',
+                    'รายได้เฉลี่ย: ',
                     style: GoogleFonts.kanit(
                       fontSize: 14,
                       color: const Color(0xFF166534),
                     ),
                   ),
-                  Text(
-                    job.estimatedIncome,
-                    style: GoogleFonts.kanit(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF166534),
+                  Expanded(
+                    child: Text(
+                      job.estimatedIncome.contains('ตกลง') 
+                          ? job.estimatedIncome 
+                          : '${job.estimatedIncome} บาท / วัน',
+                      style: GoogleFonts.kanit(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF166534),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Job Description Snippet
+            if (job.description.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'รายละเอียดงาน:',
+                      style: GoogleFonts.kanit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF374151),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      job.description,
+                      style: GoogleFonts.kanit(
+                        fontSize: 13,
+                        color: const Color(0xFF4B5563),
+                        height: 1.5,
+                      ),
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 16),
 
             // Advice Box
             Container(

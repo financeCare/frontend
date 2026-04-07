@@ -29,6 +29,17 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
   String? _detectedProvince;
   String _selectedFilter = 'งานที่เหมาะกับคุณ';
   
+  final List<String> _provinces = [
+    'กรุงเทพมหานคร', 'กระบี่', 'กาญจนบุรี', 'กาฬสินธุ์', 'กำแพงเพชร', 'ขอนแก่น', 'จันทบุรี', 'ฉะเชิงเทรา', 'ชลบุรี', 'ชัยนาท', 
+    'ชัยภูมิ', 'ชุมพร', 'เชียงราย', 'เชียงใหม่', 'ตรัง', 'ตราด', 'ตาก', 'นครนายก', 'นครปฐม', 'นครพนม', 
+    'นครราชสีมา', 'นครศรีธรรมราช', 'นครสวรรค์', 'นนทบุรี', 'นราธิวาส', 'น่าน', 'บึงกาฬ', 'บุรีรัมย์', 'ปทุมธานี', 'ประจวบคีรีขันธ์', 
+    'ปราจีนบุรี', 'ปัตตานี', 'พระนครศรีอยุธยา', 'พะเยา', 'พังงา', 'พัทลุง', 'พิจิตร', 'พิษณุโลก', 'เพชรบุรี', 'เพชรบูรณ์', 
+    'แพร่', 'ภูเก็ต', 'มหาสารคาม', 'มุกดาหาร', 'แม่ฮ่องสอน', 'ยโสธร', 'ยะลา', 'ร้อยเอ็ด', 'ระนอง', 'ระยอง', 
+    'ราชบุรี', 'ลพบุรี', 'ลำปาง', 'ลำพูน', 'เลย', 'ศรีสะเกษ', 'สกลนคร', 'สงขลา', 'สตูล', 'สมุทรปราการ', 
+    'สมุทรสงคราม', 'สมุทรสาคร', 'สระแก้ว', 'สระบุรี', 'สิงห์บุรี', 'สุโขทัย', 'สุพรรณบุรี', 'สุราษฎร์ธานี', 'สุรินทร์', 'หนองคาย', 
+    'หนองบัวลำภู', 'อ่างทอง', 'อำนาจเจริญ', 'อุดรธานี', 'อุตรดิตถ์', 'อุทัยธานี', 'อุบลราชธานี'
+  ];
+  
   // New state for profile settings
   List<String> _selectedSkills = [];
 
@@ -87,9 +98,10 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
     }
 
     if (mounted) {
+      final translatedProvince = _translateProvince(province ?? '');
       setState(() {
-        _detectedProvince = province;
-        _locationController.text = province ?? 'ประเทศไทย';
+        _detectedProvince = translatedProvince;
+        _locationController.text = translatedProvince.isEmpty ? 'ประเทศไทย' : translatedProvince;
       });
     }
 
@@ -127,18 +139,38 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
   Future<void> _loadJobs({String? keywords}) async {
     setState(() => _isLoading = true);
     try {
-      final String effectiveKeywords = (keywords != null && keywords.isNotEmpty)
-          ? keywords
-          : (_searchController.text.trim().isNotEmpty)
-              ? _searchController.text.trim()
-              : (_selectedSkills.isNotEmpty)
-                  ? _selectedSkills.join(" ")
-                  : "งานพาร์ทไทม์";
+      String effectiveKeywords;
+      
+      if (_selectedFilter == 'งานที่เหมาะกับคุณ') {
+        // ใช้ทักษะของผู้ใช้เป็นเกณฑ์
+        String baseTerms = (_searchController.text.trim().isNotEmpty)
+            ? _searchController.text.trim()
+            : (_selectedSkills.isNotEmpty)
+                ? _selectedSkills.join(" ")
+                : "งาน";
+        effectiveKeywords = baseTerms;
+      } else if (_selectedFilter == 'งานทั้งหมด') {
+        // ค้นหางานเสริมทั่วไปในพื้นที่
+        effectiveKeywords = "งานเสริม";
+      } else if (_selectedFilter == 'รายวัน') {
+        effectiveKeywords = "รายวัน";
+      } else if (_selectedFilter == 'รายเดือน') {
+        effectiveKeywords = "รายเดือน";
+      } else if (_selectedFilter == 'Part-time') {
+        effectiveKeywords = "Part-time";
+      } else {
+        // ฟิลเตอร์อื่นๆ (เช่น Freelance, Work from Home) ก็ใช้ชื่อฟิลเตอร์เลย
+        effectiveKeywords = _selectedFilter;
+      }
+
+      final String finalLocation = _locationController.text.isEmpty || _locationController.text == 'ประเทศไทย' 
+          ? (_detectedProvince ?? '') 
+          : _locationController.text;
 
       final jobs = await _jobService.getSuggestedJobs(
-        keywords: effectiveKeywords,
-        location: _locationController.text.isEmpty ? _detectedProvince : _locationController.text,
-        skills: _selectedSkills,
+        keywords: keywords ?? effectiveKeywords,
+        location: _translateProvince(finalLocation),
+        skills: _selectedFilter == 'งานที่เหมาะกับคุณ' ? _selectedSkills : [],
       );
       if (mounted) {
         setState(() {
@@ -147,6 +179,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
         });
       }
     } catch (e) {
+      print('Error loading jobs: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -157,11 +190,11 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
   }
 
   List<JobModel> get _filteredJobs {
-    if (_selectedFilter == 'งานทั้งหมด') return _jobs;
     if (_selectedFilter == 'งานที่เหมาะกับคุณ') {
       return _jobs.where((job) => job.isRecommended).toList();
     }
-    return _jobs.where((job) => job.type.contains(_selectedFilter)).toList();
+    // สำหรับฟิลเตอร์อื่นๆ เราใช้ API ในการกรองข้อมูลมาให้แล้วจาก Keywords
+    return _jobs;
   }
 
   @override
@@ -268,26 +301,29 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.withOpacity(0.2)),
-                            ),
-                            child: TextField(
-                              controller: _locationController,
-                              onSubmitted: (value) => _loadJobs(),
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                hintText: 'เมือง หรือ จังหวัด',
-                                hintStyle: GoogleFonts.kanit(fontSize: 14, color: Colors.grey[400]),
-                                suffixIcon: IconButton(
-                                  icon: const Icon(Icons.search, size: 20, color: Color(0xFF2D955F)),
-                                  onPressed: () => _loadJobs(),
-                                ),
+                          GestureDetector(
+                            onTap: _showProvinceSelection,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.withOpacity(0.2)),
                               ),
-                              style: GoogleFonts.kanit(fontSize: 14),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _locationController.text.isEmpty ? 'เลือกจังหวัด' : _locationController.text,
+                                      style: GoogleFonts.kanit(
+                                        fontSize: 14,
+                                        color: _locationController.text.isEmpty ? Colors.grey[400] : Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_drop_down, color: Color(0xFF2D955F)),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -454,6 +490,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                       onSelected: (selected) {
                         if (selected) {
                           setState(() => _selectedFilter = filter);
+                          _loadJobs(); // Trigger API load for the new filter keyword
                         }
                       },
                       selectedColor: const Color(0xFF2D955F),
@@ -854,5 +891,114 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
         ),
       ),
     );
+  }
+
+  void _showProvinceSelection() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Row(
+                    children: [
+                      Text(
+                        'เลือกจังหวัดที่ต้องการทำงาน',
+                        style: GoogleFonts.kanit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _provinces.length,
+                    itemBuilder: (context, index) {
+                      final province = _provinces[index];
+                      final isSelected = _locationController.text == province;
+                      return ListTile(
+                        onTap: () {
+                          setState(() {
+                            _locationController.text = province;
+                          });
+                          Navigator.pop(context);
+                          _loadJobs();
+                        },
+                        title: Text(
+                          province,
+                          style: GoogleFonts.kanit(
+                            color: isSelected ? const Color(0xFF2D955F) : Colors.black87,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        trailing: isSelected ? const Icon(Icons.check, color: Color(0xFF2D955F)) : null,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      ),
+    );
+  }
+
+  String _translateProvince(String name) {
+    if (name.isEmpty) return "";
+    String normalized = name.trim().toLowerCase();
+    
+    final Map<String, String> translationMap = {
+      'bangkok': 'กรุงเทพมหานคร',
+      'chiang mai': 'เชียงใหม่',
+      'phuket': 'ภูเก็ต',
+      'chon buri': 'ชลบุรี',
+      'chonburi': 'ชลบุรี',
+      'rayong': 'ระยอง',
+      'khon kaen': 'ขอนแก่น',
+      'nakhon ratchasima': 'นครราชสีมา',
+      'samut prakan': 'สมุทรปราการ',
+      'nonthaburi': 'นนทบุรี',
+      'pathum thani': 'ปทุมธานี',
+      'surat thani': 'สุราษฎร์ธานี',
+      'songkhla': 'สงขลา',
+      'chiang rai': 'เชียงราย',
+      'ayutthaya': 'พระนครศรีอยุธยา',
+      'phra nakhon si ayutthaya': 'พระนครศรีอยุธยา',
+    };
+
+    // Check mapping
+    for (var entry in translationMap.entries) {
+      if (normalized.contains(entry.key)) return entry.value;
+    }
+
+    // fallback to original if not found (might already be Thai)
+    return name;
   }
 }
