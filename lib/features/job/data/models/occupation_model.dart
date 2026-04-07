@@ -34,7 +34,7 @@ class OccupationModel {
       potentialKeywords: json['potentialKeywords'] ?? '',
       externalUrl: json['externalUrl'],
       platformName: json['platformName'],
-      isBestMatch: json['isBestMatch'] ?? false,
+      isBestMatch: json['isBestMatch'] ?? json['bestMatch'] ?? false,
     );
   }
 }

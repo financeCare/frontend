@@ -30,18 +30,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
   String _selectedFilter = 'งานที่เหมาะกับคุณ';
   
   // New state for profile settings
-  String? _selectedProfession;
   List<String> _selectedSkills = [];
-  
-  final List<String> _professions = [
-    'พนักงานไอที/กราฟิก',
-    'พนักงานบริษัท/ออฟฟิศ',
-    'นักเรียน/นักศึกษา',
-    'พนักงานขาย/แคชเชียร์',
-    'พนักงานโรงงาน',
-    'เจ้าของธุรกิจ/ฟรีแลนซ์',
-    'ไม่มีอาชีพ/ว่างงาน'
-  ];
 
   final List<String> _availableSkills = [
     'ขับรถ', 'คอมพิวเตอร์', 'ภาษาอังกฤษ', 'ภาษาไทย', 'การสื่อสาร', 
@@ -80,7 +69,6 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
       
       if (mounted) {
         setState(() {
-          _selectedProfession = userSetting.currentProfession ?? 'พนักงานไอที/กราฟิก';
           if (userSetting.skills != null && userSetting.skills!.isNotEmpty) {
             _selectedSkills = userSetting.skills!.split(',');
           } else {
@@ -93,7 +81,6 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
       // Fallback to defaults
       if (mounted) {
         setState(() {
-          _selectedProfession = 'พนักงานไอที/กราฟิก';
           _selectedSkills = ['คอมพิวเตอร์'];
         });
       }
@@ -127,15 +114,12 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
   }
 
   Future<void> _updateProfileAndLoadJobs() async {
-    if (_selectedProfession != null) {
-      try {
-        await _userSettingService.updateUserProfile(
-          profession: _selectedProfession!,
-          skills: _selectedSkills,
-        );
-      } catch (e) {
-        print('Error updating profile: $e');
-      }
+    try {
+      await _userSettingService.updateUserProfile(
+        skills: _selectedSkills,
+      );
+    } catch (e) {
+      print('Error updating profile: $e');
     }
     await _loadJobs();
   }
@@ -143,10 +127,17 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
   Future<void> _loadJobs({String? keywords}) async {
     setState(() => _isLoading = true);
     try {
+      final String effectiveKeywords = (keywords != null && keywords.isNotEmpty)
+          ? keywords
+          : (_searchController.text.trim().isNotEmpty)
+              ? _searchController.text.trim()
+              : (_selectedSkills.isNotEmpty)
+                  ? _selectedSkills.join(" ")
+                  : "งานพาร์ทไทม์";
+
       final jobs = await _jobService.getSuggestedJobs(
-        keywords: keywords ?? _searchController.text.trim(),
+        keywords: effectiveKeywords,
         location: _locationController.text.isEmpty ? _detectedProvince : _locationController.text,
-        currentProfession: _selectedProfession,
         skills: _selectedSkills,
       );
       if (mounted) {
@@ -270,40 +261,6 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'อาชีพปัจจุบัน:',
-                            style: GoogleFonts.kanit(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.withOpacity(0.2)),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _selectedProfession,
-                                isExpanded: true,
-                                icon: const Icon(Icons.expand_more, color: Color(0xFF2D955F)),
-                                items: _professions.map((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value, style: GoogleFonts.kanit(fontSize: 14)),
-                                  );
-                                }).toList(),
-                                onChanged: (newValue) {
-                                  setState(() => _selectedProfession = newValue);
-                                  _updateProfileAndLoadJobs();
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
                             'พื้นที่การทำงาน (ระบุจังหวัด):',
                             style: GoogleFonts.kanit(
                               fontSize: 13,
@@ -411,7 +368,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'ระบบกำลังคำนวณงานที่เหมาะกับอาชีพ "$_selectedProfession" และทักษะเฉพาะของคุณให้เป็นพิเศษ',
+                        'ระบบกำลังคำนวณงานที่เหมาะกับทักษะเฉพาะของคุณให้เป็นพิเศษ เพื่อช่วยให้คุณปลดหนี้ได้ไวขึ้น',
                         style: GoogleFonts.kanit(
                           fontSize: 12,
                           color: const Color(0xFF1B5E20),

@@ -24,7 +24,6 @@ class UserSetting {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  final String? currentProfession;
   final String? skills;
 
   UserSetting({
@@ -36,7 +35,6 @@ class UserSetting {
     required this.timezone,
     required this.createdAt,
     required this.updatedAt,
-    this.currentProfession,
     this.skills,
   });
 
@@ -50,7 +48,6 @@ class UserSetting {
       timezone: json['timezone'] ?? "Asia/Bangkok",
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
-      currentProfession: json['currentProfession'],
       skills: json['skills'],
     );
   }

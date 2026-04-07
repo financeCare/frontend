@@ -118,7 +118,6 @@ class UserSettingService {
   }
 
   Future<void> updateUserProfile({
-    required String profession,
     required List<String> skills,
   }) async {
     final token = await AccesstokenService().getAccessToken();
@@ -131,7 +130,6 @@ class UserSettingService {
         "Authorization": "Bearer $token",
       },
       body: jsonEncode({
-        "currentProfession": profession,
         "skills": skills.join(','),
       }),
     );

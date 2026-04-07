@@ -19,6 +19,7 @@ class JobService {
       final List<dynamic> data = jsonDecode(response.body);
       return data.map((json) => OccupationModel.fromJson(json)).toList();
     } else {
+      print('DEBUG ERROR (Occupations): ${response.statusCode} - ${response.body}');
       throw Exception("Failed to load recommended occupations");
     }
   }
@@ -26,16 +27,14 @@ class JobService {
   Future<List<JobModel>> getSuggestedJobs({
     String? keywords,
     String? location,
-    String? currentProfession,
     List<String>? skills,
   }) async {
     final token = await AccesstokenService().getAccessToken();
     final url = Uri.parse("${Config.baseUrl}/api/jobs/suggest");
 
     final Map<String, dynamic> body = {
-      "keywords": keywords ?? "part-time",
-      "location": location ?? "ประเทศไทย",
-      "currentProfession": currentProfession,
+      "keywords": (keywords == null || keywords.isEmpty) ? "part-time" : keywords,
+      "location": (location == null || location.isEmpty) ? "Thailand" : location,
       "skills": skills,
     };
 
@@ -52,6 +51,7 @@ class JobService {
       final List<dynamic> data = jsonDecode(response.body);
       return data.map((json) => JobModel.fromJson(json)).toList();
     } else {
+      print('DEBUG ERROR (SuggestedJobs): ${response.statusCode} - ${response.body}');
       throw Exception("Failed to load suggested jobs: ${response.statusCode}");
     }
   }

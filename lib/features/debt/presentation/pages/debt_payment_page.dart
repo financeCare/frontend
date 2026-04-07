@@ -72,11 +72,11 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
       return;
     }
 
-    if (amount > _selectedDebt!.principalOutstanding) {
+    if (amount > _selectedDebt!.totalRemaining + 0.01) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'ยอดชำระเกินยอดคงเหลือ (คงเหลือ ${NumberFormat('#,##0.00').format(_selectedDebt!.principalOutstanding)} ฿)',
+            'ยอดชำระเกินยอดคงเหลือทั้งหมด (คงเหลือ ${NumberFormat('#,##0.00').format(_selectedDebt!.totalRemaining)} ฿)',
           ),
         ),
       );
@@ -249,7 +249,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
                           ),
                           TextButton(
                             onPressed: () => _onShortcutPressed(
-                              _selectedDebt!.principalOutstanding,
+                              _selectedDebt!.totalRemaining,
                             ),
                             child: Text(
                               'ชำระทั้งหมด',
@@ -313,7 +313,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
         ),
         subtitle: Text(
           _selectedDebt != null
-              ? '${_selectedDebt!.debtType.debtTypeName} / ${_selectedDebt!.repaymentType.typeName} | คงเหลือ ${NumberFormat('#,##0.00').format(_selectedDebt!.principalOutstanding)} ฿'
+              ? '${_selectedDebt!.debtType.debtTypeName} / ${_selectedDebt!.repaymentType.typeName} | คงเหลือทั้งหมด ${NumberFormat('#,##0.00').format(_selectedDebt!.totalRemaining)} ฿'
               : 'แตะเพื่อเลือกหนี้',
           style: GoogleFonts.kanit(fontSize: 12, color: Colors.black45),
         ),
@@ -381,7 +381,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
                         ),
                       ),
                       subtitle: Text(
-                        'คงเหลือ ${NumberFormat('#,##0.00').format(debt.principalOutstanding)} ฿',
+                        'คงเหลือทั้งหมด ${NumberFormat('#,##0.00').format(debt.totalRemaining)} ฿',
                       ),
                       trailing: isSelected
                           ? const Icon(
@@ -419,7 +419,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'ยอดหนี้คงเหลือ',
+            'ยอดหนี้คงเหลือทั้งหมด',
             style: GoogleFonts.kanit(
               color: Colors.white.withOpacity(0.9),
               fontSize: 14,
@@ -427,7 +427,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            '${NumberFormat('#,##0.00').format(debt.principalOutstanding)} ฿',
+            '${NumberFormat('#,##0.00').format(debt.totalRemaining)} ฿',
             style: GoogleFonts.kanit(
               color: Colors.white,
               fontSize: 32,

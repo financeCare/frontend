@@ -28,7 +28,7 @@ class JobModel {
       description: json['description'] ?? '',
       requirement: json['requirement'] ?? '',
       platformLinks: Map<String, String>.from(json['platformLinks'] ?? {}),
-      isRecommended: json['isRecommended'] ?? false,
+      isRecommended: json['isRecommended'] ?? json['recommended'] ?? false,
     );
   }
 }
