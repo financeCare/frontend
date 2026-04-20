@@ -3,27 +3,8 @@ import 'package:http/http.dart' as http;
 import '../../../../core/config/config.dart' as Config;
 import '../../../../features/auth/data/services/access_token_service.dart';
 import '../models/job_model.dart';
-import '../models/occupation_model.dart';
 
 class JobService {
-  Future<List<OccupationModel>> getRecommendedOccupations() async {
-    final url = Uri.parse("${Config.baseUrl}/api/jobs/occupations");
-    final token = await AccesstokenService().getAccessToken();
-
-    final response = await http.get(
-      url,
-      headers: {"Authorization": "Bearer $token"},
-    );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => OccupationModel.fromJson(json)).toList();
-    } else {
-      print('DEBUG ERROR (Occupations): ${response.statusCode} - ${response.body}');
-      throw Exception("Failed to load recommended occupations");
-    }
-  }
-
   Future<List<JobModel>> getSuggestedJobs({
     String? keywords,
     String? location,

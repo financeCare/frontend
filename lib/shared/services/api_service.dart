@@ -4,6 +4,7 @@ import '../../features/auth/presentation/auth_manager.dart';
 import '../../features/budget/domain/models/budget_summary.dart';
 import '../../core/config/config.dart' as Config;
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/navigator_key.dart';
 
 class ApiService {
   static final String _baseUrl = '${Config.baseUrl}/api';
@@ -115,6 +116,8 @@ class ApiService {
       }
       return {};
     } else if (response.statusCode == 401) {
+      // เรียกใช้ตัวจัดการส่วนกลาง
+      AuthManager.handleUnauthorized();
       throw Exception('Unauthorized. Please log in again.');
     } else if (response.statusCode == 400 || response.statusCode == 422) {
       // 400 Bad Request หรือ 422 Unprocessable Entity (Validation Error)

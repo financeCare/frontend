@@ -1,6 +1,7 @@
 import 'dart:convert';
 import '../../domain/models/budget_overview.dart';
 import '../../domain/models/budget_response.dart';
+import '../../../../features/auth/presentation/auth_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -27,6 +28,7 @@ class BudgetService {
       final List<dynamic> jsonList = json.decode(utf8.decode(response.bodyBytes));
       return jsonList.map((json) => BudgetResponse.fromJson(json)).toList();
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -60,6 +62,7 @@ class BudgetService {
       print(jsonList.map((json) => BudgetOverview.fromJson(json)).toList());
       return jsonList.map((json) => BudgetOverview.fromJson(json)).toList();
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -92,6 +95,7 @@ class BudgetService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       print("Budget updated successfully.");
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(

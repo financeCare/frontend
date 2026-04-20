@@ -13,6 +13,7 @@ import '../../../../core/utils/app_logger.dart';
 import '../../../../features/auth/data/services/access_token_service.dart';
 import '../../domain/models/debt_request.dart';
 import '../../domain/models/monthly_debt_status.dart';
+import '../../../../features/auth/presentation/auth_manager.dart';
 
 
 class DebtService {
@@ -34,6 +35,7 @@ class DebtService {
       final List<dynamic> jsonList = json.decode(response.body);
       return jsonList.map((json) => DebtTypeResponse.fromJson(json)).toList();
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -67,6 +69,7 @@ class DebtService {
           .map((json) => RepaymentTypeResponse.fromJson(json))
           .toList();
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -118,6 +121,7 @@ class DebtService {
       final List<dynamic> jsonList = json.decode(response.body);
       return jsonList.map((json) => DebtResponse.fromJson(json)).toList();
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -151,6 +155,7 @@ class DebtService {
       final Map<String, dynamic> jsonMap = json.decode(response.body);
       return DebtResponse.fromJson(jsonMap);
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -179,6 +184,7 @@ class DebtService {
     AppLog.d("deleteDebt: ${response.statusCode}");
     if (response.statusCode == 200) {
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -208,6 +214,7 @@ class DebtService {
     AppLog.d("createDebt: ${response.statusCode}");
     if (response.statusCode == 200 || response.statusCode == 201) {
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -237,6 +244,7 @@ class DebtService {
     AppLog.d("updateDebt: ${response.statusCode}");
     if (response.statusCode == 200 || response.statusCode == 201) {
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -271,6 +279,7 @@ class DebtService {
     AppLog.d("payDebt: ${response.statusCode}");
     if (response.statusCode == 200 || response.statusCode == 201) {
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/models/job_model.dart';
-import '../../data/models/occupation_model.dart';
 import '../../data/services/job_service.dart';
 import '../widgets/job_card.dart';
 import '../../../../core/services/location_service.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../settings/data/services/user_setting_service.dart';
 
 class JobSuggestionPage extends StatefulWidget {
@@ -23,9 +21,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
   final TextEditingController _locationController = TextEditingController();
   
   List<JobModel> _jobs = [];
-  List<OccupationModel> _occupations = [];
   bool _isLoading = true;
-  bool _isOccupationsLoading = true;
   String? _detectedProvince;
   String _selectedFilter = 'งานที่เหมาะกับคุณ';
   
@@ -105,25 +101,10 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
       });
     }
 
-    await _loadOccupations();
     await _loadJobs();
   }
 
-  Future<void> _loadOccupations() async {
-    setState(() => _isOccupationsLoading = true);
-    try {
-      final occupations = await _jobService.getRecommendedOccupations();
-      if (mounted) {
-        setState(() {
-          _occupations = occupations;
-          _isOccupationsLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error loading occupations: $e');
-      if (mounted) setState(() => _isOccupationsLoading = false);
-    }
-  }
+
 
   Future<void> _updateProfileAndLoadJobs() async {
     try {
@@ -418,35 +399,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
             ),
             const SizedBox(height: 16),
 
-            // Recommended Occupations Discovery
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-              child: Row(
-                children: [
-                  Text(
-                    'แนะนำไอเดียอาชีพเสริม',
-                    style: GoogleFonts.kanit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF111827),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _isOccupationsLoading
-                ? const SizedBox(height: 140, child: Center(child: CircularProgressIndicator()))
-                : SizedBox(
-                    height: 180,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: _occupations.length,
-                      itemBuilder: (context, index) {
-                        return _buildOccupationCard(_occupations[index]);
-                      },
-                    ),
-                  ),
+
 
             // Filters
             Padding(
@@ -564,334 +517,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
     );
   }
 
-  Widget _buildOccupationCard(OccupationModel occupation) {
-    return GestureDetector(
-      onTap: () {
-        if (occupation.externalUrl != null) {
-          _showOccupationChoiceSheet(occupation);
-        } else {
-          _searchController.text = occupation.potentialKeywords;
-          _loadJobs(keywords: occupation.potentialKeywords);
-        }
-      },
-      child: Container(
-        width: 160,
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: occupation.isBestMatch 
-                  ? const Color(0xFFF59E0B).withOpacity(0.15) 
-                  : Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-          border: Border.all(
-            color: occupation.isBestMatch 
-                ? const Color(0xFFF59E0B).withOpacity(0.5) 
-                : const Color(0xFFF3F4F6),
-            width: occupation.isBestMatch ? 1.5 : 1.0,
-          ),
-        ),
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: occupation.isBestMatch 
-                        ? const Color(0xFFFFF7ED) 
-                        : const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    _getOccupationIcon(occupation.iconType),
-                    color: occupation.isBestMatch 
-                        ? const Color(0xFFD97706) 
-                        : const Color(0xFF3B82F6),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  occupation.title,
-                  style: GoogleFonts.kanit(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1F2937),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'เฉลี่ย: ',
-                  style: GoogleFonts.kanit(
-                    fontSize: 11,
-                    color: Colors.grey[500],
-                  ),
-                ),
-                Text(
-                  occupation.averageIncome,
-                  style: GoogleFonts.kanit(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: occupation.isBestMatch 
-                        ? const Color(0xFFD97706) 
-                        : const Color(0xFF059669),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const Spacer(),
-                Row(
-                  children: [
-                    Text(
-                      'ดูประกาศงาน',
-                      style: GoogleFonts.kanit(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: occupation.isBestMatch 
-                            ? const Color(0xFFD97706) 
-                            : const Color(0xFF3B82F6),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward, 
-                      size: 12, 
-                      color: occupation.isBestMatch 
-                          ? const Color(0xFFD97706) 
-                          : const Color(0xFF3B82F6)
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            if (occupation.isBestMatch)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF59E0B),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.star, size: 8, color: Colors.white),
-                      const SizedBox(width: 2),
-                      Text(
-                        'ดีที่สุด',
-                        style: GoogleFonts.kanit(
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  IconData _getOccupationIcon(String type) {
-    switch (type) {
-      case 'delivery': return Icons.delivery_dining;
-      case 'computer': return Icons.laptop_mac;
-      case 'teaching': return Icons.school_outlined;
-      case 'sales': return Icons.storefront_outlined;
-      case 'car': return Icons.directions_car_filled_outlined;
-      case 'service': return Icons.home_repair_service_outlined;
-      case 'event': return Icons.event_available;
-      case 'pet': return Icons.pets;
-      case 'admin': return Icons.support_agent;
-      case 'writing': return Icons.edit_note;
-      case 'staff': return Icons.coffee;
-      case 'video': return Icons.video_library;
-      case 'resell': return Icons.loop;
-      case 'shopping': return Icons.shopping_bag;
-      case 'package': return Icons.inventory_2;
-      case 'mystery': return Icons.search;
-      case 'fitness': return Icons.fitness_center;
-      case 'old': return Icons.elderly;
-      case 'beauty': return Icons.brush;
-      case 'house': return Icons.home;
-      case 'laundry': return Icons.local_laundry_service;
-      case 'handmade': return Icons.palette;
-      default: return Icons.work_outline;
-    }
-  }
-
-  void _showOccupationChoiceSheet(OccupationModel occupation) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    _getOccupationIcon(occupation.iconType),
-                    color: const Color(0xFF3B82F6),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        occupation.title,
-                        style: GoogleFonts.kanit(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF111827),
-                        ),
-                      ),
-                      Text(
-                        'เลือกช่องทางที่คุณสนใจ',
-                        style: GoogleFonts.kanit(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            
-            // Option 1: Jooble
-            _buildActionTile(
-              icon: Icons.search_outlined,
-              title: 'ค้นหาประกาศงานบน Jooble',
-              subtitle: 'ดูประกาศรับสมัครจากบริษัทหรือบริษัทจัดหางาน',
-              onTap: () {
-                Navigator.pop(context);
-                _searchController.text = occupation.potentialKeywords;
-                _loadJobs(keywords: occupation.potentialKeywords);
-              },
-            ),
-            const SizedBox(height: 12),
-            
-            // Option 2: Direct Platform
-            if (occupation.externalUrl != null)
-              _buildActionTile(
-                icon: Icons.open_in_new_outlined,
-                title: 'สมัครผ่าน ${occupation.platformName} โดยตรง',
-                subtitle: 'สมัครงานอิสระ (Gig Economy) บนแพลตฟอร์มพาร์ทเนอร์',
-                isPrimary: true,
-                onTap: () async {
-                  Navigator.pop(context);
-                  final uri = Uri.parse(occupation.externalUrl!);
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  }
-                },
-              ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    bool isPrimary = false,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isPrimary ? const Color(0xFFEFF6FF) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isPrimary ? const Color(0xFF3B82F6).withOpacity(0.3) : const Color(0xFFF3F4F6),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isPrimary ? Colors.white : const Color(0xFFF9FAFB),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: isPrimary ? const Color(0xFF3B82F6) : const Color(0xFF6B7280),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.kanit(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1F2937),
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.kanit(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: isPrimary ? const Color(0xFF3B82F6) : Colors.grey[400],
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showProvinceSelection() {
     showModalBottomSheet(

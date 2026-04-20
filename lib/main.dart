@@ -9,6 +9,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'features/notification/data/services/slip_detection_service.dart';
 import 'dart:io';
+import 'core/utils/navigator_key.dart';
 
 
 import 'firebase_options.dart';
@@ -74,7 +75,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final _navKey = GlobalKey<NavigatorState>();
   late final NotificationService _notificationService;
 
   @override
@@ -94,7 +94,7 @@ class _MyAppState extends State<MyApp> {
     await _notificationService.init(
       onTap: ({refType, refId}) {
         // เวลา user กดแจ้งเตือน -> ไปหน้า notify
-        _navKey.currentState?.pushNamed(
+        navigatorKey.currentState?.pushNamed(
           '/notify',
           arguments: {'refType': refType, 'refId': refId},
         );
@@ -111,7 +111,7 @@ class _MyAppState extends State<MyApp> {
         : const WelcomePage();
 
     return MaterialApp(
-      navigatorKey: _navKey,
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'FINANCE CARE FC App',
       localizationsDelegates: const [
