@@ -264,11 +264,11 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
               if (_selectedTab == 'Pending') ...[
                 _buildPendingNotice(pending.length),
                 const SizedBox(height: 16),
-                ...pending.map((r) => _buildPendingReceiverItem(r)).toList(),
+                ...pending.map((r) => _buildPendingReceiverItem(r)),
               ] else ...[
                 _buildMatchedHeader(matched.length),
                 const SizedBox(height: 12),
-                ...matched.map((r) => _buildMatchedReceiverItem(r)).toList(),
+                ...matched.map((r) => _buildMatchedReceiverItem(r)),
               ],
               const SizedBox(height: 40),
             ],
@@ -343,7 +343,7 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
   }
 
   Widget _buildProgressCircle(double percent) {
-    return Container(
+    return SizedBox(
       width: 80,
       height: 80,
       child: Stack(

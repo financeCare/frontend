@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:finance_care/core/utils/app_logger.dart';
+import '../../../auth/presentation/auth_manager.dart';
 
 class NotificationApi {
   final String baseUrl;
@@ -31,7 +32,10 @@ class NotificationApi {
     );
 
     AppLog.d('upsertDevice: ${res.statusCode}');
-    if (res.statusCode != 200 && res.statusCode != 201) {
+    if (res.statusCode == 401) {
+      AuthManager.handleUnauthorized();
+      throw Exception('Register device failed: Unauthorized (401)');
+    } else if (res.statusCode != 200 && res.statusCode != 201) {
       throw Exception('Register device failed: ${res.statusCode}');
     }
   }

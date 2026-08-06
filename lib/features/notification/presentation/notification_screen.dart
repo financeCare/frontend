@@ -47,8 +47,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
       // Fetch notifications based on filter
       String? refTypeFilter;
-      if (_selectedFilter == NotificationFilter.budget)
+      if (_selectedFilter == NotificationFilter.budget) {
         refTypeFilter = 'BUDGET';
+      }
       if (_selectedFilter == NotificationFilter.debt) refTypeFilter = 'DEBT';
 
       final logs = await _api.getLogs(

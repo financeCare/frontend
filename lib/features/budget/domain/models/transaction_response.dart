@@ -39,7 +39,13 @@ class TransactionResponse {
       senderBank: json['senderBank'] as String?,
       receiverName: json['receiverName'] as String?,
       imagePath: json['imagePath'] as String?,
-      slipId: json['slipId'] as int?,
+      slipId: json['slipId'] is int 
+          ? json['slipId'] as int 
+          : (json['id'] is int 
+              ? json['id'] as int 
+              : (json['slipId'] != null 
+                  ? int.tryParse(json['slipId'].toString()) 
+                  : (json['id'] != null ? int.tryParse(json['id'].toString()) : null))),
     );
   }
 

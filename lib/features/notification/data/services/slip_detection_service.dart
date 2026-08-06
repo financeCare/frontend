@@ -201,7 +201,8 @@ class SlipDetectionService {
         }
       } else {
         AppLog.e('SlipDetectionService: OCR Upload Failed: ${response.statusCode}');
-        throw Exception('OCR processing failed with status ${response.statusCode}');
+        AppLog.e('SlipDetectionService: Response body: ${response.body}');
+        throw Exception('OCR processing failed with status ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       AppLog.e('SlipDetectionService: Error processing slip', e);

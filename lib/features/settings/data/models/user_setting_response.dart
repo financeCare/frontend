@@ -24,6 +24,8 @@ class UserSetting {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  final String? skills;
+
   UserSetting({
     required this.userId,
     required this.notificationsEnabled,
@@ -33,6 +35,7 @@ class UserSetting {
     required this.timezone,
     required this.createdAt,
     required this.updatedAt,
+    this.skills,
   });
 
   factory UserSetting.fromJson(Map<String, dynamic> json) {
@@ -45,6 +48,7 @@ class UserSetting {
       timezone: json['timezone'] ?? "Asia/Bangkok",
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
+      skills: json['skills'],
     );
   }
 }

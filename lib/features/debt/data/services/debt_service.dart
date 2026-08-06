@@ -13,6 +13,7 @@ import '../../../../core/utils/app_logger.dart';
 import '../../../../features/auth/data/services/access_token_service.dart';
 import '../../domain/models/debt_request.dart';
 import '../../domain/models/monthly_debt_status.dart';
+import '../../../../features/auth/presentation/auth_manager.dart';
 
 
 class DebtService {
@@ -34,6 +35,7 @@ class DebtService {
       final List<dynamic> jsonList = json.decode(response.body);
       return jsonList.map((json) => DebtTypeResponse.fromJson(json)).toList();
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -67,6 +69,7 @@ class DebtService {
           .map((json) => RepaymentTypeResponse.fromJson(json))
           .toList();
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -118,6 +121,7 @@ class DebtService {
       final List<dynamic> jsonList = json.decode(response.body);
       return jsonList.map((json) => DebtResponse.fromJson(json)).toList();
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -151,6 +155,7 @@ class DebtService {
       final Map<String, dynamic> jsonMap = json.decode(response.body);
       return DebtResponse.fromJson(jsonMap);
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -179,6 +184,7 @@ class DebtService {
     AppLog.d("deleteDebt: ${response.statusCode}");
     if (response.statusCode == 200) {
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -198,7 +204,7 @@ class DebtService {
   Future<void> createDebt(DebtRequest debtRequest) async {
     String? accessToken = await AccesstokenService().getAccessToken();
     final response = await http.post(
-      Uri.parse("$url"),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
@@ -208,6 +214,7 @@ class DebtService {
     AppLog.d("createDebt: ${response.statusCode}");
     if (response.statusCode == 200 || response.statusCode == 201) {
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -237,6 +244,7 @@ class DebtService {
     AppLog.d("updateDebt: ${response.statusCode}");
     if (response.statusCode == 200 || response.statusCode == 201) {
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -271,6 +279,7 @@ class DebtService {
     AppLog.d("payDebt: ${response.statusCode}");
     if (response.statusCode == 200 || response.statusCode == 201) {
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -288,24 +297,35 @@ class DebtService {
   }
 
   Future<MonthlyDebtStatus> getMonthlyDebtStatus() async {
-    String? accessToken = await AccesstokenService().getAccessToken();
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/debts/monthly-status'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-    );
-    AppLog.d("getMonthlyDebtStatus: ${response.statusCode}");
-    if (response.body.isEmpty) {
-      return MonthlyDebtStatus(
-        totalAmount: 0,
-        paidAmount: 0,
-        remainingAmount: 0,
-        requiredMinPayment: 0,
-        isBudgetInsufficient: false,
+    try {
+      String? accessToken = await AccesstokenService().getAccessToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/debts/monthly-status'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
       );
-    } else {
+      
+      AppLog.d("getMonthlyDebtStatus: ${response.statusCode}");
+      
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) {
+          return MonthlyDebtStatus(
+            totalAmount: 0,
+            paidAmount: 0,
+            remainingAmount: 0,
+            requiredMinPayment: 0,
+            isBudgetInsufficient: false,
+          );
+        }
+        final Map<String, dynamic> jsonMap = json.decode(response.body);
+        return MonthlyDebtStatus.fromJson(jsonMap);
+      } else {
+        throw Exception('Failed to load monthly status');
+      }
+    } catch (e) {
+      AppLog.e('getMonthlyDebtStatus Error: $e');
       return MonthlyDebtStatus(
         totalAmount: 0,
         paidAmount: 0,

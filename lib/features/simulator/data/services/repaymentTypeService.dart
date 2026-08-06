@@ -9,11 +9,13 @@ import '../../../../features/auth/data/services/access_token_service.dart';
 
 class RepaymentStrategiesOverview {
   final double actualMinPayment;
+  final double safeMinSum;
   final double monthlyBudget;
   final List<RepaymentStrategyResponse> strategies;
 
   RepaymentStrategiesOverview({
     required this.actualMinPayment,
+    required this.safeMinSum,
     required this.monthlyBudget,
     required this.strategies,
   });
@@ -44,6 +46,8 @@ class RepaymentStrategyService {
         final List strategiesJson = data['repaymentStrategyList'] ?? [];
         final double actualMin =
             (data['actualMinPayment'] as num?)?.toDouble() ?? 0.0;
+        final double safeMin =
+            (data['safeMinSum'] as num?)?.toDouble() ?? 0.0;
         final double budget =
             (data['monthlyBudget'] as num?)?.toDouble() ?? 0.0;
 
@@ -58,6 +62,7 @@ class RepaymentStrategyService {
 
         return RepaymentStrategiesOverview(
           actualMinPayment: actualMin,
+          safeMinSum: safeMin,
           monthlyBudget: budget,
           strategies: strategies,
         );

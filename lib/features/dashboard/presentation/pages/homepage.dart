@@ -36,12 +36,14 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     print('!!! HomePage: initState');
     super.initState();
-    _initNotifications();
-
-    _fetchUnreadCount();
-    print('!!! HomePage: Setting up notification timer');
-    _notifTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initNotifications();
       _fetchUnreadCount();
+      print('!!! HomePage: Setting up notification timer');
+      _notifTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+        _fetchUnreadCount();
+      });
     });
   }
 
@@ -233,27 +235,5 @@ class _HomePageState extends State<HomePage> {
     
   }
 
-  Future<void> _markNotificationsAsRead() async {
-    try {
-      String url = "${Config.baseUrl}/api/notifications/logs/read-all";
-      String? accessToken = await AccesstokenService().getAccessToken();
-      if (accessToken == null) return;
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          unreadNotificationCount = 0;
-        });
-      }
-    } catch (e) {
-      debugPrint("Failed to mark notifications as read: $e");
-    }
-  }
 }

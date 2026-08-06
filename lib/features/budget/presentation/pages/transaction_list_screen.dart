@@ -67,11 +67,13 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
       // Type Filter
       if (_selectedFilter == 'Income' &&
-          tx.category.type.toLowerCase() != 'income')
+          tx.category.type.toLowerCase() != 'income') {
         return false;
+      }
       if (_selectedFilter == 'Expense' &&
-          tx.category.type.toLowerCase() != 'expense')
+          tx.category.type.toLowerCase() != 'expense') {
         return false;
+      }
 
       // Date Filter
       if (_filterDate != null) {
@@ -167,7 +169,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                         (entry) =>
                             _buildTransactionGroup(entry.key, entry.value),
                       )
-                      .toList(),
+                      ,
                 const SliverToBoxAdapter(child: SizedBox(height: 40)),
               ],
             ),
@@ -393,7 +395,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               ],
             ),
           ),
-          ...txs.map((tx) => _buildTransactionItem(tx)).toList(),
+          ...txs.map((tx) => _buildTransactionItem(tx)),
         ]),
       ),
     );

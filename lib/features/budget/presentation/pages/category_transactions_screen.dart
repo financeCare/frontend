@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../data/services/transaction_service.dart';
 import '../../domain/models/transaction_detail.dart';
+import '../../../../core/config/config.dart' as Config;
+import '../../../auth/data/services/access_token_service.dart';
 
 class CategoryTransactionsScreen extends StatefulWidget {
   final int categoryId;
@@ -185,6 +187,100 @@ class _CategoryTransactionsScreenState
     }
   }
 
+  void _showSlipDialog(int slipId) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        clipBehavior: Clip.antiAlias,
+        child: FutureBuilder<String?>(
+          future: AccesstokenService().getAccessToken(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                height: 200,
+                child: const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF2D955F)),
+                ),
+              );
+            }
+            if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+              return Container(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const SizedBox(height: 16),
+                    Text('ไม่สามารถโหลดข้อมูลสลิปได้', style: GoogleFonts.kanit()),
+                  ],
+                ),
+              );
+            }
+
+            final token = snapshot.data!;
+            final url = '${Config.baseUrl}/api/slips/$slipId/image';
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppBar(
+                  title: Text('รูปภาพสลิป', style: GoogleFonts.kanit(fontSize: 16, fontWeight: FontWeight.bold)),
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black87,
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                Flexible(
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.7,
+                    ),
+                    child: InteractiveViewer(
+                      child: Image.network(
+                        url,
+                        headers: {'Authorization': 'Bearer $token'},
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            padding: const EdgeInsets.all(40),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.broken_image_outlined, color: Colors.grey, size: 64),
+                                const SizedBox(height: 16),
+                                Text('โหลดรูปภาพสลิปไม่สำเร็จ', style: GoogleFonts.kanit(color: Colors.black54)),
+                              ],
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: 300,
+                            child: const Center(
+                              child: CircularProgressIndicator(color: Color(0xFF2D955F)),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final grouped = _groupTransactions(_transactions);
@@ -263,7 +359,7 @@ class _CategoryTransactionsScreenState
                         ),
                       ),
                     ),
-                    ...items.map((tx) => _buildTransactionItem(tx)).toList(),
+                    ...items.map((tx) => _buildTransactionItem(tx)),
                   ],
                 );
               },
@@ -340,35 +436,73 @@ class _CategoryTransactionsScreenState
                           ),
                         ),
                         const SizedBox(height: 8),
-                        GestureDetector(
-                          onTap: () => _deleteTransaction(tx),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEB5757).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.delete_outline,
-                                  size: 14,
-                                  color: Color(0xFFEB5757),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'ลบรายการ',
-                                  style: GoogleFonts.kanit(
-                                    fontSize: 11,
-                                    color: const Color(0xFFEB5757),
-                                    fontWeight: FontWeight.bold,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (tx.slipId != null) ...[
+                              GestureDetector(
+                                onTap: () => _showSlipDialog(tx.slipId!),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2D955F).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.receipt_long_outlined,
+                                        size: 14,
+                                        color: Color(0xFF2D955F),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'ดูสลิป',
+                                        style: GoogleFonts.kanit(
+                                          fontSize: 11,
+                                          color: const Color(0xFF2D955F),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            GestureDetector(
+                              onTap: () => _deleteTransaction(tx),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEB5757).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.delete_outline,
+                                      size: 14,
+                                      color: Color(0xFFEB5757),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'ลบรายการ',
+                                      style: GoogleFonts.kanit(
+                                        fontSize: 11,
+                                        color: const Color(0xFFEB5757),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),

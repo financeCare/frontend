@@ -4,6 +4,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/config/config.dart'; // ไฟล์ config.dart ที่มี baseUrl
 import 'package:jwt_decoder/jwt_decoder.dart';
+import '../../../../core/utils/navigator_key.dart';
+import '../../../../core/utils/app_logger.dart';
+import '../../../../core/utils/unauthorized_handler.dart';
 
 class AccesstokenService {
   // HIGH SECURITY: Enable hardware-backed encryption
@@ -66,6 +69,10 @@ class AccesstokenService {
           return newAccessToken;
         } else {
           debugPrint("Refresh token failed: ${response.statusCode}");
+          
+          // เรียกตัวจัดการส่วนกลาง จะได้ไม่เกิดเหตุการณ์ Redirect รัวๆ
+          UnauthorizedHandler.handleUnauthorized();
+          
           return null;
         }
       } else {

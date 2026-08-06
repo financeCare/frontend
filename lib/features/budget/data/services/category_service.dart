@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'package:finance_care/features/budget/domain/models/budgetDto.dart';
-import 'package:finance_care/features/debt/domain/models/debt_dto.dart';
+import '../../../../features/auth/presentation/auth_manager.dart';
 
 import '../../domain/models/category.dart';
 import 'budget_service.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../../core/config/config.dart';
@@ -29,6 +28,7 @@ class CategoryService {
       final List<dynamic> jsonList = json.decode(utf8.decode(response.bodyBytes));
       return jsonList.map((json) => Categories.fromJson(json)).toList();
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(

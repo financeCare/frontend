@@ -36,11 +36,18 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
       if (!mounted) return;
       setState(() {
         _strategies = overview.strategies;
-        _monthlyBudget = overview.monthlyBudget;
+        _monthlyBudget = overview.safeMinSum; // ใช้ safeMinSum เป็นค่าขั้นต่ำที่แสดง
         if (_strategies.isNotEmpty) {
           _selectedStrategy = _strategies.first.strategyId;
-          if (_monthlyBudget > 0) {
-            _budgetController.text = _monthlyBudget.round().toString();
+          
+          // ถ้ามีงบประมาณที่เคยตั้งไว้ (monthlyBudget) ให้ใช้ค่านั้นก่อน
+          // แต่ถ้าไม่มี (เป็น 0) ให้ใช้ safeMinSum (ค่าขั้นต่ำที่ปลอดภัย) เป็นค่าเริ่มต้นให้ผู้ใช้เลย
+          double initialBudget = overview.monthlyBudget > 0 
+              ? overview.monthlyBudget 
+              : overview.safeMinSum;
+
+          if (initialBudget > 0) {
+            _budgetController.text = initialBudget.round().toString();
           }
         }
         _isLoading = false;

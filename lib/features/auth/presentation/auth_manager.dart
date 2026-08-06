@@ -1,4 +1,7 @@
 import '../data/services/access_token_service.dart';
+import '../../../core/utils/navigator_key.dart';
+import '../../../core/utils/app_logger.dart';
+import '../../../core/utils/unauthorized_handler.dart';
 
 class AuthManager {
   static String? _token;
@@ -34,11 +37,17 @@ class AuthManager {
     print('Token cleared successfully from SecureStorage.');
   }
 
-  /// Logout: alias for clearToken (can be extended later)
+  /// Logout: Clear all tokens and storage
   static Future<void> logout() async {
-    await clearToken();
+    _token = null; // Clear memory
     final storage = AccesstokenService.sharedStorage;
-    await storage.delete(key: 'refreshToken');
+    await storage.deleteAll(); // Wipe everything
+    AppLog.d('Logged out and cleared all storage.');
+  }
+
+  /// Centralized handling for 401 Unauthorized
+  static Future<void> handleUnauthorized() async {
+    await UnauthorizedHandler.handleUnauthorized();
   }
 
   /// ตรวจสอบว่ามีการล็อกอินหรือไม่

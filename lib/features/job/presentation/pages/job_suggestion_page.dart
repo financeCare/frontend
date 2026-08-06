@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/models/job_model.dart';
 import '../../data/services/job_service.dart';
 import '../widgets/job_card.dart';
+import '../../../../core/services/location_service.dart';
+import '../../../settings/data/services/user_setting_service.dart';
 
 class JobSuggestionPage extends StatefulWidget {
   const JobSuggestionPage({super.key});
@@ -13,28 +15,276 @@ class JobSuggestionPage extends StatefulWidget {
 
 class _JobSuggestionPageState extends State<JobSuggestionPage> {
   final JobService _jobService = JobService();
+  final LocationService _locationService = LocationService();
+  final UserSettingService _userSettingService = UserSettingService();
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  
   List<JobModel> _jobs = [];
   bool _isLoading = true;
-  String _selectedFilter = 'ทั้งหมด';
+  String? _detectedProvince;
+  String _selectedFilter = 'งานที่เหมาะกับคุณ';
+  
+  final List<String> _provinces = [
+    'กรุงเทพมหานคร', 'กระบี่', 'กาญจนบุรี', 'กาฬสินธุ์', 'กำแพงเพชร', 'ขอนแก่น', 'จันทบุรี', 'ฉะเชิงเทรา', 'ชลบุรี', 'ชัยนาท', 
+    'ชัยภูมิ', 'ชุมพร', 'เชียงราย', 'เชียงใหม่', 'ตรัง', 'ตราด', 'ตาก', 'นครนายก', 'นครปฐม', 'นครพนม', 
+    'นครราชสีมา', 'นครศรีธรรมราช', 'นครสวรรค์', 'นนทบุรี', 'นราธิวาส', 'น่าน', 'บึงกาฬ', 'บุรีรัมย์', 'ปทุมธานี', 'ประจวบคีรีขันธ์', 
+    'ปราจีนบุรี', 'ปัตตานี', 'พระนครศรีอยุธยา', 'พะเยา', 'พังงา', 'พัทลุง', 'พิจิตร', 'พิษณุโลก', 'เพชรบุรี', 'เพชรบูรณ์', 
+    'แพร่', 'ภูเก็ต', 'มหาสารคาม', 'มุกดาหาร', 'แม่ฮ่องสอน', 'ยโสธร', 'ยะลา', 'ร้อยเอ็ด', 'ระนอง', 'ระยอง', 
+    'ราชบุรี', 'ลพบุรี', 'ลำปาง', 'ลำพูน', 'เลย', 'ศรีสะเกษ', 'สกลนคร', 'สงขลา', 'สตูล', 'สมุทรปราการ', 
+    'สมุทรสงคราม', 'สมุทรสาคร', 'สระแก้ว', 'สระบุรี', 'สิงห์บุรี', 'สุโขทัย', 'สุพรรณบุรี', 'สุราษฎร์ธานี', 'สุรินทร์', 'หนองคาย', 
+    'หนองบัวลำภู', 'อ่างทอง', 'อำนาจเจริญ', 'อุดรธานี', 'อุตรดิตถ์', 'อุทัยธานี', 'อุบลราชธานี'
+  ];
+  
+  // New state for profile settings
+  List<String> _selectedSkills = [];
+
+  final List<SkillCategory> _skillCategories = [
+    SkillCategory(
+      name: 'งานสำนักงาน / แอดมิน',
+      icon: Icons.business_center_outlined,
+      skills: ['คีย์ข้อมูล/ธุรการ', 'บัญชีเบื้องต้น', 'จัดการเอกสาร'],
+    ),
+    SkillCategory(
+      name: 'งานบริการ / อาหาร',
+      icon: Icons.local_dining_outlined,
+      skills: ['บริการลูกค้า/ต้อนรับ', 'พนักงานเสิร์ฟ/ช่วยงานครัว', 'ขายสินค้าหน้าร้าน', 'แคชเชียร์'],
+    ),
+    SkillCategory(
+      name: 'งานด้านเทคนิค / ช่าง',
+      icon: Icons.build_outlined,
+      skills: ['งานช่าง/ซ่อมบำรุง', 'ประกอบเฟอร์นิเจอร์', 'ติดตั้ง/ดูแลระบบ'],
+    ),
+    SkillCategory(
+      name: 'งานสร้างสรรค์ / ศิลปะ / มีเดีย',
+      icon: Icons.palette_outlined,
+      skills: [
+        'เขียนบทความ/สร้างคอนเทนต์',
+        'ออกแบบกราฟิก/ดีไซน์',
+        'ถ่ายภาพ/ถ่ายวิดีโอ',
+        'ตัดต่อภาพ/วิดีโอ',
+        'งานฝีมือ/งานประดิษฐ์'
+      ],
+    ),
+    SkillCategory(
+      name: 'งานจัดส่ง / ยานพาหนะ',
+      icon: Icons.local_shipping_outlined,
+      skills: ['ขับรถยนต์/ส่งของ', 'ขี่มอเตอร์ไซค์ส่งอาหาร'],
+    ),
+    SkillCategory(
+      name: 'งานทั่วไป / ลงแรง / ดูแล',
+      icon: Icons.volunteer_activism_outlined,
+      skills: ['แพ็กของ/จัดเตรียมสินค้า', 'รับเลี้ยง/ดูแลสัตว์เลี้ยง', 'งานทำความสะอาด/แม่บ้าน', 'ดูแลเด็ก/ผู้สูงอายุ'],
+    ),
+  ];
+
+  /// แปลงทักษะที่แสดงบน UI ให้เป็นคำค้นหาที่สั้นและกระชับสำหรับการเรียกค้นหาผ่าน API
+  String _mapSkillToSearchKeyword(String skill) {
+    switch (skill) {
+      // งานสำนักงาน / แอดมิน
+      case 'คีย์ข้อมูล/ธุรการ':
+        return 'คีย์ข้อมูล';
+      case 'บัญชีเบื้องต้น':
+        return 'บัญชี';
+      case 'จัดการเอกสาร':
+        return 'คีย์ข้อมูล';
+      // งานบริการ / อาหาร
+      case 'บริการลูกค้า/ต้อนรับ':
+        return 'บริการลูกค้า';
+      case 'พนักงานเสิร์ฟ/ช่วยงานครัว':
+        return 'พนักงานเสิร์ฟ';
+      case 'ขายสินค้าหน้าร้าน':
+        return 'พนักงานขาย';
+      case 'แคชเชียร์':
+        return 'แคชเชียร์';
+      // งานด้านเทคนิค / ช่าง
+      case 'งานช่าง/ซ่อมบำรุง':
+        return 'งานช่าง';
+      case 'ประกอบเฟอร์นิเจอร์':
+        return 'ประกอบเฟอร์นิเจอร์';
+      case 'ติดตั้ง/ดูแลระบบ':
+        return 'ติดตั้ง';
+      // งานสร้างสรรค์ / ศิลปะ / มีเดีย
+      case 'เขียนบทความ/สร้างคอนเทนต์':
+        return 'เขียนบทความ';
+      case 'ออกแบบกราฟิก/ดีไซน์':
+        return 'กราฟิก';
+      case 'ถ่ายภาพ/ถ่ายวิดีโอ':
+        return 'ถ่ายภาพ';
+      case 'ตัดต่อภาพ/วิดีโอ':
+        return 'ตัดต่อ';
+      case 'งานฝีมือ/งานประดิษฐ์':
+        return 'งานฝีมือ';
+      // งานจัดส่ง / ยานพาหนะ
+      case 'ขับรถยนต์/ส่งของ':
+        return 'ขับรถ';
+      case 'ขี่มอเตอร์ไซค์ส่งอาหาร':
+        return 'ส่งอาหาร';
+      // งานทั่วไป / ลงแรง
+      case 'แพ็กของ/จัดเตรียมสินค้า':
+        return 'แพ็กของ';
+      case 'รับเลี้ยง/ดูแลสัตว์เลี้ยง':
+        return 'ดูแลสัตว์';
+      case 'งานทำความสะอาด/แม่บ้าน':
+        return 'แม่บ้าน';
+      case 'ดูแลเด็ก/ผู้สูงอายุ':
+        return 'พี่เลี้ยง';
+      default:
+        return skill;
+    }
+  }
+
+  /// แปลงทักษะแบบคำสั้น (Legacy) ที่ดึงมาจากดาต้าเบส ให้กลายเป็นคำยาวแบบใหม่ใน UI
+  String _mapLegacySkillToUiSkill(String skill) {
+    switch (skill.trim()) {
+      case 'ขับรถ':
+        return 'ขับรถยนต์/ส่งของ';
+      case 'คอมพิวเตอร์':
+        return 'คีย์ข้อมูล/ธุรการ';
+      case 'ภาษาอังกฤษ':
+        return 'ภาษาอังกฤษเพื่อการสื่อสาร';
+      case 'ภาษาไทย':
+        return 'งานแปล/พิสูจน์อักษร';
+      case 'การสื่อสาร':
+        return 'ประสานงาน/บริการลูกค้า';
+      case 'งานบริการ':
+        return 'งานบริการ/พนักงานต้อนรับ';
+      case 'งานช่าง':
+        return 'งานช่าง/ซ่อมบำรุง';
+      case 'งานเขียน':
+        return 'เขียนบทความ/สร้างคอนเทนต์';
+      case 'ออกแบบ':
+        return 'ออกแบบกราฟิก/ดีไซน์';
+      case 'ความอดทน':
+        return 'แพ็กของ/จัดเตรียมสินค้า';
+      case 'การตลาด':
+        return 'การตลาดออนไลน์/ขายสินค้า';
+      case 'ศิลปะ':
+        return 'งานฝีมือ/งานประดิษฐ์';
+      case 'ถ่ายภาพ':
+        return 'ถ่ายภาพ/ถ่ายวิดีโอ';
+      case 'แต่งภาพ':
+        return 'ตัดต่อภาพ/วิดีโอ';
+      case 'ดูแลสัตว์':
+        return 'รับเลี้ยง/ดูแลสัตว์เลี้ยง';
+      default:
+        return skill;
+    }
+  }
 
   final List<String> _filters = [
-    'ทั้งหมด',
-    'แนะนำ',
+    'งานที่เหมาะกับคุณ',
+    'งานทั้งหมด',
+    'รายวัน',
+    'รายเดือน',
     'Work from Home',
-    'หลังเลิกงาน',
-    'เสาร์-อาทิตย์'
+    'Freelance',
+    'Part-time'
   ];
 
   @override
   void initState() {
     super.initState();
-    _loadJobs();
+    _initializeData();
   }
 
-  Future<void> _loadJobs() async {
+  Future<void> _initializeData() async {
+    setState(() => _isLoading = true);
+    
+    // 1. Get current location
+    final province = await _locationService.getCurrentProvince();
+    
+    // 2. Get debt status (logic removed)
+
+    // 3. Get user profile for profession and skills
+    try {
+      final settings = await _userSettingService.fetchUserSettings();
+      final userSetting = settings.userSetting;
+      
+      if (mounted) {
+        setState(() {
+          if (userSetting.skills != null && userSetting.skills!.isNotEmpty) {
+            _selectedSkills = userSetting.skills!
+                .split(',')
+                .map((s) => _mapLegacySkillToUiSkill(s.trim()))
+                .toList();
+          } else {
+            _selectedSkills = ['คีย์ข้อมูล/ธุรการ']; // Default if none
+          }
+        });
+      }
+    } catch (e) {
+      print('Error fetching user settings: $e');
+      // Fallback to defaults
+      if (mounted) {
+        setState(() {
+          _selectedSkills = ['คีย์ข้อมูล/ธุรการ'];
+        });
+      }
+    }
+
+    if (mounted) {
+      final translatedProvince = _translateProvince(province ?? '');
+      setState(() {
+        _detectedProvince = translatedProvince;
+        _locationController.text = translatedProvince.isEmpty ? 'ประเทศไทย' : translatedProvince;
+      });
+    }
+
+    await _loadJobs();
+  }
+
+
+
+  Future<void> _updateProfileAndLoadJobs() async {
+    try {
+      await _userSettingService.updateUserProfile(
+        skills: _selectedSkills,
+      );
+    } catch (e) {
+      print('Error updating profile: $e');
+    }
+    await _loadJobs();
+  }
+
+  Future<void> _loadJobs({String? keywords}) async {
     setState(() => _isLoading = true);
     try {
-      final jobs = await _jobService.getSuggestedJobs();
+      String effectiveKeywords;
+      
+      if (_selectedFilter == 'งานที่เหมาะกับคุณ') {
+        // ใช้ทักษะของผู้ใช้เป็นเกณฑ์ (แปลงเป็นคีย์เวิร์ดสั้นสำหรับการค้นหา)
+        String baseTerms = (_searchController.text.trim().isNotEmpty)
+            ? _searchController.text.trim()
+            : (_selectedSkills.isNotEmpty)
+                ? _selectedSkills.map(_mapSkillToSearchKeyword).join(" ")
+                : "งาน";
+        effectiveKeywords = baseTerms;
+      } else if (_selectedFilter == 'งานทั้งหมด') {
+        // ค้นหางานเสริมทั่วไปในพื้นที่
+        effectiveKeywords = "งานเสริม";
+      } else if (_selectedFilter == 'รายวัน') {
+        effectiveKeywords = "รายวัน";
+      } else if (_selectedFilter == 'รายเดือน') {
+        effectiveKeywords = "รายเดือน";
+      } else if (_selectedFilter == 'Part-time') {
+        effectiveKeywords = "Part-time";
+      } else {
+        // ฟิลเตอร์อื่นๆ (เช่น Freelance, Work from Home) ก็ใช้ชื่อฟิลเตอร์เลย
+        effectiveKeywords = _selectedFilter;
+      }
+
+      final String finalLocation = _locationController.text.isEmpty || _locationController.text == 'ประเทศไทย' 
+          ? (_detectedProvince ?? '') 
+          : _locationController.text;
+
+      final jobs = await _jobService.getSuggestedJobs(
+        keywords: keywords ?? effectiveKeywords,
+        location: _translateProvince(finalLocation),
+        skills: _selectedFilter == 'งานที่เหมาะกับคุณ' 
+            ? _selectedSkills.map(_mapSkillToSearchKeyword).toList() 
+            : [],
+      );
       if (mounted) {
         setState(() {
           _jobs = jobs;
@@ -42,6 +292,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
         });
       }
     } catch (e) {
+      print('Error loading jobs: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -52,11 +303,11 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
   }
 
   List<JobModel> get _filteredJobs {
-    if (_selectedFilter == 'ทั้งหมด') return _jobs;
-    if (_selectedFilter == 'แนะนำ') {
+    if (_selectedFilter == 'งานที่เหมาะกับคุณ') {
       return _jobs.where((job) => job.isRecommended).toList();
     }
-    return _jobs.where((job) => job.type.contains(_selectedFilter)).toList();
+    // สำหรับฟิลเตอร์อื่นๆ เราใช้ API ในการกรองข้อมูลมาให้แล้วจาก Keywords
+    return _jobs;
   }
 
   @override
@@ -80,186 +331,622 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          // Header Banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(left: 24, right: 24, bottom: 32, top: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF2D955F),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Stack(
               children: [
-                Text(
-                  'เพิ่มโอกาส เพิ่มรายได้',
-                  style: GoogleFonts.kanit(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'ปลดหนี้ให้ไวขึ้น!',
-                  style: GoogleFonts.kanit(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                // Green Header Banner (Background)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
+                  width: double.infinity,
+                  height: 280,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF2D955F),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(40),
+                      bottomRight: Radius.circular(40),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline, color: Colors.white, size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'เราช่วยคัดสรรอาชีพเสริมที่เหมาะกับคุณ เพื่อเพิ่มรายได้และปลดหนี้ได้รวดเร็วยิ่งขึ้น',
-                          style: GoogleFonts.kanit(
-                            color: Colors.white,
-                            fontSize: 12,
-                            height: 1.4,
+                ),
+                
+                // Content Column (This defines the Stack's height and enables proper hit-testing)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Welcome Text
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'เพิ่มโอกาส เพิ่มรายได้',
+                            style: GoogleFonts.kanit(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 16,
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Filters
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-            child: Row(
-              children: [
-                Text(
-                  'หมวดหมู่งาน',
-                  style: GoogleFonts.kanit(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF111827),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 40,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: _filters.length,
-              itemBuilder: (context, index) {
-                final filter = _filters[index];
-                final isSelected = filter == _selectedFilter;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: ChoiceChip(
-                    label: Text(
-                      filter,
-                      style: GoogleFonts.kanit(
-                        color: isSelected ? Colors.white : const Color(0xFF4B5563),
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          const SizedBox(height: 4),
+                          Text(
+                            'ปลดหนี้ให้ไวขึ้น!',
+                            style: GoogleFonts.kanit(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() => _selectedFilter = filter);
-                      }
-                    },
-                    selectedColor: const Color(0xFF2D955F),
-                    backgroundColor: Colors.white,
-                    side: BorderSide(
-                      color: isSelected ? const Color(0xFF2D955F) : Colors.grey.withOpacity(0.2),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Job List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF2D955F)))
-                : _filteredJobs.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
-                            const SizedBox(height: 16),
-                            Text(
-                              'ไม่พบงานในหมวดหมู่นี้',
-                              style: GoogleFonts.kanit(
-                                fontSize: 16,
-                                color: Colors.grey[600],
+                    
+                    // Profile Settings Card
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F4F0),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ตั้งค่าโปรไฟล์เพื่อคำนวณงานที่เหมาะ:',
+                            style: GoogleFonts.kanit(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: const Color(0xFF1F2937),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'พื้นที่การทำงาน (ระบุจังหวัด):',
+                            style: GoogleFonts.kanit(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: _showProvinceSelection,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _locationController.text.isEmpty ? 'เลือกจังหวัด' : _locationController.text,
+                                      style: GoogleFonts.kanit(
+                                        fontSize: 14,
+                                        color: _locationController.text.isEmpty ? Colors.grey[400] : Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_drop_down, color: Color(0xFF2D955F)),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadJobs,
-                        color: const Color(0xFF2D955F),
-                        child: ListView.builder(
-                          padding: const EdgeInsets.only(bottom: 32, top: 8),
-                          itemCount: _filteredJobs.length,
-                          itemBuilder: (context, index) {
-                            return JobCard(job: _filteredJobs[index]);
-                          },
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'ทักษะที่คุณถนัด:',
+                            style: GoogleFonts.kanit(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: _showSkillSelectionBottomSheet,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _selectedSkills.isEmpty
+                                        ? Text(
+                                            'แตะเพื่อเลือกทักษะที่คุณถนัด',
+                                            style: GoogleFonts.kanit(
+                                              fontSize: 14,
+                                              color: Colors.grey[400],
+                                            ),
+                                          )
+                                        : Wrap(
+                                            spacing: 6,
+                                            runSpacing: 6,
+                                            children: _selectedSkills.map((skill) {
+                                              return Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFE8F5E9),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: const Color(0xFF2D955F).withOpacity(0.3)),
+                                                ),
+                                                child: Text(
+                                                  skill,
+                                                  style: GoogleFonts.kanit(
+                                                    fontSize: 11,
+                                                    color: const Color(0xFF1B5E20),
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.edit_outlined, color: Color(0xFF2D955F), size: 20),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24), // Natural margin after card
+                  ],
+                ),
+              ],
+            ),
+
+            // Calculation Status Info
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2D955F),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'ระบบกำลังคำนวณงานที่เหมาะกับทักษะเฉพาะของคุณให้เป็นพิเศษ เพื่อช่วยให้คุณปลดหนี้ได้ไวขึ้น',
+                        style: GoogleFonts.kanit(
+                          fontSize: 12,
+                          color: const Color(0xFF1B5E20),
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-          ),
-          // Footer Note (Disclaimer for Presentation)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                    ),
+                  ],
+                ),
               ),
+            ),
+            const SizedBox(height: 16),
+
+
+
+            // Filters
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
               child: Row(
                 children: [
-                   Icon(Icons.tips_and_updates_rounded, color: Colors.blue[700], size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'หมายเหตุ: ระบบเลือกแนะนำงานจาก JobsDB และ Fastwork เนื่องจากเป็นแพลตฟอร์มที่ได้รับความนิยมและมีความน่าเชื่อถือสูงสุดในปัจจุบัน',
-                      style: GoogleFonts.kanit(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                        height: 1.4,
-                        fontStyle: FontStyle.italic,
-                      ),
+                  Text(
+                    'ค้นหาประกาศรับสมัครงาน',
+                    style: GoogleFonts.kanit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF111827),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+            SizedBox(
+              height: 48,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _filters.length,
+                itemBuilder: (context, index) {
+                  final filter = _filters[index];
+                  final isSelected = filter == _selectedFilter;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: ChoiceChip(
+                      label: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          filter,
+                          style: GoogleFonts.kanit(
+                            color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() => _selectedFilter = filter);
+                          _loadJobs(); // Trigger API load for the new filter keyword
+                        }
+                      },
+                      selectedColor: const Color(0xFF2D955F),
+                      backgroundColor: Colors.white,
+                      side: BorderSide(
+                        color: isSelected ? const Color(0xFF2D955F) : Colors.grey.withOpacity(0.2),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      avatar: isSelected ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Job List
+            _isLoading
+                ? const Padding(
+                    padding: EdgeInsets.only(top: 100),
+                    child: Center(child: CircularProgressIndicator(color: Color(0xFF2D955F))),
+                  )
+                : _filteredJobs.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 100),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+                              const SizedBox(height: 16),
+                              Text(
+                                'ไม่พบงานในหมวดหมู่นี้',
+                                style: GoogleFonts.kanit(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 32),
+                        itemCount: _filteredJobs.length,
+                        itemBuilder: (context, index) {
+                          return JobCard(job: _filteredJobs[index]);
+                        },
+                      ),
+            
+            // Footer Note
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Text(
+                '* ข้อมูลงานอ้างอิงจาก Jooble ซึ่งเป็นแพลตฟอร์มรวบรวมงานที่ครอบคลุมที่สุด',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.kanit(
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+
+
+  void _showProvinceSelection() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Row(
+                    children: [
+                      Text(
+                        'เลือกจังหวัดที่ต้องการทำงาน',
+                        style: GoogleFonts.kanit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _provinces.length,
+                    itemBuilder: (context, index) {
+                      final province = _provinces[index];
+                      final isSelected = _locationController.text == province;
+                      return ListTile(
+                        onTap: () {
+                          setState(() {
+                            _locationController.text = province;
+                          });
+                          Navigator.pop(context);
+                          _loadJobs();
+                        },
+                        title: Text(
+                          province,
+                          style: GoogleFonts.kanit(
+                            color: isSelected ? const Color(0xFF2D955F) : Colors.black87,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        trailing: isSelected ? const Icon(Icons.check, color: Color(0xFF2D955F)) : null,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      ),
+    );
+  }
+
+  void _showSkillSelectionBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  // แถบลากปิดของ Bottom Sheet
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                    child: Row(
+                      children: [
+                        Text(
+                          'เลือกทักษะที่คุณถนัด',
+                          style: GoogleFonts.kanit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1F2937),
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      itemCount: _skillCategories.length,
+                      itemBuilder: (context, index) {
+                        final category = _skillCategories[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // หัวข้อหมวดหมู่พร้อมไอคอน
+                              Row(
+                                children: [
+                                  Icon(
+                                    category.icon,
+                                    size: 18,
+                                    color: const Color(0xFF2D955F),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    category.name,
+                                    style: GoogleFonts.kanit(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF374151),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              // รายการทักษะในหมวดหมู่นี้
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: category.skills.map((skill) {
+                                  final isSelected = _selectedSkills.contains(skill);
+                                  return GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () {
+                                      setModalState(() {
+                                        if (isSelected) {
+                                          _selectedSkills.remove(skill);
+                                        } else {
+                                          _selectedSkills.add(skill);
+                                        }
+                                      });
+                                      setState(() {}); // อัปเดต UI หน้าหลักหลักด้วย
+                                      _updateProfileAndLoadJobs();
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 150),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? const Color(0xFF2D955F) : Colors.grey[50],
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: isSelected ? const Color(0xFF2D955F) : Colors.grey.withOpacity(0.2),
+                                        ),
+                                        boxShadow: isSelected ? [
+                                          BoxShadow(
+                                            color: const Color(0xFF2D955F).withOpacity(0.15),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 3),
+                                          )
+                                        ] : null,
+                                      ),
+                                      child: Text(
+                                        skill,
+                                        style: GoogleFonts.kanit(
+                                          fontSize: 11,
+                                          color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // ปุ่มยืนยันปิด Bottom Sheet
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2D955F),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'บันทึกและปิด',
+                          style: GoogleFonts.kanit(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _translateProvince(String name) {
+    if (name.isEmpty) return "";
+    String normalized = name.trim().toLowerCase();
+    
+    final Map<String, String> translationMap = {
+      'bangkok': 'กรุงเทพมหานคร',
+      'chiang mai': 'เชียงใหม่',
+      'phuket': 'ภูเก็ต',
+      'chon buri': 'ชลบุรี',
+      'chonburi': 'ชลบุรี',
+      'rayong': 'ระยอง',
+      'khon kaen': 'ขอนแก่น',
+      'nakhon ratchasima': 'นครราชสีมา',
+      'samut prakan': 'สมุทรปราการ',
+      'nonthaburi': 'นนทบุรี',
+      'pathum thani': 'ปทุมธานี',
+      'surat thani': 'สุราษฎร์ธานี',
+      'songkhla': 'สงขลา',
+      'chiang rai': 'เชียงราย',
+      'ayutthaya': 'พระนครศรีอยุธยา',
+      'phra nakhon si ayutthaya': 'พระนครศรีอยุธยา',
+    };
+
+    // Check mapping
+    for (var entry in translationMap.entries) {
+      if (normalized.contains(entry.key)) return entry.value;
+    }
+
+    // fallback to original if not found (might already be Thai)
+    return name;
+  }
+}
+
+class SkillCategory {
+  final String name;
+  final IconData icon;
+  final List<String> skills;
+
+  SkillCategory({
+    required this.name,
+    required this.icon,
+    required this.skills,
+  });
 }

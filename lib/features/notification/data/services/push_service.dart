@@ -12,41 +12,49 @@ class PushService {
   final FlutterSecureStorage _storage = AccesstokenService.sharedStorage;
 
   // เปลี่ยนเป็นของคุณ
-  final String baseUrl = "${Config.baseUrl}";
+  final String baseUrl = Config.baseUrl;
 
   Future<void> init() async {
-    // 1) ขอ permission (สำคัญมาก โดยเฉพาะ iOS และ Android 13+)
-    await _requestPermission();
+    try {
+      // 1) ขอ permission (สำคัญมาก โดยเฉพาะ iOS และ Android 13+)
+      await _requestPermission();
 
-    // 2) ตั้งค่าการแสดง notification ตอน foreground (iOS)
-    await _messaging.setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+      // 2) ตั้งค่าการแสดง notification ตอน foreground (iOS)
+      await _messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-    // 3) Get token ครั้งแรก
-    final token = await _messaging.getToken();
-    if (token != null) {
-      await _registerDevice(token);
+      // 3) Get token ครั้งแรก
+      final token = await _messaging.getToken();
+      if (token != null) {
+        AppLog.d('PushService: Initial token received');
+        // ยังไม่ต้องสั่งทำงานในส่วนของ PushService (ตามคำขอ)
+        // await _registerDevice(token);
+      }
+
+      // 4) ฟัง token refresh (ต้องทำ ไม่งั้นวันหนึ่งจะส่งไม่ถึง)
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+        AppLog.d('PushService: Token refreshed');
+        // ยังไม่ต้องสั่งทำงานในส่วนของ PushService (ตามคำขอ)
+        // await _registerDevice(newToken);
+      });
+
+      // 5) (Optional) รับ event ตอนผู้ใช้กด notification
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        // TODO: navigate ไปหน้าที่ต้องการ
+      });
+
+      // 6) (Optional) ตอนแอปเปิดอยู่ (foreground) จะได้รับ message ที่นี่
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        // ถ้าส่งเป็น "notification" แบบปกติ
+        // Android มักแสดงเองใน background, แต่ foreground อาจต้องทำ UI เอง
+        // หรือพึ่ง setForegroundNotificationPresentationOptions บน iOS
+      });
+    } catch (e) {
+      AppLog.e('PushService: Initialization failed: $e');
     }
-
-    // 4) ฟัง token refresh (ต้องทำ ไม่งั้นวันหนึ่งจะส่งไม่ถึง)
-    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-      await _registerDevice(newToken);
-    });
-
-    // 5) (Optional) รับ event ตอนผู้ใช้กด notification
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      // TODO: navigate ไปหน้าที่ต้องการ
-    });
-
-    // 6) (Optional) ตอนแอปเปิดอยู่ (foreground) จะได้รับ message ที่นี่
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // ถ้าส่งเป็น "notification" แบบปกติ
-      // Android มักแสดงเองใน background, แต่ foreground อาจต้องทำ UI เอง
-      // หรือพึ่ง setForegroundNotificationPresentationOptions บน iOS
-    });
   }
 
   Future<void> _requestPermission() async {
@@ -64,30 +72,40 @@ class PushService {
   }
 
   Future<void> _registerDevice(String fcmToken) async {
-    final deviceKey = await DeviceService.getOrCreateDeviceId();
-    final info = await DeviceService.getDeviceInfo();
+    try {
+      final deviceKey = await DeviceService.getOrCreateDeviceId();
+      final info = await DeviceService.getDeviceInfo();
 
-    // ถ้าคุณใช้ JWT ให้แนบ token ด้วย
-    final accessToken = await _storage.read(key: "accessToken");
+      // ถ้าคุณใช้ JWT ให้แนบ token ด้วย
+      final accessToken = await _storage.read(key: "accessToken");
 
-    final body = jsonEncode({
-      "deviceKey": deviceKey,
-      "fcmToken": fcmToken,
-      "platform": info["platform"],
-      "deviceName": info["deviceName"],
-    });
+      final body = jsonEncode({
+        "deviceKey": deviceKey,
+        "fcmToken": fcmToken,
+        "platform": info["platform"],
+        "deviceName": info["deviceName"],
+      });
 
-    final res = await http.post(
-      Uri.parse("$baseUrl/api/notifications/devices/register"),
-      headers: {
-        "Content-Type": "application/json",
-        if (accessToken != null) "Authorization": "Bearer $accessToken",
-      },
-      body: body,
-    );
+      final urlStr = "$baseUrl/api/notifications/devices/register";
+      AppLog.d('PushService: Registering device at $urlStr');
 
-    if (res.statusCode != 200) {
-      AppLog.e('Register device failed: ${res.statusCode}');
+      final res = await http.post(
+        Uri.parse(urlStr),
+        headers: {
+          "Content-Type": "application/json",
+          if (accessToken != null) "Authorization": "Bearer $accessToken",
+        },
+        body: body,
+      );
+
+      if (res.statusCode != 200 && res.statusCode != 201) {
+        AppLog.e('PushService: Register device failed with status ${res.statusCode}: ${res.body}');
+      } else {
+        AppLog.d('PushService: Device registered successfully');
+      }
+    } catch (e) {
+      AppLog.e('PushService: Error during device registration: $e');
+      // หากเกิด SocketException (Failed host lookup) จะถูกดักจับที่นี่
     }
   }
 }

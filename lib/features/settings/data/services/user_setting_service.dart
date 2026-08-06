@@ -116,4 +116,26 @@ class UserSettingService {
       );
     }
   }
+
+  Future<void> updateUserProfile({
+    required List<String> skills,
+  }) async {
+    final token = await AccesstokenService().getAccessToken();
+    final url = Uri.parse("${Config.baseUrl}/api/user-setting");
+
+    final response = await http.put(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode({
+        "skills": skills.join(','),
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to update user profile: ${response.statusCode}");
+    }
+  }
 }

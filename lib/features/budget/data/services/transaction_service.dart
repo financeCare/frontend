@@ -6,6 +6,7 @@ import '../../domain/models/transaction_request.dart';
 import '../../../../core/config/config.dart';
 import '../../../../features/auth/data/services/access_token_service.dart';
 import '../../domain/models/transaction_detail.dart';
+import '../../../../features/auth/presentation/auth_manager.dart';
 
 class TransactionService {
   final String _transactionsUrl = '$baseUrl/api/transactions';
@@ -29,6 +30,7 @@ class TransactionService {
           .map((json) => TransactionResponse.fromJson(json))
           .toList();
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
@@ -106,7 +108,7 @@ class TransactionService {
     String? accessToken = await AccesstokenService().getAccessToken();
 
     final response = await http.post(
-      Uri.parse("$_transactionsUrl"),
+      Uri.parse(_transactionsUrl),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
@@ -120,6 +122,7 @@ class TransactionService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       print("Transaction created successfully.");
     } else if (response.statusCode == 401) {
+      AuthManager.handleUnauthorized();
       throw Exception('Authorization failed (401). Please log in again.');
     } else if (response.statusCode == 403) {
       throw Exception(
