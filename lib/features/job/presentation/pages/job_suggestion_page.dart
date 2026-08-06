@@ -39,11 +39,138 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
   // New state for profile settings
   List<String> _selectedSkills = [];
 
-  final List<String> _availableSkills = [
-    'ขับรถ', 'คอมพิวเตอร์', 'ภาษาอังกฤษ', 'ภาษาไทย', 'การสื่อสาร', 
-    'งานบริการ', 'งานช่าง', 'งานเขียน', 'ออกแบบ', 'ความอดทน', 
-    'การตลาด', 'ศิลปะ', 'ถ่ายภาพ', 'แต่งภาพ', 'ดูแลสัตว์'
+  final List<SkillCategory> _skillCategories = [
+    SkillCategory(
+      name: 'งานสำนักงาน / แอดมิน',
+      icon: Icons.business_center_outlined,
+      skills: ['คีย์ข้อมูล/ธุรการ', 'บัญชีเบื้องต้น', 'จัดการเอกสาร'],
+    ),
+    SkillCategory(
+      name: 'งานบริการ / อาหาร',
+      icon: Icons.local_dining_outlined,
+      skills: ['บริการลูกค้า/ต้อนรับ', 'พนักงานเสิร์ฟ/ช่วยงานครัว', 'ขายสินค้าหน้าร้าน', 'แคชเชียร์'],
+    ),
+    SkillCategory(
+      name: 'งานด้านเทคนิค / ช่าง',
+      icon: Icons.build_outlined,
+      skills: ['งานช่าง/ซ่อมบำรุง', 'ประกอบเฟอร์นิเจอร์', 'ติดตั้ง/ดูแลระบบ'],
+    ),
+    SkillCategory(
+      name: 'งานสร้างสรรค์ / ศิลปะ / มีเดีย',
+      icon: Icons.palette_outlined,
+      skills: [
+        'เขียนบทความ/สร้างคอนเทนต์',
+        'ออกแบบกราฟิก/ดีไซน์',
+        'ถ่ายภาพ/ถ่ายวิดีโอ',
+        'ตัดต่อภาพ/วิดีโอ',
+        'งานฝีมือ/งานประดิษฐ์'
+      ],
+    ),
+    SkillCategory(
+      name: 'งานจัดส่ง / ยานพาหนะ',
+      icon: Icons.local_shipping_outlined,
+      skills: ['ขับรถยนต์/ส่งของ', 'ขี่มอเตอร์ไซค์ส่งอาหาร'],
+    ),
+    SkillCategory(
+      name: 'งานทั่วไป / ลงแรง / ดูแล',
+      icon: Icons.volunteer_activism_outlined,
+      skills: ['แพ็กของ/จัดเตรียมสินค้า', 'รับเลี้ยง/ดูแลสัตว์เลี้ยง', 'งานทำความสะอาด/แม่บ้าน', 'ดูแลเด็ก/ผู้สูงอายุ'],
+    ),
   ];
+
+  /// แปลงทักษะที่แสดงบน UI ให้เป็นคำค้นหาที่สั้นและกระชับสำหรับการเรียกค้นหาผ่าน API
+  String _mapSkillToSearchKeyword(String skill) {
+    switch (skill) {
+      // งานสำนักงาน / แอดมิน
+      case 'คีย์ข้อมูล/ธุรการ':
+        return 'คีย์ข้อมูล';
+      case 'บัญชีเบื้องต้น':
+        return 'บัญชี';
+      case 'จัดการเอกสาร':
+        return 'คีย์ข้อมูล';
+      // งานบริการ / อาหาร
+      case 'บริการลูกค้า/ต้อนรับ':
+        return 'บริการลูกค้า';
+      case 'พนักงานเสิร์ฟ/ช่วยงานครัว':
+        return 'พนักงานเสิร์ฟ';
+      case 'ขายสินค้าหน้าร้าน':
+        return 'พนักงานขาย';
+      case 'แคชเชียร์':
+        return 'แคชเชียร์';
+      // งานด้านเทคนิค / ช่าง
+      case 'งานช่าง/ซ่อมบำรุง':
+        return 'งานช่าง';
+      case 'ประกอบเฟอร์นิเจอร์':
+        return 'ประกอบเฟอร์นิเจอร์';
+      case 'ติดตั้ง/ดูแลระบบ':
+        return 'ติดตั้ง';
+      // งานสร้างสรรค์ / ศิลปะ / มีเดีย
+      case 'เขียนบทความ/สร้างคอนเทนต์':
+        return 'เขียนบทความ';
+      case 'ออกแบบกราฟิก/ดีไซน์':
+        return 'กราฟิก';
+      case 'ถ่ายภาพ/ถ่ายวิดีโอ':
+        return 'ถ่ายภาพ';
+      case 'ตัดต่อภาพ/วิดีโอ':
+        return 'ตัดต่อ';
+      case 'งานฝีมือ/งานประดิษฐ์':
+        return 'งานฝีมือ';
+      // งานจัดส่ง / ยานพาหนะ
+      case 'ขับรถยนต์/ส่งของ':
+        return 'ขับรถ';
+      case 'ขี่มอเตอร์ไซค์ส่งอาหาร':
+        return 'ส่งอาหาร';
+      // งานทั่วไป / ลงแรง
+      case 'แพ็กของ/จัดเตรียมสินค้า':
+        return 'แพ็กของ';
+      case 'รับเลี้ยง/ดูแลสัตว์เลี้ยง':
+        return 'ดูแลสัตว์';
+      case 'งานทำความสะอาด/แม่บ้าน':
+        return 'แม่บ้าน';
+      case 'ดูแลเด็ก/ผู้สูงอายุ':
+        return 'พี่เลี้ยง';
+      default:
+        return skill;
+    }
+  }
+
+  /// แปลงทักษะแบบคำสั้น (Legacy) ที่ดึงมาจากดาต้าเบส ให้กลายเป็นคำยาวแบบใหม่ใน UI
+  String _mapLegacySkillToUiSkill(String skill) {
+    switch (skill.trim()) {
+      case 'ขับรถ':
+        return 'ขับรถยนต์/ส่งของ';
+      case 'คอมพิวเตอร์':
+        return 'คีย์ข้อมูล/ธุรการ';
+      case 'ภาษาอังกฤษ':
+        return 'ภาษาอังกฤษเพื่อการสื่อสาร';
+      case 'ภาษาไทย':
+        return 'งานแปล/พิสูจน์อักษร';
+      case 'การสื่อสาร':
+        return 'ประสานงาน/บริการลูกค้า';
+      case 'งานบริการ':
+        return 'งานบริการ/พนักงานต้อนรับ';
+      case 'งานช่าง':
+        return 'งานช่าง/ซ่อมบำรุง';
+      case 'งานเขียน':
+        return 'เขียนบทความ/สร้างคอนเทนต์';
+      case 'ออกแบบ':
+        return 'ออกแบบกราฟิก/ดีไซน์';
+      case 'ความอดทน':
+        return 'แพ็กของ/จัดเตรียมสินค้า';
+      case 'การตลาด':
+        return 'การตลาดออนไลน์/ขายสินค้า';
+      case 'ศิลปะ':
+        return 'งานฝีมือ/งานประดิษฐ์';
+      case 'ถ่ายภาพ':
+        return 'ถ่ายภาพ/ถ่ายวิดีโอ';
+      case 'แต่งภาพ':
+        return 'ตัดต่อภาพ/วิดีโอ';
+      case 'ดูแลสัตว์':
+        return 'รับเลี้ยง/ดูแลสัตว์เลี้ยง';
+      default:
+        return skill;
+    }
+  }
 
   final List<String> _filters = [
     'งานที่เหมาะกับคุณ',
@@ -77,9 +204,12 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
       if (mounted) {
         setState(() {
           if (userSetting.skills != null && userSetting.skills!.isNotEmpty) {
-            _selectedSkills = userSetting.skills!.split(',');
+            _selectedSkills = userSetting.skills!
+                .split(',')
+                .map((s) => _mapLegacySkillToUiSkill(s.trim()))
+                .toList();
           } else {
-            _selectedSkills = ['คอมพิวเตอร์']; // Default if none
+            _selectedSkills = ['คีย์ข้อมูล/ธุรการ']; // Default if none
           }
         });
       }
@@ -88,7 +218,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
       // Fallback to defaults
       if (mounted) {
         setState(() {
-          _selectedSkills = ['คอมพิวเตอร์'];
+          _selectedSkills = ['คีย์ข้อมูล/ธุรการ'];
         });
       }
     }
@@ -123,11 +253,11 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
       String effectiveKeywords;
       
       if (_selectedFilter == 'งานที่เหมาะกับคุณ') {
-        // ใช้ทักษะของผู้ใช้เป็นเกณฑ์
+        // ใช้ทักษะของผู้ใช้เป็นเกณฑ์ (แปลงเป็นคีย์เวิร์ดสั้นสำหรับการค้นหา)
         String baseTerms = (_searchController.text.trim().isNotEmpty)
             ? _searchController.text.trim()
             : (_selectedSkills.isNotEmpty)
-                ? _selectedSkills.join(" ")
+                ? _selectedSkills.map(_mapSkillToSearchKeyword).join(" ")
                 : "งาน";
         effectiveKeywords = baseTerms;
       } else if (_selectedFilter == 'งานทั้งหมด') {
@@ -151,7 +281,9 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
       final jobs = await _jobService.getSuggestedJobs(
         keywords: keywords ?? effectiveKeywords,
         location: _translateProvince(finalLocation),
-        skills: _selectedFilter == 'งานที่เหมาะกับคุณ' ? _selectedSkills : [],
+        skills: _selectedFilter == 'งานที่เหมาะกับคุณ' 
+            ? _selectedSkills.map(_mapSkillToSearchKeyword).toList() 
+            : [],
       );
       if (mounted) {
         setState(() {
@@ -315,44 +447,56 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                               color: Colors.grey[600],
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: _availableSkills.map((skill) {
-                              final isSelected = _selectedSkills.contains(skill);
-                              return GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () {
-                                  setState(() {
-                                    if (isSelected) {
-                                      _selectedSkills.remove(skill);
-                                    } else {
-                                      _selectedSkills.add(skill);
-                                    }
-                                  });
-                                  _updateProfileAndLoadJobs();
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? const Color(0xFF2D955F) : Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: isSelected ? const Color(0xFF2D955F) : Colors.grey.withOpacity(0.2),
-                                    ),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: _showSkillSelectionBottomSheet,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _selectedSkills.isEmpty
+                                        ? Text(
+                                            'แตะเพื่อเลือกทักษะที่คุณถนัด',
+                                            style: GoogleFonts.kanit(
+                                              fontSize: 14,
+                                              color: Colors.grey[400],
+                                            ),
+                                          )
+                                        : Wrap(
+                                            spacing: 6,
+                                            runSpacing: 6,
+                                            children: _selectedSkills.map((skill) {
+                                              return Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFE8F5E9),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: const Color(0xFF2D955F).withOpacity(0.3)),
+                                                ),
+                                                child: Text(
+                                                  skill,
+                                                  style: GoogleFonts.kanit(
+                                                    fontSize: 11,
+                                                    color: const Color(0xFF1B5E20),
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ),
                                   ),
-                                  child: Text(
-                                    skill,
-                                    style: GoogleFonts.kanit(
-                                      fontSize: 12,
-                                      color: isSelected ? Colors.white : const Color(0xFF4B5563),
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.edit_outlined, color: Color(0xFF2D955F), size: 20),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -596,6 +740,172 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
     );
   }
 
+  void _showSkillSelectionBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  // แถบลากปิดของ Bottom Sheet
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                    child: Row(
+                      children: [
+                        Text(
+                          'เลือกทักษะที่คุณถนัด',
+                          style: GoogleFonts.kanit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1F2937),
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      itemCount: _skillCategories.length,
+                      itemBuilder: (context, index) {
+                        final category = _skillCategories[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // หัวข้อหมวดหมู่พร้อมไอคอน
+                              Row(
+                                children: [
+                                  Icon(
+                                    category.icon,
+                                    size: 18,
+                                    color: const Color(0xFF2D955F),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    category.name,
+                                    style: GoogleFonts.kanit(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF374151),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              // รายการทักษะในหมวดหมู่นี้
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: category.skills.map((skill) {
+                                  final isSelected = _selectedSkills.contains(skill);
+                                  return GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () {
+                                      setModalState(() {
+                                        if (isSelected) {
+                                          _selectedSkills.remove(skill);
+                                        } else {
+                                          _selectedSkills.add(skill);
+                                        }
+                                      });
+                                      setState(() {}); // อัปเดต UI หน้าหลักหลักด้วย
+                                      _updateProfileAndLoadJobs();
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 150),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? const Color(0xFF2D955F) : Colors.grey[50],
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: isSelected ? const Color(0xFF2D955F) : Colors.grey.withOpacity(0.2),
+                                        ),
+                                        boxShadow: isSelected ? [
+                                          BoxShadow(
+                                            color: const Color(0xFF2D955F).withOpacity(0.15),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 3),
+                                          )
+                                        ] : null,
+                                      ),
+                                      child: Text(
+                                        skill,
+                                        style: GoogleFonts.kanit(
+                                          fontSize: 11,
+                                          color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // ปุ่มยืนยันปิด Bottom Sheet
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2D955F),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'บันทึกและปิด',
+                          style: GoogleFonts.kanit(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   String _translateProvince(String name) {
     if (name.isEmpty) return "";
     String normalized = name.trim().toLowerCase();
@@ -627,4 +937,16 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
     // fallback to original if not found (might already be Thai)
     return name;
   }
+}
+
+class SkillCategory {
+  final String name;
+  final IconData icon;
+  final List<String> skills;
+
+  SkillCategory({
+    required this.name,
+    required this.icon,
+    required this.skills,
+  });
 }

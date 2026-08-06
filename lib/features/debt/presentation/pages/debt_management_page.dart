@@ -1310,7 +1310,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
         _buildInputField(
           "จำนวนเงินต้น",
           debtAmountCtrl,
-          Icons.money,
+          Icons.payments_outlined,
           "฿",
           hintText: "0.00",
           inputFormatters: [
@@ -1339,8 +1339,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
         _buildInputField(
           "ดอกเบี้ยค้างชำระยกมา (ถ้ามี)",
           initialInterestCtrl,
-          Icons.percent,
-          "%",
+          Icons.monetization_on_outlined,
+          "฿",
           hintText: "ยอดดอกเบี้ยที่ค้างอยู่เดิม",
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
@@ -1350,7 +1350,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
         _buildInputField(
           "ค่าปรับ/ค่าธรรมเนียมค้างชำระยกมา (ถ้ามี)",
           initialLateFeeCtrl,
-          Icons.warning_amber_rounded,
+          Icons.receipt_long_outlined,
           "฿",
           hintText: "ยอดค่าปรับที่ค้างอยู่เดิม",
           inputFormatters: [

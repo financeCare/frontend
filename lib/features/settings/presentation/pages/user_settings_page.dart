@@ -60,7 +60,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       debugPrint("Logout failed: $e");
     }
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/');
+      Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (route) => false);
     }
   }
 
@@ -458,7 +458,6 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     _salaryController.dispose();
     _salaryFocusNode.dispose();
     _scrollController.dispose();
-    _googleSignIn.disconnect();
     super.dispose();
   }
 

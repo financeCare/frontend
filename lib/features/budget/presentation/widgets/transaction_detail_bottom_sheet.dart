@@ -13,7 +13,11 @@ class TransactionDetailBottomSheet extends StatelessWidget {
     required this.onEdit,
   });
 
-  static void show(BuildContext context, TransactionResponse transaction, VoidCallback onEdit) {
+  static void show(
+    BuildContext context,
+    TransactionResponse transaction,
+    VoidCallback onEdit,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -29,7 +33,9 @@ class TransactionDetailBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isIncome = transaction.category.type.toLowerCase() == 'income';
     final currencyFormat = NumberFormat.currency(symbol: '฿', decimalDigits: 2);
-    final String formattedDate = (transaction.transactionDate.hour == 0 && transaction.transactionDate.minute == 0)
+    final String formattedDate =
+        (transaction.transactionDate.hour == 0 &&
+            transaction.transactionDate.minute == 0)
         ? DateFormat('dd MMM yyyy').format(transaction.transactionDate)
         : DateFormat('dd MMM yyyy, HH:mm').format(transaction.transactionDate);
 
@@ -89,7 +95,9 @@ class TransactionDetailBottomSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: isIncome ? const Color(0xFF2D955F).withOpacity(0.1) : Colors.grey[100],
+              color: isIncome
+                  ? const Color(0xFF2D955F).withOpacity(0.1)
+                  : Colors.grey[100],
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -113,11 +121,14 @@ class TransactionDetailBottomSheet extends StatelessWidget {
                 _buildDetailRow('Sender Bank', transaction.senderBank ?? '-'),
                 _buildDetailRow('Receiver', transaction.receiverName ?? '-'),
                 _buildDetailRow('Ref ID', transaction.transactionId),
-                _buildDetailRow('Note', transaction.description.isNotEmpty ? transaction.description : '-'),
-                
-                const SizedBox(height: 16),
-                
+                _buildDetailRow(
+                  'Note',
+                  transaction.description.isNotEmpty
+                      ? transaction.description
+                      : '-',
+                ),
 
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -168,10 +179,7 @@ class TransactionDetailBottomSheet extends StatelessWidget {
             flex: 2,
             child: Text(
               key,
-              style: GoogleFonts.kanit(
-                fontSize: 14,
-                color: Colors.black45,
-              ),
+              style: GoogleFonts.kanit(fontSize: 14, color: Colors.black45),
             ),
           ),
           Expanded(

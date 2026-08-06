@@ -89,7 +89,19 @@ class _WelcomePageState extends State<WelcomePage> {
       }
     } catch (error) {
       print('!!! Google login error: $error');
-      _showErrorDialog("Google Login Failed: $error");
+      String errorMessage = "การเข้าสู่ระบบด้วย Google ล้มเหลว: $error";
+      final errorStr = error.toString().toLowerCase();
+      if (errorStr.contains('network_error') || 
+          errorStr.contains('socketexception') || 
+          errorStr.contains('failed host lookup') ||
+          errorStr.contains('connection failed')) {
+        errorMessage = "ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้ กรุณาตรวจสอบการเชื่อมต่อของอุปกรณ์และลองใหม่อีกครั้ง";
+      } else if (errorStr.contains('sign_in_canceled')) {
+        errorMessage = "การลงชื่อเข้าใช้งานถูกยกเลิก";
+      } else if (errorStr.contains('sign_in_failed')) {
+        errorMessage = "การลงชื่อเข้าใช้งานล้มเหลว กรุณาตรวจสอบสิทธิ์การใช้งานบัญชีของคุณ";
+      }
+      _showErrorDialog(errorMessage);
     } finally {
       if (!mounted) {
         print('!!! WelcomePage unmounted during login');
