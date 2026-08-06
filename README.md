@@ -87,7 +87,7 @@ lib/
 ### 3. ตั้งค่า LINE SDK
 * LINE Login จะทำงานผ่าน ID ช่องทางที่ระบุไว้ใน `lib/main.dart`:
   ```dart
-  await LineSDK.instance.setup('1111111111'); // Channel ID ของ LINE Developers
+  await LineSDK.instance.setup('2008279064'); // Channel ID ของ LINE Developers
   ```
 * ตรวจสอบว่าแอปของคุณได้ตั้งค่า Redirect URI และ Schema ในฝั่ง Native แล้ว (`android/app/build.gradle` และ `ios/Runner/Info.plist`)
 
