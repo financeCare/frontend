@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../../../../core/config/config.dart' as Config;
+import '../../../../core/config/config.dart' as config;
 import 'package:finance_care/features/auth/data/services/access_token_service.dart';
 import 'package:finance_care/features/auth/data/services/device_service.dart';
 import 'package:finance_care/features/settings/data/models/user_setting_response.dart';
@@ -9,7 +9,7 @@ import 'package:finance_care/features/settings/data/models/user_setting_response
 class UserSettingService {
   Future<UserSettingOverview> fetchUserSettings() async {
     final token = await AccesstokenService().getAccessToken();
-    final url = Uri.parse("${Config.baseUrl}/api/user-setting");
+    final url = Uri.parse("${config.baseUrl}/api/user-setting");
 
     debugPrint("====== USER SETTING API ======");
     debugPrint("URL => $url");
@@ -40,7 +40,7 @@ class UserSettingService {
     required int daysBefore,
   }) async {
     final token = await AccesstokenService().getAccessToken();
-    final url = Uri.parse("${Config.baseUrl}/api/user-setting");
+    final url = Uri.parse("${config.baseUrl}/api/user-setting");
 
     final response = await http.put(
       url,
@@ -63,7 +63,7 @@ class UserSettingService {
   Future<void> deleteDevice(String deviceId) async {
     final token = await AccesstokenService().getAccessToken();
     final url = Uri.parse(
-      "${Config.baseUrl}/api/notifications/devices/$deviceId",
+      "${config.baseUrl}/api/notifications/devices/$deviceId",
     );
 
     final response = await http.delete(
@@ -81,7 +81,7 @@ class UserSettingService {
 
   Future<double> getSalary() async {
     final token = await AccesstokenService().getAccessToken();
-    final url = Uri.parse("${Config.baseUrl}/api/budget/salary");
+    final url = Uri.parse("${config.baseUrl}/api/budget/salary");
 
     final response = await http.get(
       url,
@@ -100,7 +100,7 @@ class UserSettingService {
 
   Future<void> setSalary(double amount) async {
     final token = await AccesstokenService().getAccessToken();
-    final url = Uri.parse("${Config.baseUrl}/api/budget/salary/$amount");
+    final url = Uri.parse("${config.baseUrl}/api/budget/salary/$amount");
 
     final response = await http.post(
       url,
@@ -121,7 +121,7 @@ class UserSettingService {
     required List<String> skills,
   }) async {
     final token = await AccesstokenService().getAccessToken();
-    final url = Uri.parse("${Config.baseUrl}/api/user-setting");
+    final url = Uri.parse("${config.baseUrl}/api/user-setting");
 
     final response = await http.put(
       url,

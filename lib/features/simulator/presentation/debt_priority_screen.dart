@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../data/models/debt_priority_model.dart';
-import '../data/services/repaymentTypeService.dart';
-import 'RepaymentSimulatorPage.dart';
+import '../data/services/repayment_type_service.dart';
+import 'repayment_simulator_page.dart';
 
 class DebtPriorityScreen extends StatefulWidget {
   final double monthlyBudget;
@@ -518,7 +518,7 @@ class _DebtPriorityScreenState extends State<DebtPriorityScreen> {
                       'ดำเนินการต่อเพื่อดูรายละเอียดไทม์ไลน์การชำระหนี้',
                       style: GoogleFonts.kanit(
                         fontSize: 13,
-                        color: const Color(0xFF1B5E20).withOpacity(0.7),
+                        color: const Color(0xFF1B5E20).withValues(alpha: 0.7),
                       ),
                     ),
                   ],

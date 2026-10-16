@@ -142,7 +142,7 @@ class _OtpPageState extends State<OtpPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D955F).withOpacity(0.08),
+        color: const Color(0xFF2D955F).withValues(alpha: 0.08),
         shape: BoxShape.circle,
       ),
       child: const Icon(
@@ -167,7 +167,7 @@ class _OtpPageState extends State<OtpPage> {
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FA),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: TextField(
         controller: _otpControllers[index],
@@ -199,7 +199,7 @@ class _OtpPageState extends State<OtpPage> {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(
             0xFF2D955F,
-          ).withOpacity(isComplete ? 1.0 : 0.4),
+          ).withValues(alpha: isComplete ? 1.0 : 0.4),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

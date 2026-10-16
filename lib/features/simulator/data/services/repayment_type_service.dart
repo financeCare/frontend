@@ -4,7 +4,7 @@ import 'package:finance_care/features/simulator/data/models/repayment_simulation
 import 'package:finance_care/features/simulator/data/models/debt_priority_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import '../../../../core/config/config.dart' as Config;
+import '../../../../core/config/config.dart' as config;
 import '../../../../features/auth/data/services/access_token_service.dart';
 
 class RepaymentStrategiesOverview {
@@ -24,7 +24,7 @@ class RepaymentStrategiesOverview {
 class RepaymentStrategyService {
   Future<RepaymentStrategiesOverview> fetchStrategies() async {
     final token = await AccesstokenService().getAccessToken();
-    final url = Uri.parse("${Config.baseUrl}/api/repayment-plans/strategies");
+    final url = Uri.parse("${config.baseUrl}/api/repayment-plans/strategies");
 
     debugPrint("====== STRATEGY API ======");
     debugPrint("URL => $url");
@@ -82,7 +82,7 @@ class RepaymentStrategyService {
   }) async {
     final token = await AccesstokenService().getAccessToken();
 
-    final url = Uri.parse("${Config.baseUrl}/api/repayment-plans");
+    final url = Uri.parse("${config.baseUrl}/api/repayment-plans");
 
     final response = await http.post(
       url,
@@ -105,7 +105,7 @@ class RepaymentStrategyService {
 
   Future<List<DebtPriorityResponse>> fetchDebtPriorities() async {
     final token = await AccesstokenService().getAccessToken();
-    final url = Uri.parse("${Config.baseUrl}/api/debts/priorities");
+    final url = Uri.parse("${config.baseUrl}/api/debts/priorities");
 
     final response = await http.get(
       url,
@@ -127,7 +127,7 @@ class RepaymentStrategyService {
     List<DebtPriorityUpdateRequest> priorities,
   ) async {
     final token = await AccesstokenService().getAccessToken();
-    final url = Uri.parse("${Config.baseUrl}/api/debts/priorities");
+    final url = Uri.parse("${config.baseUrl}/api/debts/priorities");
 
     final response = await http.put(
       url,
@@ -149,8 +149,8 @@ class RepaymentStrategyService {
   ) async {
     final token = await AccesstokenService().getAccessToken();
     // Assuming the API expects query parameters for budget and strategy based on the GET spec
-    // Config.baseUrl/api/repayment-plans/simulate (GET)
-    final url = Uri.parse("${Config.baseUrl}/api/repayment-plans");
+    // config.baseUrl/api/repayment-plans/simulate (GET)
+    final url = Uri.parse("${config.baseUrl}/api/repayment-plans");
 
     debugPrint("SIMULATE URL => $url");
 

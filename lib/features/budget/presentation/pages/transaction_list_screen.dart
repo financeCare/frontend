@@ -211,7 +211,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -260,7 +260,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             borderRadius: BorderRadius.circular(25),
             boxShadow: [
               if (!isSelected)
-                BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 5),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 5),
             ],
           ),
           child: Text(
@@ -307,7 +307,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             borderRadius: BorderRadius.circular(25),
             boxShadow: [
               if (!isSelected)
-                BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 5),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 5),
             ],
           ),
           child: Row(
@@ -411,7 +411,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -544,7 +544,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(iconData, color: color, size: 24),

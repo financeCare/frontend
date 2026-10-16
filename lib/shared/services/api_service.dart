@@ -2,12 +2,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../features/auth/presentation/auth_manager.dart';
 import '../../features/budget/domain/models/budget_summary.dart';
-import '../../core/config/config.dart' as Config;
+import '../../core/config/config.dart' as config;
 import '../../core/utils/app_logger.dart';
-import '../../core/utils/navigator_key.dart';
 
 class ApiService {
-  static final String _baseUrl = '${Config.baseUrl}/api';
+  static final String _baseUrl = '${config.baseUrl}/api';
 
   /// Getter สำหรับสร้าง HTTP Headers พร้อมแนบ Token
   Map<String, String> get _getHeaders {
@@ -82,7 +81,7 @@ class ApiService {
 
   // เมธอด placeholder สำหรับ 'getBudgetSummary'
   Future<BudgetSummary> getBudgetSummary() async {
-    final responseData = await get('budget/summary');
+    await get('budget/summary');
     // หากเชื่อมต่อสำเร็จจริง
     // return BudgetSummary.fromJson(responseData);
 
@@ -96,7 +95,7 @@ class ApiService {
 
   // เมธอด placeholder สำหรับดึงรายการธุรกรรมทั้งหมด
   Future<List<Map<String, dynamic>>> getAllTransactions() async {
-    final responseData = await get('transactions');
+    await get('transactions');
     // หากเชื่อมต่อสำเร็จจริง
     // return List<Map<String, dynamic>>.from(responseData);
 

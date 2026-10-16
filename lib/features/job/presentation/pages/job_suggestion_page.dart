@@ -362,7 +362,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                           Text(
                             'เพิ่มโอกาส เพิ่มรายได้',
                             style: GoogleFonts.kanit(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 16,
                             ),
                           ),
@@ -388,7 +388,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -421,7 +421,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                                border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                               ),
                               child: Row(
                                 children: [
@@ -456,7 +456,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                                border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                               ),
                               child: Row(
                                 children: [
@@ -478,7 +478,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                                                 decoration: BoxDecoration(
                                                   color: const Color(0xFFE8F5E9),
                                                   borderRadius: BorderRadius.circular(12),
-                                                  border: Border.all(color: const Color(0xFF2D955F).withOpacity(0.3)),
+                                                  border: Border.all(color: const Color(0xFF2D955F).withValues(alpha: 0.3)),
                                                 ),
                                                 child: Text(
                                                   skill,
@@ -593,7 +593,7 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                       selectedColor: const Color(0xFF2D955F),
                       backgroundColor: Colors.white,
                       side: BorderSide(
-                        color: isSelected ? const Color(0xFF2D955F) : Colors.grey.withOpacity(0.2),
+                        color: isSelected ? const Color(0xFF2D955F) : Colors.grey.withValues(alpha: 0.2),
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -843,11 +843,11 @@ class _JobSuggestionPageState extends State<JobSuggestionPage> {
                                         color: isSelected ? const Color(0xFF2D955F) : Colors.grey[50],
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(
-                                          color: isSelected ? const Color(0xFF2D955F) : Colors.grey.withOpacity(0.2),
+                                          color: isSelected ? const Color(0xFF2D955F) : Colors.grey.withValues(alpha: 0.2),
                                         ),
                                         boxShadow: isSelected ? [
                                           BoxShadow(
-                                            color: const Color(0xFF2D955F).withOpacity(0.15),
+                                            color: const Color(0xFF2D955F).withValues(alpha: 0.15),
                                             blurRadius: 6,
                                             offset: const Offset(0, 3),
                                           )

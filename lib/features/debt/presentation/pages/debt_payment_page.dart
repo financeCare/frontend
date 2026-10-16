@@ -124,7 +124,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -135,7 +135,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -161,7 +161,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
                     Text(
                       message,
                       style: GoogleFonts.kanit(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 14,
                       ),
                     ),
@@ -409,7 +409,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF27AE60).withOpacity(0.3),
+            color: const Color(0xFF27AE60).withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -421,7 +421,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
           Text(
             'ยอดหนี้คงเหลือทั้งหมด',
             style: GoogleFonts.kanit(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               fontSize: 14,
             ),
           ),
@@ -476,7 +476,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
             Text(
               debt.plannedPayment > 0 ? 'เป้าหมายการชำระเดือนนี้' : 'ยอดขั้นต่ำที่ต้องจ่าย',
               style: GoogleFonts.kanit(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -499,7 +499,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
               Container(
                 height: 6,
                 width: double.infinity,
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
               ),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 500),
@@ -540,7 +540,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
@@ -591,7 +591,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.black.withOpacity(0.05)),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
             ),
             child: Text(
               '${NumberFormat('#,##0').format(amount)} ฿',
@@ -631,7 +631,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black.withOpacity(0.05)),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
         ),
         child: Row(
           children: [

@@ -4,7 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../data/models/repayment_simulation_model.dart';
 import '../data/models/debt_priority_model.dart';
-import '../data/services/repaymentTypeService.dart';
+import '../data/services/repayment_type_service.dart';
 
 class RepaymentSimulatorPage extends StatefulWidget {
   final double monthlyBudget;
@@ -462,7 +462,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: const Color(0xFF2D955F).withOpacity(0.05),
+                      color: const Color(0xFF2D955F).withValues(alpha: 0.05),
                     ),
                   ),
                 ],
@@ -733,7 +733,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
                                 BoxShadow(
                                   color: const Color(
                                     0xFF2D955F,
-                                  ).withOpacity(0.05),
+                                  ).withValues(alpha: 0.05),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -1046,7 +1046,7 @@ class _RepaymentSimulatorPageState extends State<RepaymentSimulatorPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

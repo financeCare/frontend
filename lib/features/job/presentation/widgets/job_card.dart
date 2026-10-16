@@ -34,7 +34,7 @@ class JobCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -127,7 +127,7 @@ class JobCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF0FDF4),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBBF7D0).withOpacity(0.5)),
+                border: Border.all(color: const Color(0xFFBBF7D0).withValues(alpha: 0.5)),
               ),
               child: Row(
                 children: [
@@ -195,7 +195,7 @@ class JobCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFEEF2FF),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFC7D2FE).withOpacity(0.5)),
+                border: Border.all(color: const Color(0xFFC7D2FE).withValues(alpha: 0.5)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +243,7 @@ class JobCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: _getPlatformColors(platform)[0].withOpacity(0.3),
+                            color: _getPlatformColors(platform)[0].withValues(alpha: 0.3),
                             blurRadius: 15,
                             offset: const Offset(0, 6),
                           ),

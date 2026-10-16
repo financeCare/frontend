@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../data/models/notification_log_item.dart';
 import '../data/services/notification_log_api.dart';
 import '../../auth/data/services/access_token_service.dart';
-import '../../../core/config/config.dart' as Config;
+import '../../../core/config/config.dart' as config;
 
 class NotificationScreen extends StatefulWidget {
   final bool showBackButton;
@@ -17,7 +17,7 @@ class NotificationScreen extends StatefulWidget {
 enum NotificationFilter { all, budget, debt }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  final NotificationLogApi _api = NotificationLogApi(baseUrl: Config.baseUrl);
+  final NotificationLogApi _api = NotificationLogApi(baseUrl: config.baseUrl);
   NotificationFilter _selectedFilter = NotificationFilter.all;
   List<NotificationLogItem> _notifications = [];
   bool _isLoading = true;
@@ -114,7 +114,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
           _markAllAsRead();
         }
@@ -210,7 +210,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF2D955F).withOpacity(0.2),
+                    color: const Color(0xFF2D955F).withValues(alpha: 0.2),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -218,7 +218,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               : [],
           border: isSelected
               ? null
-              : Border.all(color: Colors.grey.withOpacity(0.15)),
+              : Border.all(color: Colors.grey.withValues(alpha: 0.15)),
         ),
         child: Text(
           label,
@@ -309,13 +309,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   ? (isBudget
                             ? const Color(0xFF2D955F)
                             : const Color(0xFFEB5757))
-                        .withOpacity(0.08)
-                  : Colors.grey.withOpacity(0.05),
+                        .withValues(alpha: 0.08)
+                  : Colors.grey.withValues(alpha: 0.05),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -333,7 +333,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         (isBudget
                                 ? const Color(0xFF2D955F)
                                 : const Color(0xFFEB5757))
-                            .withOpacity(0.08),
+                            .withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Icon(
@@ -377,7 +377,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                         (isBudget
                                                 ? const Color(0xFF2D955F)
                                                 : const Color(0xFFEB5757))
-                                            .withOpacity(0.1),
+                                            .withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Row(
@@ -421,7 +421,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   BoxShadow(
                                     color: const Color(
                                       0xFF2D955F,
-                                    ).withOpacity(0.4),
+                                    ).withValues(alpha: 0.4),
                                     blurRadius: 6,
                                     spreadRadius: 2,
                                   ),

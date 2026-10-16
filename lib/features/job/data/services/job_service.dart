@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../../../core/config/config.dart' as Config;
+import '../../../../core/config/config.dart' as config;
 import '../../../../features/auth/data/services/access_token_service.dart';
 import '../models/job_model.dart';
 
@@ -11,7 +11,7 @@ class JobService {
     List<String>? skills,
   }) async {
     final token = await AccesstokenService().getAccessToken();
-    final url = Uri.parse("${Config.baseUrl}/api/jobs/suggest");
+    final url = Uri.parse("${config.baseUrl}/api/jobs/suggest");
 
     final Map<String, dynamic> body = {
       "keywords": (keywords == null || keywords.isEmpty) ? "part-time" : keywords,
@@ -43,7 +43,7 @@ class JobService {
     required String platform,
   }) async {
     final token = await AccesstokenService().getAccessToken();
-    final url = Uri.parse("${Config.baseUrl}/api/jobs/track-application");
+    final url = Uri.parse("${config.baseUrl}/api/jobs/track-application");
 
     await http.post(
       url,

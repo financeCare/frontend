@@ -205,7 +205,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -217,7 +217,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: confirmColor.withOpacity(0.1),
+                  color: confirmColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 32, color: confirmColor),
@@ -253,7 +253,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        side: BorderSide(color: Colors.black.withOpacity(0.1)),
+                        side: BorderSide(color: Colors.black.withValues(alpha: 0.1)),
                       ),
                       child: Text(
                         'ยกเลิก',
@@ -361,7 +361,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -409,12 +409,12 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF27AE60).withOpacity(0.05)
+                            ? const Color(0xFF27AE60).withValues(alpha: 0.05)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isSelected
-                              ? const Color(0xFF27AE60).withOpacity(0.3)
+                              ? const Color(0xFF27AE60).withValues(alpha: 0.3)
                               : Colors.transparent,
                         ),
                       ),
@@ -497,7 +497,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                         ),
                         if (_isLoading)
                           Container(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             child: const Center(
                               child: CircularProgressIndicator(
                                 color: Color(0xFF2D955F),
@@ -572,10 +572,10 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -609,7 +609,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             border: Border.all(
               color: _isSalaryInvalid
                   ? Colors.red
-                  : Colors.black.withOpacity(0.05),
+                  : Colors.black.withValues(alpha: 0.05),
             ),
           ),
           child: TextField(
@@ -658,7 +658,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.black.withOpacity(0.05)),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
           ),
           child: Row(
             children: [
@@ -709,7 +709,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             decoration: BoxDecoration(
               color: const Color(0xFFF9FAFB),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.black.withOpacity(0.05)),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -741,7 +741,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             decoration: BoxDecoration(
               color: const Color(0xFFF9FAFB),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.black.withOpacity(0.05)),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -818,8 +818,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCurrent
-              ? const Color(0xFF27AE60).withOpacity(0.3)
-              : Colors.black.withOpacity(0.05),
+              ? const Color(0xFF27AE60).withValues(alpha: 0.3)
+              : Colors.black.withValues(alpha: 0.05),
         ),
       ),
       child: Row(
@@ -830,7 +830,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             decoration: BoxDecoration(
               color: isCurrent
                   ? const Color(0xFF27AE60)
-                  : Colors.black.withOpacity(0.05),
+                  : Colors.black.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -867,7 +867,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF27AE60).withOpacity(0.1),
+                          color: const Color(0xFF27AE60).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -951,7 +951,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              side: BorderSide(color: Colors.black.withOpacity(0.1)),
+              side: BorderSide(color: Colors.black.withValues(alpha: 0.1)),
             ),
             child: Text(
               'รีเซ็ต',

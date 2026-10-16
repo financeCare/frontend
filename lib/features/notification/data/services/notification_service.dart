@@ -186,7 +186,7 @@ class NotificationService {
     }
     if (Platform.isIOS) {
       final i = await info.iosInfo;
-      return i.utsname.machine ?? 'iPhone';
+      return i.utsname.machine;
     }
     return 'web';
   }
