@@ -1,6 +1,8 @@
 import 'dart:convert';
-import 'dart:ui';
 
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,9 +11,10 @@ import 'package:http/http.dart' as http;
 import 'pages/otp_page.dart';
 import 'auth_manager.dart';
 import 'auth_widget.dart';
-import '../../../core/config/config.dart' as Config;
+import 'google_web_button.dart';
+import '../../../core/config/config.dart' as config;
+import '../../../core/utils/app_logger.dart';
 import '../data/services/access_token_service.dart';
-
 
 final storage = AccesstokenService.sharedStorage;
 
@@ -34,11 +37,36 @@ class _WelcomePageState extends State<WelcomePage> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+  // บน web ใช้ 40 ให้เท่าปุ่ม GIS ขนาด large (Google ปรับความสูงไม่ได้)
+  static const double _socialBtnHeight = kIsWeb ? 40 : 52;
+
+  static const String _googleWebClientId =
+      "756271821434-vpmof8n9b53p89osfrfeibtk83tvqo1h.apps.googleusercontent.com";
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+    // Web อ่าน client ID จาก meta tag ใน web/index.html และไม่รองรับ serverClientId
+    serverClientId: kIsWeb ? null : _googleWebClientId,
+  );
+  StreamSubscription<GoogleSignInAccount?>? _googleUserSub;
+
   final AuthService _authService = AuthService();
-  final String _baseUrl = "${Config.baseUrl}/api/auth";
+  final String _baseUrl = "${config.baseUrl}/api/auth";
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      // บน web ผู้ใช้กดปุ่มจาก renderButton แล้ว GIS จะส่งบัญชีมาทาง stream นี้
+      _googleUserSub = _googleSignIn.onCurrentUserChanged.listen((user) {
+        if (user != null && !_isLoading) _loginWithGoogleAccount(user);
+      });
+    }
+  }
 
   @override
   void dispose() {
+    _googleUserSub?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -49,71 +77,163 @@ class _WelcomePageState extends State<WelcomePage> {
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
+  // เข้าสู่ระบบด้วยบัญชี demo: backend จะสร้างข้อมูลตัวอย่างให้ในครั้งแรก (อาจใช้เวลาสักครู่)
+  Future<void> _loginAsDemo() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await http.post(Uri.parse('$_baseUrl/demo-login'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        await AuthManager.saveToken(data['accessToken']);
+        await storage.write(key: "refreshToken", value: data['refreshToken']);
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _navigateToHome();
+        }
+        return;
+      }
+      _showErrorDialog(
+        response.statusCode == 404
+            ? 'โหมดทดลองใช้งานยังไม่เปิดใช้งานบนเซิร์ฟเวอร์'
+            : 'เข้าสู่โหมดทดลองไม่สำเร็จ (${response.statusCode})',
+      );
+    } catch (e) {
+      _showErrorDialog('เข้าสู่โหมดทดลองไม่สำเร็จ: $e');
+    }
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Widget _buildDemoButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 60,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _loginAsDemo,
+        style: ElevatedButton.styleFrom(
+          foregroundColor: const Color(0xFF2D955F),
+          backgroundColor: Colors.white,
+          disabledBackgroundColor: Colors.white70,
+          elevation: 6,
+          shadowColor: Colors.black.withValues(alpha: 0.25),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: Color(0xFF2D955F), width: 2),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.play_circle_fill_rounded, size: 30),
+            const SizedBox(width: 12),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ทดลองใช้งาน (Demo)',
+                  style: GoogleFonts.kanit(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'เข้าด้วยข้อมูลตัวอย่าง ไม่ต้องสมัครสมาชิก',
+                  style: GoogleFonts.kanit(
+                    fontSize: 12,
+                    color: Colors.blueGrey,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Android/iOS: เปิดหน้าเลือกบัญชีเอง (web ใช้ปุ่ม renderButton แทน)
   Future<void> _loginWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      print('!!! Starting googleSignIn.signIn()...');
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser != null) {
+        await _loginWithGoogleAccount(googleUser);
+        return;
+      }
+    } catch (error) {
+      _handleGoogleError(error);
+    }
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _loginWithGoogleAccount(GoogleSignInAccount googleUser) async {
     setState(() => _isLoading = true);
     bool success = false;
     try {
-      GoogleSignIn googleSignIn = GoogleSignIn(
-        scopes: ['email', 'profile'],
-        serverClientId: "756271821434-vpmof8n9b53p89osfrfeibtk83tvqo1h.apps.googleusercontent.com",
+      final GoogleSignInAuthentication auth = await googleUser.authentication;
+      print(
+        '!!! Received Google Auth tokens. idToken length: ${auth.idToken?.length}',
       );
-      print('!!! Starting googleSignIn.signIn()...');
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      if (googleUser != null) {
-        final GoogleSignInAuthentication auth = await googleUser.authentication;
-        print('!!! Received Google Auth tokens. idToken length: ${auth.idToken?.length}');
-        print('!!! Received Google Auth tokens');
-        
-        final response = await http.post(
-          Uri.parse('$_baseUrl/login/google'),
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({"idToken": auth.idToken}),
+      print('!!! Received Google Auth tokens');
+      if (auth.idToken == null) {
+        throw Exception('ไม่ได้รับ idToken จาก Google');
+      }
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl/login/google'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"idToken": auth.idToken}),
+      );
+
+      print('Google login response status: ${response.statusCode}');
+      print('Google login response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        await AuthManager.saveToken(data['accessToken']);
+        await storage.write(key: "refreshToken", value: data['refreshToken']);
+
+        // ✅ Register device after login - MOVED TO HomePage
+
+        print('!!! Tokens saved successfully');
+        success = true;
+      } else {
+        _showErrorDialog(
+          'Server error (${response.statusCode}): ${response.body}',
         );
-        
-        print('Google login response status: ${response.statusCode}');
-        print('Google login response body: ${response.body}');
-        
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          await AuthManager.saveToken(data['accessToken']);
-          await storage.write(key: "refreshToken", value: data['refreshToken']);
-          
-          // ✅ Register device after login - MOVED TO HomePage
-
-
-          print('!!! Tokens saved successfully');
-          success = true;
-        } else {
-          _showErrorDialog('Server error (${response.statusCode}): ${response.body}');
-        }
       }
     } catch (error) {
-      print('!!! Google login error: $error');
-      String errorMessage = "การเข้าสู่ระบบด้วย Google ล้มเหลว: $error";
-      final errorStr = error.toString().toLowerCase();
-      if (errorStr.contains('network_error') || 
-          errorStr.contains('socketexception') || 
-          errorStr.contains('failed host lookup') ||
-          errorStr.contains('connection failed')) {
-        errorMessage = "ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้ กรุณาตรวจสอบการเชื่อมต่อของอุปกรณ์และลองใหม่อีกครั้ง";
-      } else if (errorStr.contains('sign_in_canceled')) {
-        errorMessage = "การลงชื่อเข้าใช้งานถูกยกเลิก";
-      } else if (errorStr.contains('sign_in_failed')) {
-        errorMessage = "การลงชื่อเข้าใช้งานล้มเหลว กรุณาตรวจสอบสิทธิ์การใช้งานบัญชีของคุณ";
-      }
-      _showErrorDialog(errorMessage);
+      _handleGoogleError(error);
     } finally {
-      if (!mounted) {
-        print('!!! WelcomePage unmounted during login');
-        return;
-      }
-      setState(() => _isLoading = false);
-      print('!!! Login flow finished. success=$success');
-      if (success) {
-        print('!!! Navigating to home...');
-        _navigateToHome();
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppLog.d('Login flow finished. success=$success');
+        if (success) {
+          AppLog.d('Navigating to home...');
+          _navigateToHome();
+        }
       }
     }
+  }
+
+  void _handleGoogleError(Object error) {
+    print('!!! Google login error: $error');
+    String errorMessage = "การเข้าสู่ระบบด้วย Google ล้มเหลว: $error";
+    final errorStr = error.toString().toLowerCase();
+    if (errorStr.contains('network_error') ||
+        errorStr.contains('socketexception') ||
+        errorStr.contains('failed host lookup') ||
+        errorStr.contains('connection failed')) {
+      errorMessage =
+          "ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้ กรุณาตรวจสอบการเชื่อมต่อของอุปกรณ์และลองใหม่อีกครั้ง";
+    } else if (errorStr.contains('sign_in_canceled')) {
+      errorMessage = "การลงชื่อเข้าใช้งานถูกยกเลิก";
+    } else if (errorStr.contains('sign_in_failed')) {
+      errorMessage =
+          "การลงชื่อเข้าใช้งานล้มเหลว กรุณาตรวจสอบสิทธิ์การใช้งานบัญชีของคุณ";
+    }
+    _showErrorDialog(errorMessage);
   }
 
   Future<void> _loginWithLine() async {
@@ -124,7 +244,9 @@ class _WelcomePageState extends State<WelcomePage> {
       final result = await LineSDK.instance.login(
         scopes: ["profile", "openid", "email"],
       );
-      print('!!! LINE Login SDK Success. idToken length: ${result.accessToken.idTokenRaw?.length}');
+      print(
+        '!!! LINE Login SDK Success. idToken length: ${result.accessToken.idTokenRaw?.length}',
+      );
 
       final res = await http.post(
         Uri.parse("$_baseUrl/login/line"),
@@ -148,12 +270,13 @@ class _WelcomePageState extends State<WelcomePage> {
       print('!!! LINE login error: $e');
       _showErrorDialog("LINE Login Failed: $e");
     } finally {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      print('!!! LINE flow finished. success=$success');
-      if (success) {
-        print('!!! Navigating to home from LINE login...');
-        _navigateToHome();
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppLog.d('LINE flow finished. success=$success');
+        if (success) {
+          AppLog.d('Navigating to home from LINE login...');
+          _navigateToHome();
+        }
       }
     }
   }
@@ -199,13 +322,15 @@ class _WelcomePageState extends State<WelcomePage> {
       }
       _showErrorDialog(errorMessage);
     } finally {
-      setState(() => _isLoading = false);
-      if (success && _isLoginMode) {
-        // ✅ Register device after login - MOVED TO HomePage
-        _navigateToHome();
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (success && _isLoginMode) {
+          // ✅ Register device after login - MOVED TO HomePage
+          _navigateToHome();
+        } else if (!success && _isLoginMode) {
+          _showErrorDialog("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+        }
       }
-      else if (!success && _isLoginMode)
-        _showErrorDialog("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
     }
   }
 
@@ -256,7 +381,7 @@ class _WelcomePageState extends State<WelcomePage> {
               height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.08),
+                color: Colors.white.withValues(alpha: 0.08),
               ),
             ),
           ),
@@ -268,7 +393,7 @@ class _WelcomePageState extends State<WelcomePage> {
               height: 140,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -290,7 +415,9 @@ class _WelcomePageState extends State<WelcomePage> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2D955F).withOpacity(0.3),
+                              color: const Color(
+                                0xFF2D955F,
+                              ).withValues(alpha: 0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),
@@ -301,8 +428,11 @@ class _WelcomePageState extends State<WelcomePage> {
                           height: 72,
                           width: 72,
                           errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.account_balance,
-                                  size: 56, color: Color(0xFF2D955F)),
+                              const Icon(
+                                Icons.account_balance,
+                                size: 56,
+                                color: Color(0xFF2D955F),
+                              ),
                         ),
                       ),
                     ),
@@ -323,29 +453,16 @@ class _WelcomePageState extends State<WelcomePage> {
                           : 'เริ่มต้นจัดการการเงินของคุณวันนี้',
                       style: GoogleFonts.kanit(
                         fontSize: 14,
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                         fontWeight: FontWeight.w300,
                       ),
                     ),
                     const SizedBox(height: 28),
+                    // ปุ่มทดลองใช้งาน: วางไว้เหนือฟอร์ม เพื่อให้เห็นทันทีโดยไม่ต้องเลื่อนจอ
+                    _buildDemoButton(),
+                    const SizedBox(height: 16),
                     _buildAuthCard(),
                     const SizedBox(height: 24),
-                    // Demo Bypass Button (For Presentation Safety)
-                    TextButton.icon(
-                      onPressed: () {
-                        print('!!! Demo Bypass Triggered');
-                        _navigateToHome();
-                      },
-                      icon: const Icon(Icons.double_arrow_rounded, size: 16, color: Colors.blueGrey),
-                      label: Text(
-                        'Demo Bypass (สำหรับนำเสนอเท่านั้น)',
-                        style: GoogleFonts.kanit(
-                          fontSize: 12,
-                          color: Colors.blueGrey,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
                     const SizedBox(height: 12),
                     // Debug Logout (Temporary)
                     if (AuthManager.token != null)
@@ -356,7 +473,9 @@ class _WelcomePageState extends State<WelcomePage> {
                         },
                         child: Text(
                           'Logout (Debug)',
-                          style: TextStyle(color: Colors.grey.withOpacity(0.6)),
+                          style: TextStyle(
+                            color: Colors.grey.withValues(alpha: 0.6),
+                          ),
                         ),
                       ),
                     const SizedBox(height: 24),
@@ -379,12 +498,12 @@ class _WelcomePageState extends State<WelcomePage> {
         border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -428,8 +547,7 @@ class _WelcomePageState extends State<WelcomePage> {
                 isPassword: true,
                 showPassword: _isConfirmPasswordVisible,
                 onTogglePassword: () => setState(
-                  () =>
-                      _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
+                  () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
                 ),
               ),
             ],
@@ -480,7 +598,7 @@ class _WelcomePageState extends State<WelcomePage> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -511,12 +629,49 @@ class _WelcomePageState extends State<WelcomePage> {
           color: const Color(0xFF06C755),
         ),
         const SizedBox(height: 12),
-        _buildSocialBtn(
-          label: 'ดำเนินการต่อด้วย Google',
-          icon: 'assets/google_icon.png',
-          onTap: _loginWithGoogle,
-          isGoogle: true,
-        ),
+        if (kIsWeb)
+          // ปุ่มของ Google render ใน iframe เปลี่ยนฟอนต์ไม่ได้ จึงวางปุ่มที่เราทำเอง
+          // (ฟอนต์เดียวกับปุ่ม LINE) ไว้ข้างล่าง แล้วซ้อนปุ่ม Google แบบโปร่งใสไว้ข้างบนเพื่อรับการคลิก
+          // GIS จำกัดความกว้างปุ่มสูงสุด 400px จึงจำกัดปุ่มที่เห็นให้เท่ากัน
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: SizedBox(
+                height: _socialBtnHeight,
+                child: LayoutBuilder(
+                  builder: (context, constraints) => Stack(
+                    children: [
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: _buildSocialBtn(
+                            label: 'ดำเนินการต่อด้วย Google',
+                            icon: 'assets/google_icon.png',
+                            onTap: () {},
+                            isGoogle: true,
+                          ),
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: Opacity(
+                          opacity: 0.01,
+                          child: buildGoogleWebButton(
+                            width: constraints.maxWidth,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
+        else
+          _buildSocialBtn(
+            label: 'ดำเนินการต่อด้วย Google',
+            icon: 'assets/google_icon.png',
+            onTap: _loginWithGoogle,
+            isGoogle: true,
+          ),
       ],
     );
   }
@@ -532,26 +687,18 @@ class _WelcomePageState extends State<WelcomePage> {
       onTap: _isLoading ? null : onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        height: 52,
+        height: _socialBtnHeight,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.black.withOpacity(0.1)),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
           color: Colors.white,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (isGoogle)
-              Image.asset(
-                'assets/google_icon.png',
-                height: 22,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.g_mobiledata,
-                  color: Color(0xFF4285F4),
-                  size: 28,
-                ),
-              )
+              const Icon(Icons.g_mobiledata, color: Color(0xFF4285F4), size: 32)
             else
               Image.asset(
                 icon,
@@ -579,7 +726,7 @@ class _WelcomePageState extends State<WelcomePage> {
   Widget _buildSeparator() {
     return Row(
       children: [
-        Expanded(child: Divider(color: Colors.black.withOpacity(0.1))),
+        Expanded(child: Divider(color: Colors.black.withValues(alpha: 0.1))),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
@@ -594,7 +741,7 @@ class _WelcomePageState extends State<WelcomePage> {
             ),
           ),
         ),
-        Expanded(child: Divider(color: Colors.black.withOpacity(0.1))),
+        Expanded(child: Divider(color: Colors.black.withValues(alpha: 0.1))),
       ],
     );
   }
@@ -669,7 +816,10 @@ class _WelcomePageState extends State<WelcomePage> {
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFEB5757), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFFEB5757),
+                width: 1.5,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -685,8 +835,7 @@ class _WelcomePageState extends State<WelcomePage> {
             if (label == 'รหัสผ่าน' && v.length < 8) {
               return 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร';
             }
-            if (label == 'ยืนยันรหัสผ่าน' &&
-                v != _passwordController.text) {
+            if (label == 'ยืนยันรหัสผ่าน' && v != _passwordController.text) {
               return 'รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง';
             }
             return null;

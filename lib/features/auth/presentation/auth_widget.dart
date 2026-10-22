@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../../core/config/config.dart' as Config;
+import '../../../core/config/config.dart' as config;
 import '../data/services/access_token_service.dart';
 import 'auth_manager.dart';
 
 final storage = AccesstokenService.sharedStorage;
 // 🌟 URL ฐานสำหรับการเรียก API
 final String _baseUrl =
-    Config.baseUrl; // สมมติว่า Config.baseUrl ถูกกำหนดไว้ใน config.dart
+    config.baseUrl; // สมมติว่า config.baseUrl ถูกกำหนดไว้ใน config.dart
 
 class AuthService {
   Future<bool> login(String email, String password) async {

@@ -1,5 +1,4 @@
 import '../data/services/access_token_service.dart';
-import '../../../core/utils/navigator_key.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/utils/unauthorized_handler.dart';
 

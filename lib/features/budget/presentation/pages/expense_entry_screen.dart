@@ -288,7 +288,7 @@ class _ExpenseEntryScreenState extends State<ExpenseEntryScreen> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: isSelected ? color.withOpacity(0.1) : Colors.white,
+                  color: isSelected ? color.withValues(alpha: 0.1) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isSelected ? color : Colors.grey.shade100,

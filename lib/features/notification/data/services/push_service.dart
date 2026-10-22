@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:finance_care/features/auth/data/services/device_service.dart';
-import '../../../../core/config/config.dart' as Config;
+import '../../../../core/config/config.dart' as config;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../../../../features/auth/data/services/access_token_service.dart';
@@ -12,7 +12,7 @@ class PushService {
   final FlutterSecureStorage _storage = AccesstokenService.sharedStorage;
 
   // เปลี่ยนเป็นของคุณ
-  final String baseUrl = Config.baseUrl;
+  final String baseUrl = config.baseUrl;
 
   Future<void> init() async {
     try {
@@ -31,14 +31,14 @@ class PushService {
       if (token != null) {
         AppLog.d('PushService: Initial token received');
         // ยังไม่ต้องสั่งทำงานในส่วนของ PushService (ตามคำขอ)
-        // await _registerDevice(token);
+        // await registerDevice(token);
       }
 
       // 4) ฟัง token refresh (ต้องทำ ไม่งั้นวันหนึ่งจะส่งไม่ถึง)
       FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
         AppLog.d('PushService: Token refreshed');
         // ยังไม่ต้องสั่งทำงานในส่วนของ PushService (ตามคำขอ)
-        // await _registerDevice(newToken);
+        // await registerDevice(newToken);
       });
 
       // 5) (Optional) รับ event ตอนผู้ใช้กด notification
@@ -71,7 +71,7 @@ class PushService {
     }
   }
 
-  Future<void> _registerDevice(String fcmToken) async {
+  Future<void> registerDevice(String fcmToken) async {
     try {
       final deviceKey = await DeviceService.getOrCreateDeviceId();
       final info = await DeviceService.getDeviceInfo();
@@ -98,14 +98,9 @@ class PushService {
         body: body,
       );
 
-      if (res.statusCode != 200 && res.statusCode != 201) {
-        AppLog.e('PushService: Register device failed with status ${res.statusCode}: ${res.body}');
-      } else {
-        AppLog.d('PushService: Device registered successfully');
-      }
+      AppLog.d('PushService: Register device response code ${res.statusCode}');
     } catch (e) {
-      AppLog.e('PushService: Error during device registration: $e');
-      // หากเกิด SocketException (Failed host lookup) จะถูกดักจับที่นี่
+      AppLog.e('PushService: Register device failed: $e');
     }
   }
 }

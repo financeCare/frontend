@@ -234,7 +234,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -245,7 +245,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -271,7 +271,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
                     Text(
                       message,
                       style: GoogleFonts.kanit(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 14,
                       ),
                     ),
@@ -374,7 +374,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -587,7 +587,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(iconData, color: color, size: 24),
@@ -618,7 +618,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: !_isIncome ? const Color(0xFFEF4444).withOpacity(0.1) : Colors.transparent,
+                  color: !_isIncome ? const Color(0xFFEF4444).withValues(alpha: 0.1) : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -653,7 +653,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: _isIncome ? const Color(0xFF2D955F).withOpacity(0.1) : Colors.transparent,
+                  color: _isIncome ? const Color(0xFF2D955F).withValues(alpha: 0.1) : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -713,7 +713,7 @@ class _TransactionAddScreenState extends State<TransactionAddScreen> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF2D955F).withOpacity(0.1) : Colors.white,
+                  color: isSelected ? const Color(0xFF2D955F).withValues(alpha: 0.1) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isSelected ? const Color(0xFF2D955F) : const Color(0xFFE2E8F0),

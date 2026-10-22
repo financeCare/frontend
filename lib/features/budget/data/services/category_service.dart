@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:finance_care/features/budget/domain/models/budgetDto.dart';
+import 'package:finance_care/features/budget/domain/models/budget_dto.dart';
 import '../../../../features/auth/presentation/auth_manager.dart';
 
 import '../../domain/models/category.dart';
@@ -82,7 +82,7 @@ class CategoryService {
     }
   }
 
-  Future<List<budgetDto>> mapCategoryIncomeToDebtDto() async {
+  Future<List<BudgetDto>> mapCategoryIncomeToDebtDto() async {
     try {
       // ดึง budget list
       final budgets = await BudgetService().getBudget(); // List<BudgetResponse>
@@ -91,10 +91,10 @@ class CategoryService {
       // สมมติเราจะเอา budget[0] เป็นตัวอย่าง
       final budget = budgets.isNotEmpty ? budgets[0] : null;
 
-      List<budgetDto> incomeItem = categories
+      List<BudgetDto> incomeItem = categories
           .where((c) => c.type == 'Income')
           .map(
-            (c) => budgetDto(
+            (c) => BudgetDto(
               id: c.categoryId,
               name: c.categoryName.toString(),
               amount: budget?.amount ?? 0.0, // ถ้าไม่มี budget จะเป็น 0

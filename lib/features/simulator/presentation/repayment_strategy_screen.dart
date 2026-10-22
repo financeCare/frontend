@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:finance_care/features/simulator/data/models/repayment_strategy_response.dart';
-import 'package:finance_care/features/simulator/data/services/repaymentTypeService.dart';
-import 'DebtPriorityScreen.dart';
+import 'package:finance_care/features/simulator/data/services/repayment_type_service.dart';
+import 'debt_priority_screen.dart';
 
 
 class RepaymentStrategyScreen extends StatefulWidget {
@@ -265,7 +265,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -368,7 +368,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9).withOpacity(0.7),
+              color: const Color(0xFFE8F5E9).withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -436,7 +436,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
                 boxShadow: [
                   if (isSelected)
                     BoxShadow(
-                      color: const Color(0xFF2D955F).withOpacity(0.1),
+                      color: const Color(0xFF2D955F).withValues(alpha: 0.1),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -589,7 +589,7 @@ class _RepaymentStrategyScreenState extends State<RepaymentStrategyScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFE8F5E9),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF2D955F).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFF2D955F).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [

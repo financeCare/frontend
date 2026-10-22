@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 enum InterestCalculationType {
   THIRTY_360,      // ธนาคารทั่วไป
   DAILY_SIMPLE,    // นอกระบบทั่วไป

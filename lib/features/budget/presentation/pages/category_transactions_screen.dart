@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../data/services/transaction_service.dart';
 import '../../domain/models/transaction_detail.dart';
-import '../../../../core/config/config.dart' as Config;
+import '../../../../core/config/config.dart' as config;
 import '../../../auth/data/services/access_token_service.dart';
 
 class CategoryTransactionsScreen extends StatefulWidget {
@@ -81,7 +81,7 @@ class _CategoryTransactionsScreenState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEB5757).withOpacity(0.1),
+                  color: const Color(0xFFEB5757).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.delete_outline,
@@ -197,7 +197,7 @@ class _CategoryTransactionsScreenState
           future: AccesstokenService().getAccessToken(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Container(
+              return SizedBox(
                 height: 200,
                 child: const Center(
                   child: CircularProgressIndicator(color: Color(0xFF2D955F)),
@@ -219,7 +219,7 @@ class _CategoryTransactionsScreenState
             }
 
             final token = snapshot.data!;
-            final url = '${Config.baseUrl}/api/slips/$slipId/image';
+            final url = '${config.baseUrl}/api/slips/$slipId/image';
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -262,7 +262,7 @@ class _CategoryTransactionsScreenState
                         },
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
-                          return Container(
+                          return SizedBox(
                             height: 300,
                             child: const Center(
                               child: CircularProgressIndicator(color: Color(0xFF2D955F)),
@@ -285,10 +285,11 @@ class _CategoryTransactionsScreenState
   Widget build(BuildContext context) {
     final grouped = _groupTransactions(_transactions);
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         Navigator.pop(context, _isDataChanged);
-        return false;
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
@@ -374,7 +375,7 @@ class _CategoryTransactionsScreenState
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -389,7 +390,7 @@ class _CategoryTransactionsScreenState
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: widget.categoryColor.withOpacity(0.1),
+                        color: widget.categoryColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -446,7 +447,7 @@ class _CategoryTransactionsScreenState
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF2D955F).withOpacity(0.1),
+                                    color: const Color(0xFF2D955F).withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
@@ -478,7 +479,7 @@ class _CategoryTransactionsScreenState
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEB5757).withOpacity(0.1),
+                                  color: const Color(0xFFEB5757).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(

@@ -104,8 +104,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
       ? const Color(0xFFE3F2FD)
       : const Color(0xFFFFEBEE);
   Color get fadePrimaryColor => widget.debtToEdit != null
-      ? const Color(0xFFE3F2FD).withOpacity(0.3)
-      : const Color(0xFFFFEBEE).withOpacity(0.3);
+      ? const Color(0xFFE3F2FD).withValues(alpha: 0.3)
+      : const Color(0xFFFFEBEE).withValues(alpha: 0.3);
   Color get successColor => widget.debtToEdit != null
       ? const Color(0xFF2196F3)
       : const Color(0xFFEB5757);
@@ -504,6 +504,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
       return;
     }
 
+    if (!mounted) return;
+
     final nameCtrl = TextEditingController(text: debtDetail.debtName);
     final amountCtrl = TextEditingController(
       text: debtDetail.principalAmount.toString(),
@@ -540,8 +542,8 @@ class _AddDebtPageState extends State<AddDebtPage> {
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) => AlertDialog(
           title: const Text("แก้ไขหนี้"),
           content: SingleChildScrollView(
             child: Column(
@@ -715,13 +717,13 @@ class _AddDebtPageState extends State<AddDebtPage> {
                 try {
                   await debtService.updateDebt(debt.id, updated);
                   fetchDebt();
-                  if (mounted) Navigator.pop(context);
+                  if (dialogCtx.mounted) Navigator.pop(dialogCtx);
                 } catch (e) {
-                  if (mounted) {
+                  if (dialogCtx.mounted) {
                     if (e.toString().contains('401')) {
-                      Navigator.of(context).pushReplacementNamed('/');
+                      Navigator.of(dialogCtx).pushReplacementNamed('/');
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      ScaffoldMessenger.of(dialogCtx).showSnackBar(
                         SnackBar(content: Text('แก้ไขรายการไม่สำเร็จ: ${e.toString().replaceAll('Exception: ', '')}')),
                       );
                     }
@@ -740,12 +742,12 @@ class _AddDebtPageState extends State<AddDebtPage> {
     final debt = debts[index];
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (delCtx) => AlertDialog(
         title: const Text("ยืนยันการลบ"),
         content: Text("ยืนยันการลบ '${debt.name}'?"),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(delCtx),
             child: const Text("ยกเลิก"),
           ),
           ElevatedButton(
@@ -753,13 +755,13 @@ class _AddDebtPageState extends State<AddDebtPage> {
               try {
                 await debtService.deleteDebt(debt.id);
                 fetchDebt();
-                if (mounted) Navigator.pop(context);
+                if (delCtx.mounted) Navigator.pop(delCtx);
               } catch (e) {
-                if (mounted) {
+                if (delCtx.mounted) {
                   if (e.toString().contains('401')) {
-                    Navigator.of(context).pushReplacementNamed('/');
+                    Navigator.of(delCtx).pushReplacementNamed('/');
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(delCtx).showSnackBar(
                       SnackBar(content: Text('ลบรายการไม่สำเร็จ: ${e.toString().replaceAll('Exception: ', '')}')),
                     );
                   }
@@ -856,7 +858,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
@@ -921,7 +923,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: active ? Colors.white : Colors.white.withOpacity(0.3),
+        color: active ? Colors.white : Colors.white.withValues(alpha: 0.3),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -943,7 +945,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
     return Expanded(
       child: Container(
         height: 1,
-        color: active ? Colors.white : Colors.white.withOpacity(0.3),
+        color: active ? Colors.white : Colors.white.withValues(alpha: 0.3),
       ),
     );
   }
@@ -953,7 +955,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
       label,
       style: GoogleFonts.kanit(
         fontSize: 12,
-        color: active ? Colors.white : Colors.white.withOpacity(0.7),
+        color: active ? Colors.white : Colors.white.withValues(alpha: 0.7),
         fontWeight: active ? FontWeight.bold : FontWeight.normal,
       ),
     );
@@ -1177,7 +1179,7 @@ class _AddDebtPageState extends State<AddDebtPage> {
                 width: 2,
               ),
               color: isSelected
-                  ? lightPrimaryColor.withOpacity(0.3)
+                  ? lightPrimaryColor.withValues(alpha: 0.3)
                   : Colors.grey.shade50,
             ),
             child: Column(
@@ -1818,9 +1820,9 @@ class _AddDebtPageState extends State<AddDebtPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        border: Border.all(color: primaryColor.withOpacity(0.1)),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.1)),
         borderRadius: BorderRadius.circular(24),
-        color: lightPrimaryColor.withOpacity(0.3),
+        color: lightPrimaryColor.withValues(alpha: 0.3),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

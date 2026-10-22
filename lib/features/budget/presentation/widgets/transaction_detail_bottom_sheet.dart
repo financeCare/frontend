@@ -96,7 +96,7 @@ class TransactionDetailBottomSheet extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: isIncome
-                  ? const Color(0xFF2D955F).withOpacity(0.1)
+                  ? const Color(0xFF2D955F).withValues(alpha: 0.1)
                   : Colors.grey[100],
               borderRadius: BorderRadius.circular(20),
             ),
@@ -195,31 +195,6 @@ class TransactionDetailBottomSheet extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderImage(String message) {
-    return Container(
-      width: double.infinity,
-      height: 120,
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.image_not_supported_outlined, color: Colors.grey[400]),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: GoogleFonts.kanit(color: Colors.grey[400], fontSize: 12),
-            ),
-          ],
-        ),
       ),
     );
   }

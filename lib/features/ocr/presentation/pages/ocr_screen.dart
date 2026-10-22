@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -21,6 +22,10 @@ class _OCRScreenState extends State<OCRScreen> {
   final SlipDetectionService _slipService = SlipDetectionService();
 
   Future<void> _pickImage(ImageSource source) async {
+    if (kIsWeb) {
+      _showWebUnsupportedMessage();
+      return;
+    }
     final XFile? pickedFile = await _picker.pickImage(source: source);
 
     if (pickedFile != null) {
@@ -45,6 +50,18 @@ class _OCRScreenState extends State<OCRScreen> {
       });
       _performOCR();
     }
+  }
+
+  void _showWebUnsupportedMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'ฟีเจอร์สแกน OCR ยังไม่รองรับบนเว็บ กรุณาใช้งานผ่านแอปบนมือถือ',
+          style: GoogleFonts.kanit(),
+        ),
+        backgroundColor: Colors.orange,
+      ),
+    );
   }
 
   Map<String, String> _structuredData = {};
@@ -149,7 +166,7 @@ class _OCRScreenState extends State<OCRScreen> {
                     Text(
                       'ดึงข้อมูลอัตโนมัติ',
                       style: GoogleFonts.kanit(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 16,
                       ),
                     ),
@@ -166,7 +183,7 @@ class _OCRScreenState extends State<OCRScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(
@@ -187,6 +204,35 @@ class _OCRScreenState extends State<OCRScreen> {
                   ],
                 ),
               ),
+
+              if (kIsWeb)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFB923C)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFEA580C)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'เวอร์ชันเว็บยังไม่รองรับการสแกน OCR\nกรุณาใช้งานผ่านแอปบนมือถือ (Android/iOS)',
+                          style: GoogleFonts.kanit(
+                            color: const Color(0xFF9A3412),
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -215,7 +261,7 @@ class _OCRScreenState extends State<OCRScreen> {
                           border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
+                              color: Colors.black.withValues(alpha: 0.03),
                               blurRadius: 15,
                               offset: const Offset(0, 8),
                             ),
@@ -286,7 +332,7 @@ class _OCRScreenState extends State<OCRScreen> {
                         border: Border.all(color: const Color(0xFFE2E8F0)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.02),
+                            color: Colors.black.withValues(alpha: 0.02),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -450,7 +496,7 @@ class _OCRScreenState extends State<OCRScreen> {
       },
       border: TableBorder(
         horizontalInside: BorderSide(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           width: 1,
         ),
       ),

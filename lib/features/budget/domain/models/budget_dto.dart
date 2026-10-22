@@ -1,4 +1,4 @@
-class budgetDto {
+class BudgetDto {
   int id;
   String name;
   double amount;
@@ -6,7 +6,7 @@ class budgetDto {
   String type;
   DateTime createdAt;
 
-  budgetDto({
+  BudgetDto({
     required this.id,
     required this.name,
     required this.amount,
@@ -26,8 +26,8 @@ class budgetDto {
     };
   }
 
-  factory budgetDto.fromJson(Map<String, dynamic> json) {
-    return budgetDto(
+  factory BudgetDto.fromJson(Map<String, dynamic> json) {
+    return BudgetDto(
       id: json['id'],
       name: json['name'],
       amount: (json['amount'] as num).toDouble(),
@@ -58,7 +58,7 @@ class budgetDto {
   get debtTypeId => null;
 
   get debtName => null;
-  static double totalAmount(List<budgetDto> items) {
+  static double totalAmount(List<BudgetDto> items) {
     return items.fold(0.0, (sum, item) => sum + item.amount);
   }
 }

@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 /// ฟังก์ชันสลับ baseUrl อัตโนมัติตามสภาพแวดล้อมที่รัน
 /// เพื่อรองรับทั้ง Android Emulator, iOS Simulator, Web และ Desktop
 String _determineBaseUrl() {
+  // ใช้ตอน deploy: flutter build ... --dart-define=API_BASE_URL=https://<backend-host>
+  const override = String.fromEnvironment('API_BASE_URL');
+  if (override.isNotEmpty) return override;
   if (kIsWeb) {
     // รันบน Web Browser (เชื่อมตรงเข้า Spring Boot Backend พอร์ต 8080)
     return 'http://localhost:8080';

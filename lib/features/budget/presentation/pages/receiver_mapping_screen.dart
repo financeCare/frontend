@@ -193,9 +193,9 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -289,7 +289,7 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8)),
         ],
       ),
       child: Row(
@@ -406,7 +406,7 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Column(
@@ -440,7 +440,7 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
               ],
             ),
             child: TextField(
@@ -462,7 +462,7 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
             color: const Color(0xFF2D955F),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
-              BoxShadow(color: const Color(0xFF2D955F).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(color: const Color(0xFF2D955F).withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
           child: InkWell(
@@ -503,7 +503,7 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
             color: isSelected ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected 
-              ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5)]
+              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 5)]
               : null,
           ),
           child: Row(
@@ -554,7 +554,7 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8E1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.withOpacity(0.1)),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -608,7 +608,7 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
           child: Row(
@@ -616,7 +616,7 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.05),
+                  color: Colors.orange.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(Icons.info_outline, color: Colors.orange, size: 24),
@@ -678,7 +678,7 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
           child: Row(
@@ -686,7 +686,7 @@ class _ReceiverMappingScreenState extends State<ReceiverMappingScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.05),
+                  color: color.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: color, size: 24),

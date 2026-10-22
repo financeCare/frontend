@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -161,20 +160,20 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       backgroundColor: Colors.transparent,
       isDismissible: false,
       enableDrag: false,
-      builder: (context) => _TransactionConfirmationContent(
+      builder: (sheetContext) => _TransactionConfirmationContent(
         transaction: tx,
         categories: _allCategories,
         onConfirm: (updatedTx) async {
           try {
             await TransactionService().updateTransaction(tx.transactionId, updatedTx);
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+            if (sheetContext.mounted) {
+              ScaffoldMessenger.of(sheetContext).showSnackBar(
                 const SnackBar(content: Text('ยืนยันรายการสำเร็จ')),
               );
             }
           } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+            if (sheetContext.mounted) {
+              ScaffoldMessenger.of(sheetContext).showSnackBar(
                 SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
               );
             }
@@ -184,14 +183,14 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
         onReject: () async {
           try {
             await TransactionService().deleteTransaction(tx.transactionId);
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+            if (sheetContext.mounted) {
+              ScaffoldMessenger.of(sheetContext).showSnackBar(
                 const SnackBar(content: Text('ลบรายการแล้ว')),
               );
             }
           } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+            if (sheetContext.mounted) {
+              ScaffoldMessenger.of(sheetContext).showSnackBar(
                 SnackBar(content: Text('เกิดข้อผิดพลาดในการลบ: $e')),
               );
             }
@@ -242,13 +241,19 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       if (d.month == currentMonth && d.year == currentYear) {
         if (isIncome) {
           curInc += tx.amount;
-        } else if (isSaving) curSav += tx.amount;
-        else curExp += tx.amount;
+        } else if (isSaving) {
+          curSav += tx.amount;
+        } else {
+          curExp += tx.amount;
+        }
       } else if (d.month == prevMonth && d.year == prevYear) {
         if (isIncome) {
           preInc += tx.amount;
-        } else if (isSaving) preSav += tx.amount;
-        else preExp += tx.amount;
+        } else if (isSaving) {
+          preSav += tx.amount;
+        } else {
+          preExp += tx.amount;
+        }
       }
     }
 
@@ -307,7 +312,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -348,10 +353,10 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isSelected ? catColor.withOpacity(0.05) : Colors.transparent,
+                        color: isSelected ? catColor.withValues(alpha: 0.05) : Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected ? catColor.withOpacity(0.3) : Colors.transparent,
+                          color: isSelected ? catColor.withValues(alpha: 0.3) : Colors.transparent,
                         ),
                       ),
                       child: Row(
@@ -707,12 +712,12 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.08),
+                                    color: Colors.black.withValues(alpha: 0.08),
                                     blurRadius: 15,
                                     offset: const Offset(0, 8),
                                   ),
                                 ],
-                                border: Border.all(color: Colors.black.withOpacity(0.05)),
+                                border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(20),
@@ -747,7 +752,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                                               Container(
                                                 padding: const EdgeInsets.all(8),
                                                 decoration: BoxDecoration(
-                                                  color: catColor.withOpacity(0.1),
+                                                  color: catColor.withValues(alpha: 0.1),
                                                   borderRadius: BorderRadius.circular(10),
                                                 ),
                                                 child: Icon(
@@ -766,7 +771,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                                                       style: GoogleFonts.kanit(
                                                         fontSize: 15,
                                                         fontWeight: FontWeight.w500,
-                                                        color: Colors.black.withOpacity(0.8),
+                                                        color: Colors.black.withValues(alpha: 0.8),
                                                       ),
                                                     ),
                                                     Text(
@@ -830,7 +835,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          border: Border.all(color: themeColor.withOpacity(0.3)),
+                          border: Border.all(color: themeColor.withValues(alpha: 0.3)),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -875,11 +880,11 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                       prefixIcon: Icon(Icons.attach_money, color: themeColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: themeColor.withOpacity(0.3)),
+                        borderSide: BorderSide(color: themeColor.withValues(alpha: 0.3)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: themeColor.withOpacity(0.3)),
+                        borderSide: BorderSide(color: themeColor.withValues(alpha: 0.3)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -927,7 +932,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
-                        border: Border.all(color: themeColor.withOpacity(0.3)),
+                        border: Border.all(color: themeColor.withValues(alpha: 0.3)),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -1080,7 +1085,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
           borderRadius: BorderRadius.circular(10),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             )
@@ -1148,7 +1153,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                           decoration: BoxDecoration(
                             color: _getCategoryColor(
                               item.budgetName,
-                            ).withOpacity(0.1),
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -1378,18 +1383,17 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            onPressed: () {
+                            onPressed: () async {
                               final newLimit = double.tryParse(controller.text);
                               if (newLimit != null) {
-                                _budgetService
-                                    .updateBudgetLimit(
-                                      item.budgetId ?? item.categoryId,
-                                      newLimit,
-                                    )
-                                    .then((_) {
-                                      _loadBudgetData();
-                                      Navigator.pop(context);
-                                    });
+                                await _budgetService.updateBudgetLimit(
+                                  item.budgetId ?? item.categoryId,
+                                  newLimit,
+                                );
+                                if (context.mounted) {
+                                  _loadBudgetData();
+                                  Navigator.pop(context);
+                                }
                               }
                             },
                             child: Text(
@@ -1499,7 +1503,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1532,7 +1536,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -1590,8 +1594,8 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: isOverBudget
-                                ? const Color(0xFFFF5252).withOpacity(0.1)
-                                : const Color(0xFF2D955F).withOpacity(0.1),
+                                ? const Color(0xFFFF5252).withValues(alpha: 0.1)
+                                : const Color(0xFF2D955F).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -1762,7 +1766,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1827,7 +1831,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1908,12 +1912,12 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1923,7 +1927,7 @@ class _BudgetPerMonthScreenState extends State<BudgetPerMonthScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _getCategoryColor(item.budgetName).withOpacity(0.1),
+                  color: _getCategoryColor(item.budgetName).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -2251,7 +2255,7 @@ class _TransactionConfirmationContentState
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2D955F).withOpacity(0.1),
+                    color: const Color(0xFF2D955F).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(100),
                   ),
                   child: Text(
@@ -2296,7 +2300,7 @@ class _TransactionConfirmationContentState
                   },
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.red.withOpacity(0.05),
+                    backgroundColor: Colors.red.withValues(alpha: 0.05),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),

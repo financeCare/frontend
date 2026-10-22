@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../../../../core/config/config.dart' as Config;
+import '../../../../core/config/config.dart' as config;
 import '../../../../features/auth/data/services/access_token_service.dart';
 
 class RepaymentSimulatorService {
   Future<Map<String, dynamic>> simulate() async {
     final token = await AccesstokenService().getAccessToken();
 
-    final url = Uri.parse("${Config.baseUrl}/api/repayment-plans");
+    final url = Uri.parse("${config.baseUrl}/api/repayment-plans");
 
     debugPrint("====== SIMULATE API ======");
     debugPrint("URL => $url");

@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../features/simulator/data/services/repaymentTypeService.dart';
-import '../../../../features/simulator/presentation/RepaymentSimulatorPage.dart';
+import '../../../../features/simulator/data/services/repayment_type_service.dart';
+import '../../../../features/simulator/presentation/repayment_simulator_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/services/debt_service.dart';
 import '../../domain/models/debt_response.dart';
@@ -23,6 +24,9 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
   MonthlyDebtStatus? _monthlyStatus;
   double _plannedMonthlyBudget = 0.0;
   bool _isLoading = true;
+  bool _loadFailed = false;
+  bool _slowLoad = false;
+  Timer? _slowTimer;
 
   @override
   void initState() {
@@ -30,12 +34,26 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
     _loadData();
   }
 
+  @override
+  void dispose() {
+    _slowTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadFailed = false;
+      _slowLoad = false;
+    });
+    _slowTimer?.cancel();
+    _slowTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted && _isLoading) setState(() => _slowLoad = true);
+    });
     try {
       final List<DebtResponse> responses = await _debtService.getAllDebt();
-      final MonthlyStatus = await _debtService.getMonthlyDebtStatus();
+      final monthlyStatus = await _debtService.getMonthlyDebtStatus();
       
       // ดึงข้อมูลแผนเพื่อเอายอดงบประมาณรายเดือน
       try {
@@ -48,13 +66,16 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
       if (!mounted) return;
       setState(() {
         _debtResponses = responses;
-        _monthlyStatus = MonthlyStatus;
+        _monthlyStatus = monthlyStatus;
       });
     } catch (e) {
       debugPrint("Error loading debts: $e");
+      if (mounted) setState(() => _loadFailed = true);
     } finally {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+      _slowTimer?.cancel();
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -194,8 +215,31 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
         child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFFEB5757)),
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(color: Color(0xFFEB5757)),
+                    if (_slowLoad) ...[
+                      const SizedBox(height: 16),
+                      const Text('กำลังปลุกเซิร์ฟเวอร์ อาจใช้เวลาสักครู่...'),
+                    ],
+                  ],
+                ),
+              )
+            : _loadFailed
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ'),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _loadData,
+                      child: const Text('ลองใหม่'),
+                    ),
+                  ],
+                ),
               )
             : RefreshIndicator(
                 onRefresh: _loadData,
@@ -223,7 +267,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                                     borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.03),
+                                        color: Colors.black.withValues(alpha: 0.03),
                                         blurRadius: 10,
                                         offset: const Offset(0, 4),
                                       ),
@@ -348,7 +392,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFEB5757).withOpacity(0.4),
+            color: const Color(0xFFEB5757).withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -362,7 +406,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -414,9 +458,9 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: Column(
               children: [
@@ -511,9 +555,9 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -627,7 +671,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: (menu['iconColor'] as Color).withOpacity(0.1),
+                          color: (menu['iconColor'] as Color).withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -665,12 +709,12 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF2D955F).withOpacity(0.08),
-            const Color(0xFF2D955F).withOpacity(0.04),
+            const Color(0xFF2D955F).withValues(alpha: 0.08),
+            const Color(0xFF2D955F).withValues(alpha: 0.04),
           ],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFF2D955F).withOpacity(0.1)),
+        border: Border.all(color: const Color(0xFF2D955F).withValues(alpha: 0.1)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -689,7 +733,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                   child: Icon(
                     Icons.rocket_launch_outlined,
                     size: 120,
-                    color: const Color(0xFF2D955F).withOpacity(0.05),
+                    color: const Color(0xFF2D955F).withValues(alpha: 0.05),
                   ),
                 ),
               ),
@@ -701,7 +745,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2D955F).withOpacity(0.12),
+                        color: const Color(0xFF2D955F).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -759,7 +803,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF2D955F).withOpacity(0.3),
+                                color: const Color(0xFF2D955F).withValues(alpha: 0.3),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -837,7 +881,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
@@ -904,7 +948,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                                       borderRadius: BorderRadius.circular(6),
                                       border: Border.all(
                                           color: const Color(0xFFEB5757)
-                                              .withOpacity(0.3)),
+                                              .withValues(alpha: 0.3)),
                                     ),
                                     child: Text(
                                       'หนี้นอกระบบ',
@@ -1224,7 +1268,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
                     color: (isCompleted
                             ? const Color(0xFF2D955F)
                             : const Color(0xFF3B82F6))
-                        .withOpacity(0.3),
+                        .withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1248,9 +1292,9 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F3F4).withOpacity(0.5),
+        color: const Color(0xFFF1F3F4).withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.02)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
       ),
       child: Row(
         children: [
@@ -1285,7 +1329,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -1332,7 +1376,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.02)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
       ),
       child: Column(
         children: [
@@ -1362,7 +1406,7 @@ class _DebtOverviewPageState extends State<DebtOverviewPage> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),

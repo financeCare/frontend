@@ -1,6 +1,5 @@
 import 'navigator_key.dart';
 import 'app_logger.dart';
-import 'package:flutter/material.dart';
 import '../../features/auth/data/services/access_token_service.dart';
 
 class UnauthorizedHandler {

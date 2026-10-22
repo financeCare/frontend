@@ -1,8 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
-import 'package:finance_care/core/config/config.dart' as Config;
+import 'package:finance_care/core/config/config.dart' as config;
 import 'package:finance_care/features/auth/data/services/access_token_service.dart';
 import 'package:finance_care/features/notification/presentation/notification_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -63,7 +64,7 @@ class _HomePageState extends State<HomePage> {
       final token = await AccesstokenService().getAccessToken();
       if (token == null || token.isEmpty) return;
 
-      final url = "${Config.baseUrl}/api/notifications/logs/unread-count";
+      final url = "${config.baseUrl}/api/notifications/logs/unread-count";
       final res = await http.get(
         Uri.parse(url),
         headers: {
@@ -138,7 +139,7 @@ class _HomePageState extends State<HomePage> {
 
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         final shouldPop = await showDialog<bool>(
           context: context,
@@ -181,7 +182,7 @@ class _HomePageState extends State<HomePage> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -215,7 +216,7 @@ class _HomePageState extends State<HomePage> {
             const BottomNavigationBarItem(
               icon: Icon(Icons.camera_alt_outlined),
               activeIcon: Icon(Icons.camera_alt),
-              label: 'สแกน OCR',
+              label: kIsWeb ? 'สแกน OCR (ไม่รองรับเว็บ)' : 'สแกน OCR',
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.account_balance_wallet_outlined),
